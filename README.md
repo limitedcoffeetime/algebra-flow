@@ -37,7 +37,7 @@ To get the app running on your local machine for development or testing, follow 
 
 ## Future Roadmap
 
-The current version is just the beginning! Here are some planned features and areas for expansion:
+Here are some planned features and areas for expansion:
 
 *   **Problem Generation:** Dynamically generate a wide variety of algebra problems.
 *   **Answer Validation:** Check user-submitted answers and provide feedback.
