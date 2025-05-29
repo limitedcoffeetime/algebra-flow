@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Algebro",
-    "slug": "Algebro",
+    "slug": "algebro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -37,6 +37,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "11d26774-eebd-4426-aa12-064a3460fc6a"
+      }
+    },
+    "owner": "davidtowers"
   }
 }
