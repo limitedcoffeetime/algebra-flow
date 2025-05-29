@@ -1,50 +1,55 @@
-# Welcome to your Expo app 👋
+# Algebro - Your Algebra Practice Companion
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Welcome to Algebro! This app is designed to help you practice and master algebra concepts.
 
-## Get started
+## Current Features
 
-1. Install dependencies
+As of now, Algebro is a "dummy" application that presents a basic algebra problem. The core UI is in place, featuring:
 
-   ```bash
-   npm install
-   ```
+*   A problem display area.
+*   An input field for your answer.
+*   A submit button.
 
-2. Start the app
+This setup serves as the foundation for future development.
 
-   ```bash
-   npx expo start
-   ```
+## Getting Started (Development)
 
-In the output, you'll find options to open the app in a
+To get the app running on your local machine for development or testing, follow these steps:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+1.  **Install Dependencies:**
+    Make sure you have Node.js and npm (or Yarn) installed. Then, in the project directory, run:
+    ```bash
+    npm install
+    # or
+    # yarn install
+    ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+2.  **Start the Development Server:**
+    Once the dependencies are installed, you can start the Expo development server:
+    ```bash
+    npx expo start
+    ```
 
-## Get a fresh project
+    This command will output a QR code and server information. You can then:
+    *   Scan the QR code with the Expo Go app on your Android or iOS device.
+    *   Open the app in an Android emulator or iOS simulator.
+    *   Open the app in your web browser.
 
-When you're ready, run:
+## Future Roadmap
 
-```bash
-npm run reset-project
-```
+The current version is just the beginning! Here are some planned features and areas for expansion:
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+*   **Problem Generation:** Dynamically generate a wide variety of algebra problems.
+*   **Answer Validation:** Check user-submitted answers and provide feedback.
+*   **Step-by-Step Solutions:** Show detailed solutions for problems.
+*   **User Accounts & Progress Tracking:** Allow users to save their progress and track their learning.
+*   **Different Topics:** Expand to cover various algebra topics (e.g., linear equations, quadratics, systems of equations).
+*   **Customizable Difficulty:** Allow users to select problem difficulty levels.
 
-## Learn more
+## Project Structure
 
-To learn more about developing your project with Expo, look at the following resources:
+This project is built with [Expo](https://expo.dev) and utilizes [Expo Router](https://docs.expo.dev/router/introduction/) for file-based routing. Key directories:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+*   `app/`: Contains all the screens and navigation logic.
+*   `components/`: Houses reusable UI components.
+*   `assets/`: For static assets like images and fonts.
