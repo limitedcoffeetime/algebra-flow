@@ -19,18 +19,20 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <ProblemContainer problem={currentProblem} />
+      <View style={styles.contentWrapper}>
+        <ProblemContainer problem={currentProblem} />
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Your answer"
-          placeholderTextColor="#999"
-          keyboardType="numeric"
-          onChangeText={setUserAnswer}
-          value={userAnswer}
-        />
-        <Button label="Submit" onPress={handleSubmit} />
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Your answer"
+            placeholderTextColor="#999"
+            keyboardType="numeric"
+            onChangeText={setUserAnswer}
+            value={userAnswer}
+          />
+          <Button label="Submit" onPress={handleSubmit} />
+        </View>
       </View>
     </View>
   );
@@ -44,11 +46,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 600,
+    alignItems: 'center',
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 20,
-    width: '90%',
+    width: '100%',
     justifyContent: 'space-between',
   },
   input: {

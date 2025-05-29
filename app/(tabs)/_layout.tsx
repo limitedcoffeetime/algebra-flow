@@ -15,24 +15,25 @@ export default function TabLayout() {
         headerTintColor: '#fff',
         tabBarStyle: {
             backgroundColor: '#25292e',
+            //borderTopWidth: 1,
         },
     }}
     >
       <Tabs.Screen
         name="index"
         options={{
-            title: 'Home',
+            title: 'Practice',
             tabBarIcon: ({color, focused}) => (
-                <Ionicons name= {focused ? 'home-sharp' : 'home-outline'} color = {color} size = {24} />
+                <Ionicons name= {focused ? 'barbell' : 'barbell-outline'} color = {color} size = {24} />
             ),
         }}
     />
         <Tabs.Screen
         name="about"
         options={{
-            title: 'About',
+            title: 'Settings',
             tabBarIcon: ({color, focused}) => (
-                <Ionicons name = {focused ? 'information-circle' : 'information-circle-outline'} color = {color} size = {24} />
+                <Ionicons name = {focused ? 'cog' : 'cog-outline'} color = {color} size = {24} />
             ),
         }}
      />
