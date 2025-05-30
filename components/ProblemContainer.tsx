@@ -23,7 +23,7 @@ const ProblemContainer = ({ problem }: Props) => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 13,
+    padding: 10,
     borderRadius: 10,
     backgroundColor: '#f0f0f0', // Light grey background
     alignItems: 'center',
