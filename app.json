@@ -8,6 +8,7 @@
     "scheme": "algebro",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.davidtowers.algebro",
