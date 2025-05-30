@@ -6,7 +6,7 @@ export interface Problem {
   id: string; // For future use, like tracking problems
   equation: string;
   answer: string | number; // Answer can be string or number
-  // solutionSteps?: string[]; // Example for future expansion
+  solutionSteps?: string[]; // Example for future expansion
 }
 
 type Props = {

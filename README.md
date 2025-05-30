@@ -10,6 +10,8 @@ Algebro is currently in early development. The app presents a single "dummy" alg
 - An input field for answers
 - A submit button
 - Dark-themed UI optimized for mobile
+- **NEW**: Answer validation with immediate feedback
+- **NEW**: Collapsible step-by-step solutions for incorrect answers
 
 The foundation is built using React Native with Expo, supporting both iOS and Android platforms.
 
@@ -28,9 +30,9 @@ The foundation is built using React Native with Expo, supporting both iOS and An
 
 ## Planned Features
 
-- Step-by-step solutions
+- Step-by-step solutions ✅ (implemented with react-native-fast-collapsible)
 - Dynamic problem generation
-- Answer validation with feedback
+- Answer validation with feedback ✅ (basic implementation complete)
 - Multiple algebra topics
 - Progress tracking
 - Difficulty levels
