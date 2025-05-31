@@ -1,12 +1,22 @@
 // Main database service - Clean and simple interface for the app
 import { getDBConnection } from './db';
 import { dummyBatchAndProblemsInput } from './dummyData';
+import { mockDb } from './mockDb';
 import * as problemBatchService from './problemBatchService';
 import * as problemService from './problemService';
 import * as userProgressService from './userProgressService';
 
 // Re-export types
 export * from './schema';
+
+// Check if we should use mock database
+// For now, let's always use mock DB in development to avoid SQLite issues
+const USE_MOCK_DB = __DEV__; // You can change this to false when you have a proper native build
+
+// To use real SQLite:
+// 1. Change USE_MOCK_DB to false
+// 2. Run: npx expo run:ios (for local build)
+// 3. OR: Create an EAS development build
 
 // Database initialization
 export async function initializeDatabase() {
@@ -51,8 +61,8 @@ export async function seedDummyData() {
   }
 }
 
-// Main API - Clean functions for the app to use
-export const db = {
+// Export the appropriate database implementation
+export const db = USE_MOCK_DB ? mockDb : {
   // Initialize
   init: initializeDatabase,
   seedDummy: seedDummyData,

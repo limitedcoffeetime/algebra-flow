@@ -1,10 +1,10 @@
-import { v4 as uuidv4 } from 'uuid';
 import { getDBConnection, runInTransactionAsync } from './db';
 import {
     ProblemBatch,
     ProblemBatchInput,
     ProblemInput
 } from './schema';
+import { generateId } from './utils';
 
 const nowISO = () => new Date().toISOString();
 
@@ -17,7 +17,7 @@ export async function addProblemBatch(
   problemsInput: ProblemInput[]
 ): Promise<string> {
   return runInTransactionAsync(async (db) => {
-    const batchId = batchInput.id || uuidv4();
+    const batchId = batchInput.id || generateId();
     const importedAt = nowISO();
 
     // Insert ProblemBatch
@@ -50,7 +50,7 @@ export async function addProblemBatch(
         console.warn(`Problem ${problem.id || 'new'} has batchId ${problem.batchId} but should be ${batchId}. Skipping.`);
         continue;
       }
-      const problemId = problem.id || uuidv4();
+      const problemId = problem.id || generateId();
       const currentTime = nowISO();
       await db.runAsync(
         problemInsertSql,

@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid'; // We'll need a UUID generator
 import { ProblemBatchInput, ProblemInput } from "./schema";
+import { generateId } from './utils';
 
 // Helper to create ISO timestamps
 const now = () => new Date().toISOString();
@@ -25,7 +25,7 @@ export const dummyProblemBatchesInput: ProblemBatchInput[] = [
 export const dummyProblemsInput: ProblemInput[] = [
   // Batch 1
   {
-    id: uuidv4(),
+    id: generateId(),
     batchId: DUMMY_BATCH_1_ID,
     equation: "2x + 5 = 15",
     answer: "5",
@@ -40,7 +40,7 @@ export const dummyProblemsInput: ProblemInput[] = [
     isCompleted: false,
   },
   {
-    id: uuidv4(),
+    id: generateId(),
     batchId: DUMMY_BATCH_1_ID,
     equation: "3y - 7 = 14",
     answer: "7",
@@ -55,7 +55,7 @@ export const dummyProblemsInput: ProblemInput[] = [
     isCompleted: false,
   },
   {
-    id: uuidv4(),
+    id: generateId(),
     batchId: DUMMY_BATCH_1_ID,
     equation: "x^2 - 4 = 0",
     answer: "2 or -2",
@@ -70,7 +70,7 @@ export const dummyProblemsInput: ProblemInput[] = [
   },
   // Batch 2
   {
-    id: uuidv4(),
+    id: generateId(),
     batchId: DUMMY_BATCH_2_ID,
     equation: "a / 3 = 7",
     answer: "21",
@@ -83,7 +83,7 @@ export const dummyProblemsInput: ProblemInput[] = [
     isCompleted: false,
   },
   {
-    id: uuidv4(),
+    id: generateId(),
     batchId: DUMMY_BATCH_2_ID,
     equation: "b + 9 = 3",
     answer: "-6",
