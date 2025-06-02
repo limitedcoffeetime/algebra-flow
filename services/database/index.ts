@@ -11,12 +11,17 @@ export * from './schema';
 
 // Check if we should use mock database
 // For now, let's always use mock DB in development to avoid SQLite issues
-const USE_MOCK_DB = __DEV__; // You can change this to false when you have a proper native build
+const USE_MOCK_DB = process.env.EXPO_PUBLIC_USE_MOCK_DB === 'true'
+  ? true
+  : false; // Use real SQLite by default with EAS development build
 
 // To use real SQLite:
 // 1. Change USE_MOCK_DB to false
 // 2. Run: npx expo run:ios (for local build)
 // 3. OR: Create an EAS development build
+
+// To temporarily use mock DB even with a development build:
+// EXPO_PUBLIC_USE_MOCK_DB=true npx expo start
 
 // Database initialization
 export async function initializeDatabase() {
