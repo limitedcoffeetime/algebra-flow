@@ -1,33 +1,67 @@
 import Button from '@/components/Button';
 import FeedbackSection from '@/components/FeedbackSection';
-import ProblemContainer from '@/components/ProblemContainer';
-import { useProblemStore } from '@/store/problemStore';
+import ProblemContainer, { Problem } from '@/components/ProblemContainer';
+import { db } from '@/services/database';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function Index() {
+  const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
   const [userAnswer, setUserAnswer] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const {
-    currentProblem,
-    userProgress,
-    isLoading,
-    error,
-    initialize,
-    loadNextProblem,
-    submitAnswer
-  } = useProblemStore();
-
-  // Initialize on mount
+  // Initialize database and load first problem
   useEffect(() => {
-    initialize();
+    initializeApp();
   }, []);
+
+  const initializeApp = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Initialize database
+      const dbInitialized = await db.init();
+      if (!dbInitialized) {
+        throw new Error('Failed to initialize database');
+      }
+
+      // Seed dummy data for development
+      await db.seedDummy();
+
+      // Load first problem
+      await loadNextProblem();
+    } catch (err) {
+      console.error('Failed to initialize app:', err);
+      setError('Failed to initialize app. Please restart.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadNextProblem = async () => {
+    try {
+      const problem = await db.getNextProblem();
+      if (problem) {
+        setCurrentProblem(problem);
+        setUserAnswer('');
+        setShowFeedback(false);
+      } else {
+        setError('No more problems available!');
+      }
+    } catch (err) {
+      console.error('Failed to load problem:', err);
+      setError('Failed to load problem');
+    }
+  };
 
   const handleSubmit = async () => {
     if (!currentProblem || !userAnswer.trim()) return;
 
+    console.log("User's answer:", userAnswer);
     Keyboard.dismiss();
 
     // Check if answer is correct
@@ -41,13 +75,15 @@ export default function Index() {
     setShowFeedback(true);
 
     // Update database
-    await submitAnswer(userAnswer, correct);
+    try {
+      await db.submitAnswer(currentProblem.id, userAnswer, correct);
+    } catch (err) {
+      console.error('Failed to save answer:', err);
+    }
   };
 
-  const handleNextProblem = async () => {
-    setUserAnswer('');
-    setShowFeedback(false);
-    await loadNextProblem();
+  const handleNextProblem = () => {
+    loadNextProblem();
   };
 
   if (isLoading) {
@@ -59,11 +95,19 @@ export default function Index() {
     );
   }
 
-  if (error && !currentProblem) {
+  if (error) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <Text style={styles.errorText}>{error}</Text>
-        <Button label="Retry" theme="primary" onPress={initialize} />
+        <Button label="Retry" theme="primary" onPress={initializeApp} />
+      </View>
+    );
+  }
+
+  if (!currentProblem) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>No problem loaded</Text>
       </View>
     );
   }
@@ -71,16 +115,7 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <View style={styles.contentWrapper}>
-        {/* Progress indicator */}
-        {userProgress && (
-          <View style={styles.progressContainer}>
-            <Text style={styles.progressText}>
-              Progress: {userProgress.problemsCorrect}/{userProgress.problemsAttempted}
-            </Text>
-          </View>
-        )}
-
-        {currentProblem && <ProblemContainer problem={currentProblem} />}
+        <ProblemContainer problem={currentProblem} />
 
         <View style={styles.inputContainer}>
           <TextInput
@@ -90,6 +125,7 @@ export default function Index() {
             keyboardType="numeric"
             onChangeText={(text) => {
               setUserAnswer(text);
+              // Clear feedback when user starts typing again
               if (showFeedback) {
                 setShowFeedback(false);
               }
@@ -103,15 +139,11 @@ export default function Index() {
           />
         </View>
 
-        {showFeedback && currentProblem && (
+        {showFeedback && (
           <FeedbackSection
             isCorrect={isCorrect}
             solutionSteps={currentProblem.solutionSteps}
           />
-        )}
-
-        {error && (
-          <Text style={styles.warningText}>{error}</Text>
         )}
       </View>
     </View>
@@ -134,17 +166,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 600,
     alignItems: 'center',
-  },
-  progressContainer: {
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: '#333',
-    borderRadius: 10,
-  },
-  progressText: {
-    color: '#ffd33d',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -173,12 +194,6 @@ const styles = StyleSheet.create({
     color: '#ff6b6b',
     fontSize: 16,
     marginBottom: 20,
-    textAlign: 'center',
-  },
-  warningText: {
-    color: '#ffa500',
-    fontSize: 14,
-    marginTop: 10,
     textAlign: 'center',
   },
 });
