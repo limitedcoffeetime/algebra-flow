@@ -9,7 +9,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "dev": "APP_VARIANT=development npx expo start"
+    "dev": "APP_VARIANT=development npx expo start",
+    "dev-mock": "APP_VARIANT=development EXPO_PUBLIC_USE_MOCK_DB=true npx expo start"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",

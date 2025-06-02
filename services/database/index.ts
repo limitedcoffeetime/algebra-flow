@@ -13,7 +13,7 @@ export * from './schema';
 // For now, let's always use mock DB in development to avoid SQLite issues
 const USE_MOCK_DB = process.env.EXPO_PUBLIC_USE_MOCK_DB === 'true'
   ? true
-  : false; // Use real SQLite by default with EAS development build
+  : true; // Temporarily force mock DB until SQLite issue is resolved
 
 // To use real SQLite:
 // 1. Change USE_MOCK_DB to false
@@ -22,6 +22,11 @@ const USE_MOCK_DB = process.env.EXPO_PUBLIC_USE_MOCK_DB === 'true'
 
 // To temporarily use mock DB even with a development build:
 // EXPO_PUBLIC_USE_MOCK_DB=true npx expo start
+
+// Function to get current database type
+export function getDatabaseType(): 'Mock Database' | 'SQLite' {
+  return USE_MOCK_DB ? 'Mock Database' : 'SQLite';
+}
 
 // Database initialization
 export async function initializeDatabase() {

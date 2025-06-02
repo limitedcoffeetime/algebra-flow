@@ -1,4 +1,5 @@
 import Button from '@/components/Button';
+import { getDatabaseType } from '@/services/database';
 import { useProblemStore } from '@/store/problemStore';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -6,6 +7,9 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 export default function SettingsScreen() {
   const { userProgress, resetProgress, isLoading } = useProblemStore();
   const [isResetting, setIsResetting] = useState(false);
+
+  // Get current database type
+  const databaseType = getDatabaseType();
 
   const handleResetProgress = () => {
     Alert.alert(
@@ -64,6 +68,21 @@ export default function SettingsScreen() {
         ) : (
           <Text style={styles.noDataText}>No progress data available</Text>
         )}
+      </View>
+
+      {/* Database Status Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Database Status</Text>
+        <View style={styles.databaseStatusContainer}>
+          <Text style={styles.databaseTypeLabel}>Current Database:</Text>
+          <Text style={styles.databaseTypeValue}>{databaseType}</Text>
+        </View>
+        <Text style={styles.databaseHelpText}>
+          {databaseType === 'Mock Database'
+            ? 'Using in-memory mock database for development. Data will be lost when app is closed.'
+            : 'Using SQLite database. Data is persisted locally on your device.'
+          }
+        </Text>
       </View>
 
       {/* Actions Section */}
@@ -145,6 +164,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  databaseStatusContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  databaseTypeLabel: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  databaseTypeValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffd33d',
+  },
+  databaseHelpText: {
+    fontSize: 14,
+    color: '#999',
+    lineHeight: 20,
     fontStyle: 'italic',
   },
   buttonContainer: {
