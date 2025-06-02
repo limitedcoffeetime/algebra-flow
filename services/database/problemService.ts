@@ -116,3 +116,22 @@ export async function getTotalProblemsCountByBatch(batchId: string): Promise<num
     );
     return result?.count || 0;
 }
+
+/**
+ * Resets all problems back to unsolved state (isCompleted = false, userAnswer = null)
+ */
+export async function resetAllProblems(): Promise<void> {
+    const db = await getDBConnection();
+    const now = nowISO();
+
+    try {
+        const result = await db.runAsync(
+            'UPDATE Problems SET isCompleted = 0, userAnswer = NULL, solutionStepsShown = 0, updatedAt = ?',
+            now
+        );
+        console.log(`Reset ${result.changes} problems to unsolved state.`);
+    } catch (error) {
+        console.error('Error resetting problems:', error);
+        throw error;
+    }
+}

@@ -103,6 +103,12 @@ export const mockDb = {
       userProgress.problemsAttempted = 0;
       userProgress.problemsCorrect = 0;
     }
+
+    // Also reset all problems back to unsolved
+    problems.forEach(problem => {
+      problem.isCompleted = false;
+      problem.userAnswer = null;
+    });
   },
 
   async getNextProblem() {

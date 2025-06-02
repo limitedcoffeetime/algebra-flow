@@ -87,7 +87,12 @@ export const db = USE_MOCK_DB ? mockDb : {
   // User Progress
   getUserProgress: userProgressService.getUserProgress,
   updateUserProgress: userProgressService.updateUserProgress,
-  resetUserProgress: userProgressService.resetUserProgress,
+  resetUserProgress: async () => {
+    // Reset all problems back to unsolved
+    await problemService.resetAllProblems();
+    // Reset user progress stats
+    return await userProgressService.resetUserProgress();
+  },
 
   // Utility function to get next problem for user
   async getNextProblem() {

@@ -83,6 +83,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
   // Reset progress
   resetProgress: async () => {
     try {
+      set({ error: null }); // Clear any existing errors
       await db.resetUserProgress();
       const progress = await db.getUserProgress();
       set({ userProgress: progress });
