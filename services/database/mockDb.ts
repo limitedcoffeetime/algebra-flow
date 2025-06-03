@@ -1,87 +1,116 @@
 // Mock database for development - avoids SQLite native module issues
-import { dummyBatchAndProblemsInput } from './dummyData';
+import { getDummyBatchAndProblemsInput } from './dummyData';
 import { Problem, ProblemBatch, UserProgress } from './schema';
 
 // In-memory storage
 let problems: Problem[] = [];
 let batches: ProblemBatch[] = [];
 let userProgress: UserProgress | null = null;
+let isInitialized = false;
 
-// Initialize with dummy data
-function initializeMockData() {
+// Initialize with dummy data from JSON
+async function initializeMockData() {
+  if (isInitialized) return;
+
   batches = [];
   problems = [];
 
-  dummyBatchAndProblemsInput.forEach((data, index) => {
-    const batchId = `batch-${index + 1}`;
-    const now = new Date().toISOString();
-    batches.push({
-      ...data.batch,
-      id: batchId,
-      importedAt: now
-    });
+  try {
+    const dummyBatchAndProblemsInput = await getDummyBatchAndProblemsInput();
 
-    data.problems.forEach((problem, pIndex) => {
-      problems.push({
-        ...problem,
-        id: `${batchId}-problem-${pIndex + 1}`,
-        batchId,
-        isCompleted: false,
-        userAnswer: null,
-        createdAt: now,
-        updatedAt: now
+    dummyBatchAndProblemsInput.forEach((data, index) => {
+      const batchId = data.batch.id || `batch-${index + 1}`;
+      const now = new Date().toISOString();
+      batches.push({
+        ...data.batch,
+        id: batchId,
+        importedAt: now
+      });
+
+      data.problems.forEach((problem, pIndex) => {
+        problems.push({
+          ...problem,
+          id: problem.id || `${batchId}-problem-${pIndex + 1}`,
+          batchId,
+          isCompleted: false,
+          userAnswer: null,
+          createdAt: now,
+          updatedAt: now
+        });
       });
     });
-  });
 
-  const now = new Date().toISOString();
-  userProgress = {
-    id: 'user-1',
-    currentBatchId: batches[0]?.id || null,
-    problemsAttempted: 0,
-    problemsCorrect: 0,
-    createdAt: now,
-    updatedAt: now
-  };
+    const now = new Date().toISOString();
+    userProgress = {
+      id: 'user-1',
+      currentBatchId: batches[0]?.id || null,
+      problemsAttempted: 0,
+      problemsCorrect: 0,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    isInitialized = true;
+    console.log('Mock database initialized with data from JSON file');
+  } catch (error) {
+    console.error('Failed to initialize mock database with JSON data:', error);
+    // Initialize with empty data as fallback
+    userProgress = {
+      id: 'user-1',
+      currentBatchId: null,
+      problemsAttempted: 0,
+      problemsCorrect: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    isInitialized = true;
+  }
 }
 
 export const mockDb = {
   async init() {
     console.log('Initializing mock database...');
-    initializeMockData();
+    await initializeMockData();
     return true;
   },
 
   async seedDummy() {
-    console.log('Mock database already seeded');
+    console.log('Mock database already seeded with JSON data');
   },
 
   async getLatestBatch() {
+    await initializeMockData();
     return batches[batches.length - 1] || null;
   },
 
   async getAllBatches() {
+    await initializeMockData();
     return batches;
   },
 
   async getBatchById(id: string) {
+    await initializeMockData();
     return batches.find(b => b.id === id) || null;
   },
 
   async getProblemsByBatch(batchId: string) {
+    await initializeMockData();
     return problems.filter(p => p.batchId === batchId);
   },
 
   async getUnsolvedProblems(batchId: string, limit?: number) {
+    await initializeMockData();
     const unsolved = problems.filter(p => p.batchId === batchId && !p.isCompleted);
     return limit ? unsolved.slice(0, limit) : unsolved;
   },
 
   async getProblemById(id: string) {
+    await initializeMockData();
     return problems.find(p => p.id === id) || null;
   },
 
   async updateProblem(id: string, updates: Partial<Problem>) {
+    await initializeMockData();
     const index = problems.findIndex(p => p.id === id);
     if (index >= 0) {
       problems[index] = { ...problems[index], ...updates };
@@ -89,16 +118,19 @@ export const mockDb = {
   },
 
   async getUserProgress() {
+    await initializeMockData();
     return userProgress;
   },
 
   async updateUserProgress(updates: Partial<UserProgress>) {
+    await initializeMockData();
     if (userProgress) {
       userProgress = { ...userProgress, ...updates };
     }
   },
 
   async resetUserProgress() {
+    await initializeMockData();
     if (userProgress) {
       userProgress.problemsAttempted = 0;
       userProgress.problemsCorrect = 0;
@@ -112,6 +144,7 @@ export const mockDb = {
   },
 
   async getNextProblem() {
+    await initializeMockData();
     if (!userProgress?.currentBatchId) {
       const latestBatch = batches[batches.length - 1];
       if (latestBatch) {
@@ -144,6 +177,7 @@ export const mockDb = {
 
   // Add batch function for completeness
   async addBatch(batch: Omit<ProblemBatch, 'id' | 'importedAt'>, problemsData: Omit<Problem, 'id' | 'batchId' | 'isCompleted' | 'userAnswer' | 'createdAt' | 'updatedAt'>[]) {
+    await initializeMockData();
     const batchId = `batch-${batches.length + 1}`;
     const now = new Date().toISOString();
     const newBatch: ProblemBatch = {

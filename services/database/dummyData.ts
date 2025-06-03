@@ -1,110 +1,69 @@
+import { getSampleBatchAndProblemsInput, getSampleProblemBatches, getSampleProblems } from './sampleDataLoader';
 import { ProblemBatchInput, ProblemInput } from "./schema";
-import { generateId } from './utils';
 
 // Helper to create ISO timestamps
 const now = () => new Date().toISOString();
 
-export const DUMMY_BATCH_1_ID = `batch_${now().split('T')[0].replace(/-/g, '')}_001`; // e.g. batch_20231027_001
-export const DUMMY_BATCH_2_ID = `batch_${now().split('T')[0].replace(/-/g, '')}_002`;
+// Keep legacy constants for any code that might reference them
+// These will now be dynamically loaded but we maintain the same IDs
+export const DUMMY_BATCH_1_ID = "batch_sample_001";
+export const DUMMY_BATCH_2_ID = "batch_sample_002";
 
-export const dummyProblemBatchesInput: ProblemBatchInput[] = [
-  {
-    id: DUMMY_BATCH_1_ID,
-    generationDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    sourceUrl: "s3://algebro-problems/dummy_batch_1.json",
-    problemCount: 3,
-  },
-  {
-    id: DUMMY_BATCH_2_ID,
-    generationDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    sourceUrl: "s3://algebro-problems/dummy_batch_2.json",
-    problemCount: 2,
-  },
-];
+// Legacy function to get dummy problem batches (now loads from JSON)
+export const getDummyProblemBatchesInput = async (): Promise<ProblemBatchInput[]> => {
+  return await getSampleProblemBatches();
+};
 
-export const dummyProblemsInput: ProblemInput[] = [
-  // Batch 1
-  {
-    id: generateId(),
-    batchId: DUMMY_BATCH_1_ID,
-    equation: "2x + 5 = 15",
-    answer: "5",
-    solutionSteps: [
-      "2x + 5 - 5 = 15 - 5",
-      "2x = 10",
-      "x = 10 / 2",
-      "x = 5",
-    ],
-    difficulty: "easy",
-    problemType: "linear-one-variable",
-    isCompleted: false,
-  },
-  {
-    id: generateId(),
-    batchId: DUMMY_BATCH_1_ID,
-    equation: "3y - 7 = 14",
-    answer: "7",
-    solutionSteps: [
-      "3y - 7 + 7 = 14 + 7",
-      "3y = 21",
-      "y = 21 / 3",
-      "y = 7",
-    ],
-    difficulty: "easy",
-    problemType: "linear-one-variable",
-    isCompleted: false,
-  },
-  {
-    id: generateId(),
-    batchId: DUMMY_BATCH_1_ID,
-    equation: "x^2 - 4 = 0",
-    answer: "2 or -2",
-    solutionSteps: [
-      "x^2 = 4",
-      "x = sqrt(4)",
-      "x = ±2",
-    ],
-    difficulty: "medium",
-    problemType: "quadratic-simple",
-    isCompleted: false,
-  },
-  // Batch 2
-  {
-    id: generateId(),
-    batchId: DUMMY_BATCH_2_ID,
-    equation: "a / 3 = 7",
-    answer: "21",
-    solutionSteps: [
-      "a / 3 * 3 = 7 * 3",
-      "a = 21",
-    ],
-    difficulty: "easy",
-    problemType: "linear-one-variable",
-    isCompleted: false,
-  },
-  {
-    id: generateId(),
-    batchId: DUMMY_BATCH_2_ID,
-    equation: "b + 9 = 3",
-    answer: "-6",
-    solutionSteps: [
-      "b + 9 - 9 = 3 - 9",
-      "b = -6",
-    ],
-    difficulty: "easy",
-    problemType: "linear-one-variable",
-    isCompleted: false,
-  },
-];
+// Legacy function to get dummy problems (now loads from JSON)
+export const getDummyProblemsInput = async (): Promise<ProblemInput[]> => {
+  return await getSampleProblems();
+};
 
-// This is how you might structure the input for a service function
-export const dummyBatchAndProblemsInput = [
-    {
-        batch: dummyProblemBatchesInput[0],
-        problems: dummyProblemsInput.filter(p => p.batchId === dummyProblemBatchesInput[0].id)
-    },
-    {
-        batch: dummyProblemBatchesInput[1],
-        problems: dummyProblemsInput.filter(p => p.batchId === dummyProblemBatchesInput[1].id)
-    }
-];
+// Main export that maintains the same structure as before
+export const getDummyBatchAndProblemsInput = async () => {
+  return await getSampleBatchAndProblemsInput();
+};
+
+// For backward compatibility, export synchronous versions that will be loaded once
+let cachedBatchAndProblemsInput: any[] = [];
+let cacheInitialized = false;
+
+// Initialize cache on first access
+const initializeCache = async () => {
+  if (!cacheInitialized) {
+    cachedBatchAndProblemsInput = await getSampleBatchAndProblemsInput();
+    cacheInitialized = true;
+  }
+};
+
+// Backward compatibility exports (these will load async on first access)
+export let dummyProblemBatchesInput: ProblemBatchInput[] = [];
+export let dummyProblemsInput: ProblemInput[] = [];
+export let dummyBatchAndProblemsInput: any[] = [];
+
+// Initialize the cache and update the exports
+const initializeLegacyExports = async () => {
+  try {
+    await initializeCache();
+
+    // Update the legacy exports with loaded data
+    const batches = await getSampleProblemBatches();
+    const problems = await getSampleProblems();
+
+    dummyProblemBatchesInput.length = 0;
+    dummyProblemBatchesInput.push(...batches);
+
+    dummyProblemsInput.length = 0;
+    dummyProblemsInput.push(...problems);
+
+    dummyBatchAndProblemsInput.length = 0;
+    dummyBatchAndProblemsInput.push(...cachedBatchAndProblemsInput);
+
+    console.log('Sample problems loaded from JSON file');
+  } catch (error) {
+    console.error('Failed to load sample problems from JSON, falling back to empty arrays:', error);
+  }
+};
+
+// Initialize immediately
+initializeLegacyExports();

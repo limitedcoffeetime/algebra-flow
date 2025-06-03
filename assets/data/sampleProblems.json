@@ -1,0 +1,88 @@
+{
+  "batches": [
+    {
+      "id": "batch_sample_001",
+      "generationDate": "2024-01-25T10:00:00.000Z",
+      "sourceUrl": "bundled://assets/data/sampleProblems.json",
+      "problemCount": 3
+    },
+    {
+      "id": "batch_sample_002",
+      "generationDate": "2024-01-26T10:00:00.000Z",
+      "sourceUrl": "bundled://assets/data/sampleProblems.json",
+      "problemCount": 2
+    }
+  ],
+  "problems": [
+    {
+      "id": "prob_001",
+      "batchId": "batch_sample_001",
+      "equation": "2x + 5 = 15",
+      "answer": "5",
+      "solutionSteps": [
+        "2x + 5 - 5 = 15 - 5",
+        "2x = 10",
+        "x = 10 / 2",
+        "x = 5"
+      ],
+      "difficulty": "easy",
+      "problemType": "linear-one-variable",
+      "isCompleted": false
+    },
+    {
+      "id": "prob_002",
+      "batchId": "batch_sample_001",
+      "equation": "3y - 7 = 14",
+      "answer": "7",
+      "solutionSteps": [
+        "3y - 7 + 7 = 14 + 7",
+        "3y = 21",
+        "y = 21 / 3",
+        "y = 7"
+      ],
+      "difficulty": "easy",
+      "problemType": "linear-one-variable",
+      "isCompleted": false
+    },
+    {
+      "id": "prob_003",
+      "batchId": "batch_sample_001",
+      "equation": "x^2 - 4 = 0",
+      "answer": "2 or -2",
+      "solutionSteps": [
+        "x^2 = 4",
+        "x = sqrt(4)",
+        "x = ±2"
+      ],
+      "difficulty": "medium",
+      "problemType": "quadratic-simple",
+      "isCompleted": false
+    },
+    {
+      "id": "prob_004",
+      "batchId": "batch_sample_002",
+      "equation": "a / 3 = 7",
+      "answer": "21",
+      "solutionSteps": [
+        "a / 3 * 3 = 7 * 3",
+        "a = 21"
+      ],
+      "difficulty": "easy",
+      "problemType": "linear-one-variable",
+      "isCompleted": false
+    },
+    {
+      "id": "prob_005",
+      "batchId": "batch_sample_002",
+      "equation": "b + 9 = 3",
+      "answer": "-6",
+      "solutionSteps": [
+        "b + 9 - 9 = 3 - 9",
+        "b = -6"
+      ],
+      "difficulty": "easy",
+      "problemType": "linear-one-variable",
+      "isCompleted": false
+    }
+  ]
+}

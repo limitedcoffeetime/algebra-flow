@@ -1,6 +1,6 @@
 // Main database service - Clean and simple interface for the app
 import { getDBConnection } from './db';
-import { dummyBatchAndProblemsInput } from './dummyData';
+import { getDummyBatchAndProblemsInput } from './dummyData';
 import { mockDb } from './mockDb';
 import * as problemBatchService from './problemBatchService';
 import * as problemService from './problemService';
@@ -43,10 +43,10 @@ export async function initializeDatabase() {
   }
 }
 
-// Seed with dummy data (for development)
+// Seed with dummy data (for development) - Now loads from JSON
 export async function seedDummyData() {
   try {
-    console.log('Seeding dummy data...');
+    console.log('Seeding dummy data from JSON file...');
 
     // Check if we already have data
     const existingBatches = await problemBatchService.getAllProblemBatches();
@@ -54,6 +54,9 @@ export async function seedDummyData() {
       console.log('Database already has data, skipping seed');
       return;
     }
+
+    // Load data from JSON file
+    const dummyBatchAndProblemsInput = await getDummyBatchAndProblemsInput();
 
     // Add dummy batches
     for (const batchData of dummyBatchAndProblemsInput) {
@@ -63,7 +66,7 @@ export async function seedDummyData() {
       );
     }
 
-    console.log('Dummy data seeded successfully');
+    console.log('Dummy data seeded successfully from JSON file');
   } catch (error) {
     console.error('Failed to seed dummy data:', error);
   }
