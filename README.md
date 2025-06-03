@@ -1,199 +1,181 @@
-# Algebro
+# Algebro - Development Changelog
 
-A comprehensive educational mobile app for practicing algebra problems with step-by-step solutions and progress tracking.
+A mobile algebra learning app built with React Native and Expo. This changelog tracks the development progress and major milestones.
 
-## Features
+## 🚀 Latest Release - Week 2 Complete ✅
 
-### ✅ **Core Functionality**
-- **Problem Solving Interface**: Clean, mobile-optimized UI for solving algebra problems
-- **Answer Validation**: Real-time feedback with numeric answer checking
-- **Step-by-Step Solutions**: Collapsible solution guides for incorrect answers
-- **Progress Tracking**: Track problems attempted, correct answers, and accuracy
-- **Settings & Stats**: View progress statistics and manage app settings
+**Status**: All Week 2 goals achieved - fully functional offline algebra practice app with SQLite persistence.
 
-### ✅ **Data Management**
-- **SQLite Database**: Persistent local storage with proper schema design
-- **Problem Batches**: Organized problem sets with metadata
-- **User Progress**: Comprehensive progress tracking and statistics
-- **Mock Database**: Development mode with in-memory data for testing
+---
 
-### ✅ **Technical Features**
-- **State Management**: Zustand store for global app state
-- **Error Handling**: Comprehensive error states and user feedback
-- **TypeScript**: Full type safety throughout the application
-- **Development Tools**: Linting, type checking, and mock data seeding
+## 📅 Development History
 
-## Technical Architecture
+### **June 3, 2024** - UI Polish & Data Architecture Overhaul
 
-### **Framework & Tools**
-- **Framework**: React Native with Expo
-- **Database**: SQLite (expo-sqlite) with WAL mode for performance
-- **State Management**: Zustand for global state
-- **Navigation**: Expo Router (file-based routing)
-- **Language**: TypeScript with strict type checking
-- **Build System**: EAS Build with multiple app variants
+#### ✅ **Bundled JSON Data System**
+- **Refactored data loading**: Replaced hardcoded dummy data with `assets/data/sampleProblems.json`
+- **Created `sampleDataLoader.ts`**: Clean service for loading JSON problem sets
+- **Maintained backward compatibility**: All existing database operations work unchanged
+- **Enhanced offline capability**: Problems now truly bundled with app, no hardcoded data
 
-### **Database Schema**
+#### ✅ **Home Tab Implementation**
+- **Added third tab**: Now has complete Home → Practice → Settings navigation
+- **Welcome screen design**: Clean landing page with app branding and quick actions
+- **Progress dashboard**: Shows solved/attempted problems and accuracy when available
+- **Daily tips rotation**: Helpful learning tips that change each day deterministically
+- **Navigation integration**: Quick access buttons to Practice and Settings tabs
+
+#### 🔧 **Week 2 Goals - 100% Complete**
+- ✅ **Navigation tabs**: Home, Practice, Settings
+- ✅ **Bundled JSON problems**: Offline sample data system
+- ✅ **SQLite integration**: Full persistence with progress tracking
+- ✅ **Practice loop**: Question → answer → feedback cycle
+- ✅ **Offline functionality**: Works in airplane mode, remembers progress
+
+---
+
+### **June 2, 2024** - Database Foundation
+
+#### ✅ **SQLite Implementation Success**
+- **Migrated from mock DB**: Fully functional SQLite database with WAL mode
+- **Schema design**: Proper foreign keys, transactions, and type safety
+- **Problem batch system**: Organized problem sets with metadata tracking
+- **User progress persistence**: Comprehensive statistics and state management
+- **Error handling**: Robust database operations with graceful failure recovery
+
+#### ✅ **Database Architecture**
 ```sql
--- Problem Batches: Collections of problems
 ProblemBatches (id, generationDate, sourceUrl, problemCount, importedAt)
-
--- Individual algebra problems
-Problems (id, batchId, equation, answer, solutionSteps, difficulty, problemType, isCompleted, userAnswer, solutionStepsShown, createdAt, updatedAt)
-
--- User progress tracking
+Problems (id, batchId, equation, answer, solutionSteps, difficulty, problemType, isCompleted, userAnswer, createdAt, updatedAt)
 UserProgress (id, currentBatchId, problemsAttempted, problemsCorrect, lastSyncTimestamp, createdAt, updatedAt)
 ```
 
-### **State Management**
-- **ProblemStore (Zustand)**: Centralized state for problems, progress, and app status
-- **React State**: Local component state for UI interactions
-- **Database Services**: Abstracted data access layer with transaction support
+---
 
-## Project Structure
+### **Earlier Development** - Core Features
 
+#### ✅ **Problem Solving Interface** (Week 1)
+- **React Native app**: Clean, mobile-optimized UI for algebra problems
+- **Answer validation**: Real-time feedback with numeric checking
+- **Step-by-step solutions**: Collapsible solution guides using react-native-fast-collapsible
+- **Expo Router navigation**: File-based routing with tab navigator
+
+#### ✅ **State Management & Architecture**
+- **Zustand store**: Global state management for problems and progress
+- **TypeScript**: Full type safety throughout application
+- **Component library**: Reusable Button, ProblemContainer, FeedbackSection components
+- **Error boundaries**: Comprehensive error handling and user feedback
+
+#### ✅ **Development Tools**
+- **EAS Build**: Multiple app variants (development, preview, production)
+- **Mock database**: In-memory testing database for development
+- **Linting & type checking**: ESLint and TypeScript strict mode
+- **Development scripts**: Hot reloading, mock data seeding
+
+---
+
+## 🏗️ Current Architecture
+
+### **Tech Stack**
+- **Framework**: React Native with Expo ~53.0
+- **Database**: SQLite (expo-sqlite) with persistent storage
+- **State**: Zustand for global state management
+- **Navigation**: Expo Router with file-based routing
+- **Language**: TypeScript with strict type checking
+- **Build**: EAS Build with multiple variants
+
+### **Project Structure**
 ```
-app/
-├── (tabs)/
-│   ├── index.tsx          # Main problem-solving screen
-│   └── settings.tsx       # Settings and progress stats
-├── _layout.tsx            # Root layout with tabs
-└── +not-found.tsx         # 404 screen
+app/(tabs)/          # Tab navigation screens
+├── home.tsx         # Welcome screen with progress dashboard
+├── index.tsx        # Practice screen (main problem solving)
+├── settings.tsx     # Settings and statistics
+└── _layout.tsx      # Tab layout configuration
 
-components/
-├── Button.tsx             # Reusable button component
-├── FeedbackSection.tsx    # Answer feedback with solutions
-├── ProblemContainer.tsx   # Problem display component
+components/          # Reusable UI components
+├── Button.tsx       # Themed button component
+├── FeedbackSection.tsx  # Answer feedback with solutions
+├── ProblemContainer.tsx # Problem display
 └── StepByStepSolution.tsx # Collapsible solution steps
 
-services/database/
-├── index.ts               # Main database API
-├── db.ts                  # Connection and transaction management
-├── schema.ts              # TypeScript types and SQL schemas
-├── problemService.ts      # Problem CRUD operations
-├── problemBatchService.ts # Batch management
-├── userProgressService.ts # Progress tracking
-├── mockDb.ts              # In-memory database for development
-├── dummyData.ts           # Seed data for development
-└── utils.ts               # Database utilities
+services/database/   # Data layer
+├── index.ts         # Main database API
+├── sampleDataLoader.ts # JSON data loading service
+├── db.ts           # SQLite connection management
+├── schema.ts       # Types and SQL schemas
+├── problemService.ts # Problem CRUD operations
+└── [other services] # Batch, progress, mock DB services
 
-store/
-└── problemStore.ts        # Zustand state management
+store/              # State management
+└── problemStore.ts # Zustand global state
+
+assets/data/        # Bundled data
+└── sampleProblems.json # Sample problem sets
 ```
 
-## Development
+---
 
-### **Environment Setup**
+## 🎯 Current Status
+
+### **Functional Features**
+- ✅ Three-tab navigation (Home, Practice, Settings)
+- ✅ Algebra problem solving with answer validation
+- ✅ Step-by-step solutions for incorrect answers
+- ✅ Progress tracking with accuracy statistics
+- ✅ SQLite persistence across app restarts
+- ✅ Offline functionality with bundled problems
+- ✅ Settings screen with progress reset capability
+
+### **Problem Types Supported**
+- `linear-one-variable`: Basic equations like "2x + 5 = 15"
+- `quadratic-simple`: Simple quadratics like "x^2 - 4 = 0"
+- Difficulty levels: `easy`, `medium` (with `hard` planned)
+
+### **Data Management**
+- **5 sample problems** loaded from JSON, organized in 2 batches
+- **Progress persistence** with problems attempted/correct tracking
+- **Batch-based problem selection** (currently "latest batch" strategy)
+- **Complete offline operation** in airplane mode
+
+---
+
+## 🔮 Next Steps
+
+### **Week 3+ Priorities**
+- **Enhanced problem selection**: Topic-based filtering, difficulty progression
+- **Expanded problem library**: More algebra topics and problem types
+- **Learning analytics**: Detailed progress tracking and insights
+- **Dynamic problem generation**: Server-side problem creation
+- **Cloud sync**: Cross-device progress synchronization
+
+### **Technical Improvements**
+- **Performance optimization**: Problem caching and lazy loading
+- **Animation**: Smooth transitions and micro-interactions
+- **Accessibility**: Screen reader support and keyboard navigation
+- **Advanced offline**: Enhanced offline-first architecture
+
+---
+
+## 🛠️ Development
+
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
+# Start development (SQLite)
 npm run dev
 
-# Start with mock database (for testing)
+# Start with mock database
 npm run dev-mock
 
-# Build for production
-eas build
+# Standard Expo start
+npm start
 
-# Run linting and type checking
-npm run lint
+# Platform builds
+npm run ios / android / web
+
+# Type checking
 npx tsc --noEmit
 ```
 
-### **Database Modes**
-- **Production**: Uses SQLite database with persistent storage
-- **Development**: Can use either SQLite or mock in-memory database
-- **Mock Mode**: Set `EXPO_PUBLIC_USE_MOCK_DB=true` for testing
-
-### **Scripts**
-- `npm run dev` - Start development server with SQLite
-- `npm run dev-mock` - Start with mock database
-- `npm run lint` - Run ESLint
-- `npm start` - Standard Expo start
-- `npm run android/ios/web` - Platform-specific builds
-
-## Components
-
-### **Screen Components**
-- **Index (`app/(tabs)/index.tsx`)**: Main problem-solving interface with answer input and feedback
-- **Settings (`app/(tabs)/settings.tsx`)**: Progress statistics, database status, and reset functionality
-
-### **UI Components**
-- **Button**: Reusable button with multiple themes
-- **ProblemContainer**: Displays algebra equations with proper formatting
-- **FeedbackSection**: Shows correct/incorrect feedback with solution access
-- **StepByStepSolution**: Collapsible component for viewing solution steps
-
-### **State Management**
-- **useProblemStore**: Global state hook for problems, progress, and app status
-- **Database Services**: Abstracted data layer with proper error handling
-
-## Data Flow
-
-1. **App Initialization**: Database setup, user progress loading, first problem fetch
-2. **Problem Display**: Current problem rendered with equation and input field
-3. **Answer Submission**: Validation, database update, progress tracking, feedback display
-4. **Next Problem**: Load next unsolved problem from current batch
-5. **Progress Tracking**: Statistics updated in real-time, displayed in settings
-
-## Problem Types & Structure
-
-### **Supported Problem Types**
-- `linear-one-variable`: Basic linear equations (e.g., "2x + 5 = 15")
-- `quadratic-simple`: Simple quadratic equations (e.g., "x^2 - 4 = 0")
-
-### **Difficulty Levels**
-- `easy`: Basic algebra concepts
-- `medium`: Intermediate complexity
-- `hard`: Advanced problems (planned)
-
-### **Solution Steps**
-Each problem includes step-by-step solution arrays:
-```typescript
-solutionSteps: [
-  "2x + 5 - 5 = 15 - 5",
-  "2x = 10",
-  "x = 10 / 2",
-  "x = 5"
-]
-```
-
-## Database Operations
-
-### **Key Features**
-- **Transactions**: All multi-step operations use database transactions
-- **Foreign Keys**: Enforced referential integrity between tables
-- **WAL Mode**: Write-Ahead Logging for better performance
-- **Type Safety**: Full TypeScript types for all database operations
-
-### **Main Operations**
-- **Problem Management**: CRUD operations for problems and batches
-- **Progress Tracking**: Statistics calculation and progress updates
-- **Answer Submission**: Atomic updates with progress tracking
-- **Reset Functionality**: Clean slate with proper data cleanup
-
-## Future Enhancements
-
-### **Planned Features**
-- **Dynamic Problem Generation**: Server-side problem creation
-- **Multiple Algebra Topics**: Expand beyond basic linear/quadratic
-- **Advanced Difficulty Levels**: More challenging problem types
-- **Detailed Analytics**: Learning patterns and improvement tracking
-- **Cloud Sync**: Cross-device progress synchronization
-- **Adaptive Learning**: Difficulty adjustment based on performance
-
-### **Technical Improvements**
-- **Performance Optimization**: Problem caching and lazy loading
-- **Offline Support**: Enhanced offline functionality
-- **Animation**: Smooth transitions and micro-interactions
-- **Accessibility**: Screen reader support and keyboard navigation
-
-## Development Notes
-
-- **Database**: Uses singleton pattern for connection management
-- **Error Handling**: Comprehensive error states with user-friendly messages
-- **Type Safety**: Strict TypeScript configuration with full type coverage
-- **Testing**: Mock database enables easy testing and development
-- **Performance**: WAL mode and proper indexing for database operations
+**Database Modes**:
+- Production: SQLite with persistent storage
+- Development: SQLite or mock (set `EXPO_PUBLIC_USE_MOCK_DB=true`)
+- Testing: In-memory mock database
