@@ -150,9 +150,19 @@ export async function getTopicAccuracyStats() {
       stats[type] = { attempted: 0, correct: 0 };
     }
     stats[type].attempted += 1;
+
+    // Use the same validation logic as answer submission
     const userAns = String(row.userAnswer ?? '').trim();
     const correctAns = String(row.answer ?? '').trim();
-    if (userAns && userAns === correctAns) {
+
+    // Try numeric comparison first (like in submission logic)
+    const numericUserAnswer = parseFloat(userAns);
+    const numericCorrectAnswer = parseFloat(correctAns);
+
+    const isCorrect = !isNaN(numericUserAnswer) && !isNaN(numericCorrectAnswer) &&
+                     numericUserAnswer === numericCorrectAnswer;
+
+    if (isCorrect) {
       stats[type].correct += 1;
     }
   });

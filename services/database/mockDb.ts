@@ -162,16 +162,19 @@ export const mockDb = {
   },
 
   async submitAnswer(problemId: string, userAnswer: string, isCorrect: boolean) {
+    // Update the problem first
     await this.updateProblem(problemId, {
       isCompleted: true,
       userAnswer
     });
 
+    // Then update user progress
     if (userProgress) {
-      await this.updateUserProgress({
+      const newUserProgress = {
         problemsAttempted: userProgress.problemsAttempted + 1,
         problemsCorrect: userProgress.problemsCorrect + (isCorrect ? 1 : 0)
-      });
+      };
+      await this.updateUserProgress(newUserProgress);
     }
   },
 
@@ -185,9 +188,19 @@ export const mockDb = {
         stats[type] = { attempted: 0, correct: 0 };
       }
       stats[type].attempted += 1;
+
+      // Use the same validation logic as answer submission
       const userAns = String(p.userAnswer ?? '').trim();
       const correctAns = String(p.answer ?? '').trim();
-      if (userAns && userAns === correctAns) {
+
+      // Try numeric comparison first (like in submission logic)
+      const numericUserAnswer = parseFloat(userAns);
+      const numericCorrectAnswer = parseFloat(correctAns);
+
+      const isCorrect = !isNaN(numericUserAnswer) && !isNaN(numericCorrectAnswer) &&
+                       numericUserAnswer === numericCorrectAnswer;
+
+      if (isCorrect) {
         stats[type].correct += 1;
       }
     });
