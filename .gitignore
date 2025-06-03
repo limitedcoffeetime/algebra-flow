@@ -18,6 +18,24 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Native folders (when using Expo managed workflow / CNG)
+/android
+/ios
+
+# iOS build artifacts
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/build/
+ios/DerivedData/
+
+# Android build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
 # Metro
 .metro-health-check*
 
