@@ -135,3 +135,32 @@ export async function resetAllProblems(): Promise<void> {
         throw error;
     }
 }
+
+export async function getTopicAccuracyStats() {
+  const db = await getDBConnection();
+  const rows = await db.getAllAsync<any>(
+    'SELECT problemType, answer, userAnswer FROM Problems WHERE isCompleted = 1'
+  );
+
+  const stats: Record<string, { attempted: number; correct: number }> = {};
+
+  rows.forEach((row: any) => {
+    const type = row.problemType as string;
+    if (!stats[type]) {
+      stats[type] = { attempted: 0, correct: 0 };
+    }
+    stats[type].attempted += 1;
+    const userAns = String(row.userAnswer ?? '').trim();
+    const correctAns = String(row.answer ?? '').trim();
+    if (userAns && userAns === correctAns) {
+      stats[type].correct += 1;
+    }
+  });
+
+  return Object.entries(stats).map(([problemType, data]) => ({
+    problemType,
+    attempted: data.attempted,
+    correct: data.correct,
+    incorrect: data.attempted - data.correct,
+  }));
+}

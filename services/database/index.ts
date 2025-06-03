@@ -156,5 +156,10 @@ export const db = USE_MOCK_DB ? mockDb : {
         problemsCorrect: progress.problemsCorrect + (isCorrect ? 1 : 0)
       });
     }
+  },
+
+  // Get accuracy stats by topic
+  async getTopicAccuracyStats() {
+    return await problemService.getTopicAccuracyStats();
   }
 };

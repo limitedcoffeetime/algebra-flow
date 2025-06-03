@@ -175,6 +175,30 @@ export const mockDb = {
     }
   },
 
+  async getTopicAccuracyStats() {
+    await initializeMockData();
+    const stats: Record<string, { attempted: number; correct: number }> = {};
+    problems.forEach((p) => {
+      if (!p.isCompleted) return;
+      const type = p.problemType;
+      if (!stats[type]) {
+        stats[type] = { attempted: 0, correct: 0 };
+      }
+      stats[type].attempted += 1;
+      const userAns = String(p.userAnswer ?? '').trim();
+      const correctAns = String(p.answer ?? '').trim();
+      if (userAns && userAns === correctAns) {
+        stats[type].correct += 1;
+      }
+    });
+    return Object.entries(stats).map(([problemType, data]) => ({
+      problemType,
+      attempted: data.attempted,
+      correct: data.correct,
+      incorrect: data.attempted - data.correct,
+    }));
+  },
+
   // Add batch function for completeness
   async addBatch(batch: Omit<ProblemBatch, 'id' | 'importedAt'>, problemsData: Omit<Problem, 'id' | 'batchId' | 'isCompleted' | 'userAnswer' | 'createdAt' | 'updatedAt'>[]) {
     await initializeMockData();
