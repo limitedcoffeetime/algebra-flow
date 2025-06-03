@@ -3,12 +3,13 @@ import FeedbackSection from '@/components/FeedbackSection';
 import ProblemContainer from '@/components/ProblemContainer';
 import { useProblemStore } from '@/store/problemStore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, StyleSheet, Text, TextInput, View, InputAccessoryView, Pressable, Platform } from 'react-native';
 
 export default function Index() {
   const [userAnswer, setUserAnswer] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const inputAccessoryViewID = 'minus-accessory';
 
   const {
     currentProblem,
@@ -89,6 +90,7 @@ export default function Index() {
             placeholder="Your answer"
             placeholderTextColor="#999"
             keyboardType="numeric"
+            inputAccessoryViewID={Platform.OS === 'ios' ? inputAccessoryViewID : undefined}
             onChangeText={(text) => {
               setUserAnswer(text);
               if (showFeedback) {
@@ -103,6 +105,18 @@ export default function Index() {
             onPress={showFeedback ? handleNextProblem : handleSubmit}
           />
         </View>
+        {Platform.OS === 'ios' && (
+          <InputAccessoryView nativeID={inputAccessoryViewID}>
+            <View style={styles.accessory}>
+              <Pressable
+                onPress={() => setUserAnswer((prev) => prev + '-')}
+                style={styles.accessoryButton}
+              >
+                <Text style={styles.accessoryButtonText}>-</Text>
+              </Pressable>
+            </View>
+          </InputAccessoryView>
+        )}
 
         {showFeedback && currentProblem && (
           <FeedbackSection
@@ -164,6 +178,25 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  accessory: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 8,
+    backgroundColor: '#f2f2f2',
+    borderTopWidth: 1,
+    borderColor: '#ccc',
+  },
+  accessoryButton: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  accessoryButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
   },
   loadingText: {
     color: '#fff',
