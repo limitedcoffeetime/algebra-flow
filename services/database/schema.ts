@@ -36,6 +36,14 @@ export interface UserProgress {
   updatedAt: string;
 }
 
+// Statistics for accuracy broken down by problem type
+export interface TopicAccuracy {
+  problemType: string;
+  attempted: number;
+  correct: number;
+  incorrect: number;
+}
+
 export const CREATE_PROBLEM_BATCHES_TABLE = `
 CREATE TABLE IF NOT EXISTS ProblemBatches (
   id TEXT PRIMARY KEY NOT NULL,

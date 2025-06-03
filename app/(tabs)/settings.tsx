@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function SettingsScreen() {
-  const { userProgress, resetProgress } = useProblemStore();
+  const { resetProgress } = useProblemStore();
   const [isResetting, setIsResetting] = useState(false);
 
   // Get current database type
@@ -44,32 +44,6 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.title}>Settings</Text>
 
-      {/* Progress Stats Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Progress Stats</Text>
-        {userProgress ? (
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Problems Attempted:</Text>
-              <Text style={styles.statValue}>{userProgress.problemsAttempted}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Problems Correct:</Text>
-              <Text style={styles.statValue}>{userProgress.problemsCorrect}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Accuracy:</Text>
-              <Text style={styles.statValue}>
-                {userProgress.problemsAttempted > 0
-                  ? `${Math.round((userProgress.problemsCorrect / userProgress.problemsAttempted) * 100)}%`
-                  : '0%'}
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <Text style={styles.noDataText}>No progress data available</Text>
-        )}
-      </View>
 
       {/* Database Status Section */}
       <View style={styles.section}>
@@ -140,32 +114,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffd33d',
     marginBottom: 15,
-  },
-  statsContainer: {
-    gap: 12,
-  },
-  statItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#444',
-  },
-  statLabel: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffd33d',
-  },
-  noDataText: {
-    fontSize: 16,
-    color: '#999',
-    textAlign: 'center',
-    fontStyle: 'italic',
   },
   databaseStatusContainer: {
     flexDirection: 'row',

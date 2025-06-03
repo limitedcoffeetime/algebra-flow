@@ -19,14 +19,14 @@ A mobile algebra learning app built with React Native and Expo. This changelog t
 - **Enhanced offline capability**: Problems now truly bundled with app, no hardcoded data
 
 #### ✅ **Home Tab Implementation**
-- **Added third tab**: Now has complete Home → Practice → Settings navigation
+- **Added fourth tab**: Home, Practice, Progress, Settings navigation
 - **Welcome screen design**: Clean landing page with app branding and quick actions
 - **Progress dashboard**: Shows solved/attempted problems and accuracy when available
 - **Daily tips rotation**: Helpful learning tips that change each day deterministically
 - **Navigation integration**: Quick access buttons to Practice and Settings tabs
 
 #### 🔧 **Week 2 Goals - 100% Complete**
-- ✅ **Navigation tabs**: Home, Practice, Settings
+- ✅ **Navigation tabs**: Home, Practice, Progress, Settings
 - ✅ **Bundled JSON problems**: Offline sample data system
 - ✅ **SQLite integration**: Full persistence with progress tracking
 - ✅ **Practice loop**: Question → answer → feedback cycle
@@ -89,7 +89,8 @@ UserProgress (id, currentBatchId, problemsAttempted, problemsCorrect, lastSyncTi
 app/(tabs)/          # Tab navigation screens
 ├── home.tsx         # Welcome screen with progress dashboard
 ├── index.tsx        # Practice screen (main problem solving)
-├── settings.tsx     # Settings and statistics
+├── progress.tsx     # Progress dashboard with statistics
+├── settings.tsx     # App settings
 └── _layout.tsx      # Tab layout configuration
 
 components/          # Reusable UI components
@@ -118,7 +119,7 @@ assets/data/        # Bundled data
 ## 🎯 Current Status
 
 ### **Functional Features**
-- ✅ Three-tab navigation (Home, Practice, Settings)
+- ✅ Four-tab navigation (Home, Practice, Progress, Settings)
 - ✅ Algebra problem solving with answer validation
 - ✅ Step-by-step solutions for incorrect answers
 - ✅ Progress tracking with accuracy statistics
