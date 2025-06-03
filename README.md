@@ -30,7 +30,7 @@ A mobile algebra learning app built with React Native and Expo. This changelog t
 - ✅ **Bundled JSON problems**: Offline sample data system
 - ✅ **SQLite integration**: Full persistence with progress tracking
 - ✅ **Practice loop**: Question → answer → feedback cycle
-- ✅ **Offline functionality**: Works in airplane mode, remembers progress
+- ✅ **Offline functionality**: Remembers progress
 
 ---
 
@@ -135,45 +135,8 @@ assets/data/        # Bundled data
 - **5 sample problems** loaded from JSON, organized in 2 batches
 - **Progress persistence** with problems attempted/correct tracking
 - **Batch-based problem selection** (currently "latest batch" strategy)
-- **Complete offline operation** in airplane mode
 
 ---
-
-## 🔮 Next Steps
-
-### **Week 3+ Priorities**
-- **Enhanced problem selection**: Topic-based filtering, difficulty progression
-- **Expanded problem library**: More algebra topics and problem types
-- **Learning analytics**: Detailed progress tracking and insights
-- **Dynamic problem generation**: Server-side problem creation
-- **Cloud sync**: Cross-device progress synchronization
-
-### **Technical Improvements**
-- **Performance optimization**: Problem caching and lazy loading
-- **Animation**: Smooth transitions and micro-interactions
-- **Accessibility**: Screen reader support and keyboard navigation
-- **Advanced offline**: Enhanced offline-first architecture
-
----
-
-## 🛠️ Development
-
-```bash
-# Start development (SQLite)
-npm run dev
-
-# Start with mock database
-npm run dev-mock
-
-# Standard Expo start
-npm start
-
-# Platform builds
-npm run ios / android / web
-
-# Type checking
-npx tsc --noEmit
-```
 
 **Database Modes**:
 - Production: SQLite with persistent storage
