@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function SettingsScreen() {
-  const { userProgress, resetProgress, isLoading } = useProblemStore();
+  const { userProgress, resetProgress } = useProblemStore();
   const [isResetting, setIsResetting] = useState(false);
 
   // Get current database type
@@ -29,6 +29,7 @@ export default function SettingsScreen() {
               await resetProgress();
               Alert.alert('Success', 'Your progress has been reset!');
             } catch (error) {
+              console.error('Failed to reset progress:', error);
               Alert.alert('Error', 'Failed to reset progress. Please try again.');
             } finally {
               setIsResetting(false);

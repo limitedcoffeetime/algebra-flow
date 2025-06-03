@@ -24,7 +24,7 @@ export default function Index() {
   // Initialize on mount
   useEffect(() => {
     initialize();
-  }, []);
+  }, [initialize]);
 
   const handleSubmit = async () => {
     if (!currentProblem || !userAnswer.trim()) return;

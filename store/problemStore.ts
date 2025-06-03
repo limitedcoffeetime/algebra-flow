@@ -74,9 +74,10 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
 
       // Refresh user progress
       const progress = await db.getUserProgress();
-      set({ userProgress: progress });
+      set({ userProgress: progress, error: null });
     } catch (error) {
       console.error('Failed to submit answer:', error);
+      set({ error: 'Failed to save answer' });
     }
   },
 
