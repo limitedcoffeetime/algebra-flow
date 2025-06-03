@@ -102,24 +102,42 @@ export const db = USE_MOCK_DB ? mockDb : {
 
   // Utility function to get next problem for user
   async getNextProblem() {
-    const progress = await userProgressService.getUserProgress();
+    let progress = await userProgressService.getUserProgress();
 
-    // If no current batch, get the latest one
+    // If no current batch, default to the latest batch
     if (!progress?.currentBatchId) {
       const latestBatch = await problemBatchService.getLatestProblemBatch();
-      if (latestBatch) {
-        await userProgressService.updateUserProgress({
-          currentBatchId: latestBatch.id
-        });
-        const problems = await problemService.getUnsolvedProblemsByBatchId(latestBatch.id, 1);
-        return problems[0] || null;
-      }
+      if (!latestBatch) return null;
+
+      await userProgressService.updateUserProgress({
+        currentBatchId: latestBatch.id,
+      });
+      progress = await userProgressService.getUserProgress();
+    }
+
+    if (!progress?.currentBatchId) {
       return null;
     }
 
-    // Get next unsolved problem from current batch
-    const problems = await problemService.getUnsolvedProblemsByBatchId(progress.currentBatchId, 1);
-    return problems[0] || null;
+    // Try to get next unsolved problem from the current batch
+    let problems = await problemService.getUnsolvedProblemsByBatchId(progress.currentBatchId, 1);
+    if (problems.length > 0) {
+      return problems[0];
+    }
+
+    // No problems left in current batch. Try to move to the next available batch
+    const batches = await problemBatchService.getAllProblemBatches();
+    const currentIndex = batches.findIndex((b) => b.id === progress!.currentBatchId);
+    for (let i = currentIndex + 1; i < batches.length; i++) {
+      problems = await problemService.getUnsolvedProblemsByBatchId(batches[i].id, 1);
+      if (problems.length > 0) {
+        await userProgressService.updateUserProgress({ currentBatchId: batches[i].id });
+        return problems[0];
+      }
+    }
+
+    // No more problems in any batch
+    return null;
   },
 
   // Submit answer and update progress
