@@ -11,9 +11,7 @@ export * from './schema';
 
 // Check if we should use mock database
 // For now, let's always use mock DB in development to avoid SQLite issues
-const USE_MOCK_DB = process.env.EXPO_PUBLIC_USE_MOCK_DB === 'true'
-  ? true
-  : true; // Temporarily force mock DB until SQLite issue is resolved
+const USE_MOCK_DB = process.env.EXPO_PUBLIC_USE_MOCK_DB === 'true';
 
 // To use real SQLite:
 // 1. Change USE_MOCK_DB to false
