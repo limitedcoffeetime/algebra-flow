@@ -31,12 +31,14 @@ export default function Index() {
 
     Keyboard.dismiss();
 
-    // Check if answer is correct
+    // Check if answer is correct (exact match for integer solutions)
     const numericAnswer = parseFloat(userAnswer);
     const correctAnswer = typeof currentProblem.answer === 'number'
       ? currentProblem.answer
       : parseFloat(currentProblem.answer);
-    const correct = numericAnswer === correctAnswer;
+
+    const correct = !isNaN(numericAnswer) && !isNaN(correctAnswer) &&
+                   numericAnswer === correctAnswer;
 
     setIsCorrect(correct);
     setShowFeedback(true);

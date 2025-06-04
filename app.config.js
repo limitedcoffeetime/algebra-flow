@@ -1,15 +1,47 @@
-export default ({ config }) => ({
-    ...config,
-    name: getAppName(),
+import 'dotenv/config';
+
+export default {
+  expo: {
+    name: process.env.APP_VARIANT === 'development' ? 'Algebro (Dev)' : 'Algebro',
+    slug: 'algebro',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/images/icon.png',
+    scheme: 'myapp',
+    userInterfaceStyle: 'automatic',
+    splash: {
+      image: './assets/images/splash.png',
+      resizeMode: 'contain',
+      backgroundColor: '#ffffff'
+    },
     ios: {
-        ...config.ios,
-        bundleIdentifier: getUniqueIdentifier(),
+      supportsTablet: true
     },
     android: {
-        ...config.android,
-        package: getUniqueIdentifier(),
+      adaptiveIcon: {
+        foregroundImage: './assets/images/adaptive-icon.png',
+        backgroundColor: '#ffffff'
+      }
+    },
+    web: {
+      bundler: 'metro',
+      output: 'static',
+      favicon: './assets/images/favicon.png'
+    },
+    plugins: [
+      'expo-router'
+    ],
+    experiments: {
+      typedRoutes: true
+    },
+    extra: {
+      problemsLatestUrl: process.env.EXPO_PUBLIC_PROBLEMS_LATEST_URL || '',
+      eas: {
+        projectId: "YOUR_PROJECT_ID_HERE"
+      }
     }
-});
+  }
+};
 
 const IS_DEV = process.env.APP_VARIANT === "development";
 const IS_PREVIEW = process.env.APP_VARIANT === "preview";

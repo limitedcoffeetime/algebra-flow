@@ -1,4 +1,5 @@
 import { db, Problem, UserProgress } from '@/services/database';
+import { ProblemSyncService } from '@/services/problemSyncService';
 import { create } from 'zustand';
 
 interface ProblemStore {
@@ -7,12 +8,14 @@ interface ProblemStore {
   userProgress: UserProgress | null;
   isLoading: boolean;
   error: string | null;
+  lastSyncTime: string | null;
 
   // Actions
   initialize: () => Promise<void>;
   loadNextProblem: () => Promise<void>;
   submitAnswer: (userAnswer: string, isCorrect: boolean) => Promise<void>;
   resetProgress: () => Promise<void>;
+  forceSync: () => Promise<void>;
 }
 
 export const useProblemStore = create<ProblemStore>((set, get) => ({
@@ -21,6 +24,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
   userProgress: null,
   isLoading: false,
   error: null,
+  lastSyncTime: null,
 
   // Initialize the app
   initialize: async () => {
@@ -35,9 +39,25 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
       // Seed dummy data for development
       await db.seedDummy();
 
+      // Check for new problems if we should sync
+      const shouldSync = await ProblemSyncService.shouldSync();
+      if (shouldSync) {
+        console.log('🔄 Checking for new problems...');
+        try {
+          const newProblems = await ProblemSyncService.syncProblems();
+          if (newProblems) {
+            console.log('✅ Downloaded new problems');
+          }
+        } catch (syncError) {
+          console.error('⚠️ Sync failed but continuing with local data:', syncError);
+          // Don't fail initialization if sync fails
+        }
+      }
+
       // Load user progress
       const progress = await db.getUserProgress();
-      set({ userProgress: progress });
+      const lastSync = await ProblemSyncService.getLastSyncTime();
+      set({ userProgress: progress, lastSyncTime: lastSync });
 
       // Load first problem
       await get().loadNextProblem();
@@ -92,6 +112,18 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
     } catch (error) {
       console.error('Failed to reset progress:', error);
       set({ error: 'Failed to reset progress' });
+    }
+  },
+
+  // Force sync
+  forceSync: async () => {
+    try {
+      await ProblemSyncService.syncProblems();
+      const progress = await db.getUserProgress();
+      set({ userProgress: progress });
+    } catch (error) {
+      console.error('Failed to force sync:', error);
+      set({ error: 'Failed to force sync' });
     }
   }
 }));

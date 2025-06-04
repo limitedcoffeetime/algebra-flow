@@ -73,6 +73,30 @@ export async function addProblemBatch(
   });
 }
 
+/**
+ * Import a problem batch from sync service (converts format and calls addProblemBatch)
+ */
+export async function importProblemBatch(batchData: {
+  id: string;
+  generationDate: string;
+  problemCount: number;
+  problems: any[]
+}): Promise<string> {
+  // Convert to the format expected by addProblemBatch
+  const batchInput: ProblemBatchInput = {
+    id: batchData.id,
+    generationDate: batchData.generationDate,
+    problemCount: batchData.problemCount
+  };
+
+  const problemsInput: ProblemInput[] = batchData.problems.map(problem => ({
+    ...problem,
+    batchId: batchData.id
+  }));
+
+  return addProblemBatch(batchInput, problemsInput);
+}
+
 export async function getProblemBatchById(id: string): Promise<ProblemBatch | null> {
   const db = await getDBConnection();
   const row = await db.getFirstAsync<ProblemBatch>(
