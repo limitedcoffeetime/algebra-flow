@@ -14,13 +14,10 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@react-native-async-storage/async-storage": "^1.24.0",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
-    "@react-native-async-storage/async-storage": "^1.23.0",
-    "@aws-sdk/client-s3": "^3.0.0",
-    "openai": "^4.0.0",
-    "mathjs": "^13.0.0",
     "expo": "~53.0.9",
     "expo-blur": "~14.1.4",
     "expo-constants": "~17.1.6",
@@ -50,13 +47,16 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.824.0",
     "@babel/core": "^7.25.2",
     "@jest/globals": "^30.0.0-beta.3",
     "@types/react": "~19.0.10",
     "@types/uuid": "^10.0.0",
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.5.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
+    "mathjs": "^13.2.3",
+    "openai": "^4.104.0",
     "typescript": "~5.8.3"
   },
   "private": true

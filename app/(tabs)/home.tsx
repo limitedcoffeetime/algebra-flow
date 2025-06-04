@@ -9,7 +9,6 @@ const tips = [
   "Don't rush - understand each step",
   "Practice makes perfect",
   "Check your work before submitting",
-  "Learn from your mistakes"
 ];
 
 export default function HomeScreen() {

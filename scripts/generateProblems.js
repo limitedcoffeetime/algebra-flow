@@ -6,11 +6,11 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 // Configuration
-const PROBLEMS_PER_BATCH = 100;
+const PROBLEMS_PER_BATCH = 20;
 const TARGET_DIFFICULTY_MIX = {
-  easy: 40,
-  medium: 40,
-  hard: 20
+  easy: 40,    // 40% of total batch
+  medium: 40,  // 40% of total batch
+  hard: 20     // 20% of total batch
 };
 
 const PROBLEM_TYPES = [
@@ -33,6 +33,30 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   }
 });
+
+/**
+ * Calculate exact problem counts for each difficulty level
+ */
+function calculateProblemCounts() {
+  const totalPercentage = Object.values(TARGET_DIFFICULTY_MIX).reduce((sum, val) => sum + val, 0);
+
+  const counts = {};
+  let remaining = PROBLEMS_PER_BATCH;
+
+  // Calculate exact counts, ensuring we hit the target total
+  Object.entries(TARGET_DIFFICULTY_MIX).forEach(([difficulty, percentage], index, entries) => {
+    if (index === entries.length - 1) {
+      // Last difficulty gets whatever remains to ensure exact total
+      counts[difficulty] = remaining;
+    } else {
+      const count = Math.round((percentage / totalPercentage) * PROBLEMS_PER_BATCH);
+      counts[difficulty] = count;
+      remaining -= count;
+    }
+  });
+
+  return counts;
+}
 
 /**
  * Generate problems using OpenAI
@@ -128,28 +152,41 @@ async function generateProblemBatch() {
   const allProblems = [];
   const batchId = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
+  // Calculate exact problem counts for each difficulty
+  const difficultyCounts = calculateProblemCounts();
+  console.log('Target difficulty distribution:', difficultyCounts);
+
   // Generate problems for each difficulty level
-  for (const [difficulty, count] of Object.entries(TARGET_DIFFICULTY_MIX)) {
-    const problemsPerType = Math.ceil(count / PROBLEM_TYPES.length);
+  for (const [difficulty, totalCount] of Object.entries(difficultyCounts)) {
+    if (totalCount === 0) continue;
 
-    for (const problemType of PROBLEM_TYPES) {
-      try {
-        const problems = await generateProblemsWithAI(problemType, difficulty, problemsPerType);
-        allProblems.push(...problems);
+    // Distribute problems across types, ensuring we get exactly the right total
+    const problemsPerType = Math.floor(totalCount / PROBLEM_TYPES.length);
+    const extraProblems = totalCount % PROBLEM_TYPES.length;
 
-        // Small delay to respect API rate limits
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      } catch (error) {
-        console.error(`Failed to generate ${problemType} ${difficulty} problems:`, error);
-        // Continue with other types rather than failing completely
+    for (let i = 0; i < PROBLEM_TYPES.length; i++) {
+      const problemType = PROBLEM_TYPES[i];
+      // Give extra problems to the first few types if needed
+      const count = problemsPerType + (i < extraProblems ? 1 : 0);
+
+      if (count > 0) {
+        try {
+          const problems = await generateProblemsWithAI(problemType, difficulty, count);
+          allProblems.push(...problems);
+
+          // Small delay to respect API rate limits
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error(`Failed to generate ${problemType} ${difficulty} problems:`, error);
+          // Continue with other types rather than failing completely
+        }
       }
     }
   }
 
-  // Trim to exact count and shuffle
+  // Shuffle the problems to mix types and difficulties
   const shuffledProblems = allProblems
     .sort(() => Math.random() - 0.5)
-    .slice(0, PROBLEMS_PER_BATCH)
     .map((problem, index) => ({
       ...problem,
       id: crypto.randomUUID(),
@@ -166,6 +203,14 @@ async function generateProblemBatch() {
   };
 
   console.log(`Generated ${shuffledProblems.length} problems for batch ${batchId}`);
+
+  // Log the actual difficulty distribution
+  const actualDistribution = {};
+  shuffledProblems.forEach(problem => {
+    actualDistribution[problem.difficulty] = (actualDistribution[problem.difficulty] || 0) + 1;
+  });
+  console.log('Actual difficulty distribution:', actualDistribution);
+
   return batch;
 }
 
