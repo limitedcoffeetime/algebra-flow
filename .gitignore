@@ -55,3 +55,8 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+WEEK4_SETUP.md
+env.example
+
+# Environment variables
+.env

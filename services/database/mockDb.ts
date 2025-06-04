@@ -193,7 +193,7 @@ export const mockDb = {
       const userAns = String(p.userAnswer ?? '').trim();
       const correctAns = String(p.answer ?? '').trim();
 
-      // Try numeric comparison first (like in submission logic)
+      // Try numeric comparison (exact match for integer solutions)
       const numericUserAnswer = parseFloat(userAns);
       const numericCorrectAnswer = parseFloat(correctAns);
 
@@ -237,5 +237,32 @@ export const mockDb = {
     });
 
     return newBatch;
+  },
+
+  // Import problem batch (for sync service)
+  async importProblemBatch(batchData: { id: string; generationDate: string; problemCount: number; problems: any[] }) {
+    await initializeMockData();
+    const now = new Date().toISOString();
+
+    const newBatch: ProblemBatch = {
+      id: batchData.id,
+      generationDate: batchData.generationDate,
+      problemCount: batchData.problemCount,
+      importedAt: now
+    };
+    batches.push(newBatch);
+
+    batchData.problems.forEach((problem) => {
+      problems.push({
+        ...problem,
+        batchId: batchData.id,
+        isCompleted: false,
+        userAnswer: null,
+        createdAt: now,
+        updatedAt: now
+      });
+    });
+
+    return batchData.id;
   }
 };

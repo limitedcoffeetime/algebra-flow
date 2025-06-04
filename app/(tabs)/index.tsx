@@ -3,7 +3,7 @@ import FeedbackSection from '@/components/FeedbackSection';
 import ProblemContainer from '@/components/ProblemContainer';
 import { useProblemStore } from '@/store/problemStore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function Index() {
   const [userAnswer, setUserAnswer] = useState('');
@@ -31,12 +31,14 @@ export default function Index() {
 
     Keyboard.dismiss();
 
-    // Check if answer is correct
+    // Check if answer is correct (exact match for integer solutions)
     const numericAnswer = parseFloat(userAnswer);
     const correctAnswer = typeof currentProblem.answer === 'number'
       ? currentProblem.answer
       : parseFloat(currentProblem.answer);
-    const correct = numericAnswer === correctAnswer;
+
+    const correct = !isNaN(numericAnswer) && !isNaN(correctAnswer) &&
+                   numericAnswer === correctAnswer;
 
     setIsCorrect(correct);
     setShowFeedback(true);
@@ -84,20 +86,36 @@ export default function Index() {
         {currentProblem && <ProblemContainer problem={currentProblem} />}
 
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Your answer"
-            placeholderTextColor="#999"
-            keyboardType="numeric"
-            onChangeText={(text) => {
-              setUserAnswer(text);
-              if (showFeedback) {
-                setShowFeedback(false);
-              }
-            }}
-            value={userAnswer}
-            editable={!showFeedback}
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Your answer"
+              placeholderTextColor="#999"
+              keyboardType="numeric"
+              onChangeText={(text) => {
+                setUserAnswer(text);
+                if (showFeedback) {
+                  setShowFeedback(false);
+                }
+              }}
+              value={userAnswer}
+              editable={!showFeedback}
+            />
+            <Pressable
+              style={styles.toggleSignButton}
+              onPress={() => {
+                if (userAnswer.startsWith('-')) {
+                  setUserAnswer(userAnswer.slice(1));
+                } else if (userAnswer) {
+                  setUserAnswer('-' + userAnswer);
+                } else {
+                  setUserAnswer('-');
+                }
+              }}
+            >
+              <Text style={styles.toggleSignText}>±</Text>
+            </Pressable>
+          </View>
           <Button
             label={showFeedback ? "Next" : "Submit"}
             onPress={showFeedback ? handleNextProblem : handleSubmit}
@@ -154,16 +172,38 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'space-between',
   },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginRight: 10,
+  },
   input: {
     flex: 1,
     height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 10,
     paddingHorizontal: 15,
     fontSize: 18,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  },
+  toggleSignButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 8,
+    backgroundColor: '#ffd33d',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleSignText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#25292e',
   },
   loadingText: {
     color: '#fff',

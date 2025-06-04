@@ -80,6 +80,7 @@ export const db = USE_MOCK_DB ? mockDb : {
 
   // Problem Batches
   addBatch: problemBatchService.addProblemBatch,
+  importProblemBatch: problemBatchService.importProblemBatch,
   getLatestBatch: problemBatchService.getLatestProblemBatch,
   getAllBatches: problemBatchService.getAllProblemBatches,
   getBatchById: problemBatchService.getProblemBatchById,

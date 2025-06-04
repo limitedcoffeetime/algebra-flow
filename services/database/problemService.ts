@@ -155,7 +155,7 @@ export async function getTopicAccuracyStats() {
     const userAns = String(row.userAnswer ?? '').trim();
     const correctAns = String(row.answer ?? '').trim();
 
-    // Try numeric comparison first (like in submission logic)
+    // Try numeric comparison (exact match for integer solutions)
     const numericUserAnswer = parseFloat(userAns);
     const numericCorrectAnswer = parseFloat(correctAns);
 
