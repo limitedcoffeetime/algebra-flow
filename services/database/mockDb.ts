@@ -240,7 +240,7 @@ export const mockDb = {
   },
 
   // Import problem batch (for sync service)
-  async importProblemBatch(batchData: { id: string; generationDate: string; generationDateOnly?: string; problemCount: number; problems: any[] }): Promise<'SKIPPED_EXISTING' | 'REPLACED_EXISTING' | 'IMPORTED_NEW'> {
+  async importProblemBatch(batchData: { id: string; generationDate: string; problemCount: number; problems: any[] }): Promise<'SKIPPED_EXISTING' | 'REPLACED_EXISTING' | 'IMPORTED_NEW'> {
     await initializeMockData();
 
     // Check if batch with exact same ID already exists
@@ -250,21 +250,15 @@ export const mockDb = {
       return 'SKIPPED_EXISTING';
     }
 
-    // Get the date for comparison - use generationDateOnly if available, otherwise extract from generationDate
-    const batchDateOnly = batchData.generationDateOnly || batchData.generationDate.split('T')[0];
-
     // Check if a batch with the same generation date (but different ID) exists
-    // This handles the case where multiple batches were generated on the same day
-    const existingBatchSameDate = batches.find(b => {
-      const existingDateOnly = b.generationDateOnly || b.generationDate.split('T')[0];
-      return existingDateOnly === batchDateOnly && b.id !== batchData.id;
-    });
+    const batchDateOnly = batchData.generationDate.split('T')[0];
+    const existingBatchSameDate = batches.find(b =>
+      b.generationDate.split('T')[0] === batchDateOnly && b.id !== batchData.id
+    );
 
     let isReplacement = false;
     if (existingBatchSameDate) {
-      console.log(`Found existing batch ${existingBatchSameDate.id} for same date ${batchDateOnly}, replacing with newer batch ${batchData.id}`);
-      console.log(`  Old batch generation time: ${existingBatchSameDate.generationDate}`);
-      console.log(`  New batch generation time: ${batchData.generationDate}`);
+      console.log(`Replacing existing batch ${existingBatchSameDate.id} from same date with newer batch ${batchData.id}`);
 
       // Remove the old batch and its problems
       batches = batches.filter(b => b.id !== existingBatchSameDate.id);
@@ -277,7 +271,6 @@ export const mockDb = {
     const newBatch: ProblemBatch = {
       id: batchData.id,
       generationDate: batchData.generationDate,
-      generationDateOnly: batchDateOnly,
       problemCount: batchData.problemCount,
       importedAt: now
     };

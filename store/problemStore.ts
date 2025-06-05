@@ -133,19 +133,15 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
   // Get batches info for debugging
   getBatchesInfo: async () => {
     try {
-      console.log('🔍 DEBUG: Loading batches info...');
       const allBatches = await db.getAllBatches();
-      console.log(`🔍 DEBUG: Found ${allBatches.length} batches:`, allBatches.map(b => b.id));
-
       const userProgress = await db.getUserProgress();
-      console.log(`🔍 DEBUG: User progress currentBatchId:`, userProgress?.currentBatchId);
 
       const batchesInfo = await Promise.all(
         allBatches.map(async (batch) => {
           const problems = await db.getProblemsByBatch(batch.id);
           const completedProblems = problems.filter(p => p.isCompleted);
 
-          const batchInfo = {
+          return {
             id: batch.id,
             generationDate: batch.generationDate,
             importedAt: batch.importedAt,
@@ -154,13 +150,9 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
             isCurrentBatch: batch.id === userProgress?.currentBatchId,
             sourceUrl: batch.sourceUrl
           };
-
-          console.log(`🔍 DEBUG: Batch ${batch.id} info:`, batchInfo);
-          return batchInfo;
         })
       );
 
-      console.log(`🔍 DEBUG: Returning ${batchesInfo.length} batch info objects`);
       return batchesInfo;
     } catch (error) {
       console.error('Failed to get batches info:', error);

@@ -22,11 +22,8 @@ export default function SettingsScreen() {
   const loadBatchesInfo = async () => {
     setIsLoadingBatches(true);
     try {
-      console.log('🔄 Settings: Loading batches info...');
       const info = await getBatchesInfo();
-      console.log('🔄 Settings: Received batch info:', info.length, 'batches');
       setBatchesInfo(info);
-      console.log('🔄 Settings: Updated state with new batch info');
     } catch (error) {
       console.error('Failed to load batches info:', error);
     } finally {
@@ -77,7 +74,6 @@ export default function SettingsScreen() {
   const handleRefreshAndSync = async () => {
     setIsSyncing(true);
     try {
-      console.log('🔄 Manually triggering sync...');
       const hasNewProblems = await forceSync();
 
       if (hasNewProblems) {
@@ -89,7 +85,6 @@ export default function SettingsScreen() {
       }
 
       // Refresh the local data after sync
-      console.log('🔄 Refreshing batch info after sync...');
       await loadBatchesInfo();
     } catch (error) {
       console.error('Sync failed:', error);

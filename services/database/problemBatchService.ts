@@ -1,8 +1,8 @@
 import { getDBConnection, runInTransactionAsync } from './db';
 import {
-  ProblemBatch,
-  ProblemBatchInput,
-  ProblemInput
+    ProblemBatch,
+    ProblemBatchInput,
+    ProblemInput
 } from './schema';
 import { generateId } from './utils';
 
@@ -22,14 +22,13 @@ export async function addProblemBatch(
 
     // Insert ProblemBatch
     const batchInsertSql = `
-      INSERT INTO ProblemBatches (id, generationDate, generationDateOnly, sourceUrl, problemCount, importedAt)
-      VALUES (?, ?, ?, ?, ?, ?);
+      INSERT INTO ProblemBatches (id, generationDate, sourceUrl, problemCount, importedAt)
+      VALUES (?, ?, ?, ?, ?);
     `;
     await db.runAsync(
       batchInsertSql,
       batchId,
       batchInput.generationDate,
-      batchInput.generationDateOnly || null,
       batchInput.sourceUrl || null,
       batchInput.problemCount,
       importedAt
@@ -80,7 +79,6 @@ export async function addProblemBatch(
 export async function importProblemBatch(batchData: {
   id: string;
   generationDate: string;
-  generationDateOnly?: string; // New field for date-only comparisons
   problemCount: number;
   problems: any[]
 }): Promise<'SKIPPED_EXISTING' | 'REPLACED_EXISTING' | 'IMPORTED_NEW'> {
@@ -91,30 +89,21 @@ export async function importProblemBatch(batchData: {
     return 'SKIPPED_EXISTING';
   }
 
-  // Get the date for comparison - use generationDateOnly if available, otherwise extract from generationDate
-  const batchDateOnly = batchData.generationDateOnly || batchData.generationDate.split('T')[0];
-
   // Check if a batch with the same generation date (but different ID) exists
-  // This would indicate a replacement/overwrite scenario where multiple batches were generated on the same day
+  const batchDateOnly = batchData.generationDate.split('T')[0]; // Extract YYYY-MM-DD
   const db = await getDBConnection();
 
-  // First, try to find batches using the new generationDateOnly field (for new batches)
-  let existingBatchSameDate = await db.getFirstAsync<ProblemBatch>(
+  const existingBatchSameDate = await db.getFirstAsync<ProblemBatch>(
     `SELECT * FROM ProblemBatches
-     WHERE (generationDateOnly = ? OR DATE(generationDate) = ?)
-     AND id != ?
-     ORDER BY generationDate DESC LIMIT 1`, // Get the most recent one if multiple exist
-    batchDateOnly,
+     WHERE DATE(generationDate) = ? AND id != ?
+     ORDER BY generationDate DESC LIMIT 1`,
     batchDateOnly,
     batchData.id
   );
 
   let isReplacement = false;
   if (existingBatchSameDate) {
-    console.log(`Found existing batch ${existingBatchSameDate.id} for same date ${batchDateOnly}, replacing with newer batch ${batchData.id}`);
-    console.log(`  Old batch generation time: ${existingBatchSameDate.generationDate}`);
-    console.log(`  New batch generation time: ${batchData.generationDate}`);
-
+    console.log(`Replacing existing batch ${existingBatchSameDate.id} from same date with newer batch ${batchData.id}`);
     await deleteProblemBatch(existingBatchSameDate.id);
     isReplacement = true;
   }
@@ -123,7 +112,6 @@ export async function importProblemBatch(batchData: {
   const batchInput: ProblemBatchInput = {
     id: batchData.id,
     generationDate: batchData.generationDate,
-    generationDateOnly: batchDateOnly, // Store the date-only field for future comparisons
     problemCount: batchData.problemCount
   };
 
