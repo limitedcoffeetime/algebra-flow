@@ -48,7 +48,7 @@
       "id": "prob_003",
       "batchId": "batch_sample_001",
       "equation": "x^2 - 4 = 0",
-      "answer": "2 or -2",
+      "answer": [2, -2],
       "solutionSteps": [
         "x^2 = 4",
         "x = sqrt(4)",
