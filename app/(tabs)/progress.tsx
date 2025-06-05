@@ -1,5 +1,4 @@
-import { db } from '@/services/database';
-import { TopicAccuracy } from '@/services/database';
+import { db, TopicAccuracy } from '@/services/database';
 import { useProblemStore } from '@/store/problemStore';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
