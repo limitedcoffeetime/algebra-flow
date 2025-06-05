@@ -114,8 +114,8 @@ function getProblemTypeInstructions(problemType) {
     case 'quadratic-factoring':
     case 'quadratic-formula':
       return {
-        instructions: 'Find all solutions. Solutions should be integers or simple fractions. If multiple solutions, provide as array. NO irrational numbers or complex decimals.',
-        answerFormat: 'integer(s) or simple fraction(s)'
+        instructions: 'Find all solutions. Solutions should be integers or simple fractions. Always provide answers as an array, even for single solutions (e.g., [3] or [-2, 5]). NO irrational numbers or complex decimals.',
+        answerFormat: 'array of integer(s) or simple fraction(s)'
       };
     case 'polynomial-simplification':
       return {
@@ -187,8 +187,8 @@ function validateAnswerFormat(answer, problemType) {
 
     case 'quadratic-factoring':
     case 'quadratic-formula':
-      return typeof answer === 'number' ||
-             (Array.isArray(answer) && answer.every(a => typeof a === 'number'));
+      // Now always expecting array format for quadratic solutions
+      return Array.isArray(answer) && answer.every(a => typeof a === 'number');
 
     default:
       return true; // Accept any format for unknown types
@@ -211,16 +211,13 @@ function getProblemResponseSchema(problemType, count) {
       break;
     case 'quadratic-factoring':
     case 'quadratic-formula':
+      // Use array format for all quadratic solutions to avoid oneOf restriction
       answerSchema = {
-        "oneOf": [
-          { "type": "number" },
-          {
-            "type": "array",
-            "items": { "type": "number" },
-            "minItems": 1,
-            "maxItems": 3
-          }
-        ]
+        "type": "array",
+        "items": { "type": "number" },
+        "minItems": 1,
+        "maxItems": 3,
+        "description": "Array of solution(s). Use single-element array for one solution."
       };
       break;
     default:
@@ -316,7 +313,6 @@ Constraints:
           content: prompt
         }
       ],
-      temperature: 0.7,
       // RESPONSES API STRUCTURED OUTPUT: Using 'text.format' instead of 'response_format'
       text: {
         format: {
