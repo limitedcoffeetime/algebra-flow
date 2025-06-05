@@ -2,6 +2,7 @@ import Button from '@/components/Button';
 import FeedbackSection from '@/components/FeedbackSection';
 import ProblemContainer from '@/components/ProblemContainer';
 import { useProblemStore } from '@/store/problemStore';
+import { isAnswerCorrect } from '@/utils/answerUtils';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -31,14 +32,8 @@ export default function Index() {
 
     Keyboard.dismiss();
 
-    // Check if answer is correct (exact match for integer solutions)
-    const numericAnswer = parseFloat(userAnswer);
-    const correctAnswer = typeof currentProblem.answer === 'number'
-      ? currentProblem.answer
-      : parseFloat(currentProblem.answer);
-
-    const correct = !isNaN(numericAnswer) && !isNaN(correctAnswer) &&
-                   numericAnswer === correctAnswer;
+    // Determine if the submitted answer matches the correct one
+    const correct = isAnswerCorrect(userAnswer, currentProblem.answer);
 
     setIsCorrect(correct);
     setShowFeedback(true);
