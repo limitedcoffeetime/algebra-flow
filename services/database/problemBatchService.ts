@@ -1,8 +1,8 @@
 import { getDBConnection, runInTransactionAsync } from './db';
 import {
-  ProblemBatch,
-  ProblemBatchInput,
-  ProblemInput
+    ProblemBatch,
+    ProblemBatchInput,
+    ProblemInput
 } from './schema';
 import { generateId } from './utils';
 
@@ -81,7 +81,33 @@ export async function importProblemBatch(batchData: {
   generationDate: string;
   problemCount: number;
   problems: any[]
-}): Promise<string> {
+}): Promise<'SKIPPED_EXISTING' | 'REPLACED_EXISTING' | 'IMPORTED_NEW'> {
+  // Check if batch with exact same ID already exists
+  const existingBatch = await getProblemBatchById(batchData.id);
+  if (existingBatch) {
+    console.log(`Batch ${batchData.id} already exists, skipping import`);
+    return 'SKIPPED_EXISTING';
+  }
+
+  // Check if a batch with the same generation date (but different ID) exists
+  const batchDateOnly = batchData.generationDate.split('T')[0]; // Extract YYYY-MM-DD
+  const db = await getDBConnection();
+
+  const existingBatchSameDate = await db.getFirstAsync<ProblemBatch>(
+    `SELECT * FROM ProblemBatches
+     WHERE DATE(generationDate) = ? AND id != ?
+     ORDER BY generationDate DESC LIMIT 1`,
+    batchDateOnly,
+    batchData.id
+  );
+
+  let isReplacement = false;
+  if (existingBatchSameDate) {
+    console.log(`Replacing existing batch ${existingBatchSameDate.id} from same date with newer batch ${batchData.id}`);
+    await deleteProblemBatch(existingBatchSameDate.id);
+    isReplacement = true;
+  }
+
   // Convert to the format expected by addProblemBatch
   const batchInput: ProblemBatchInput = {
     id: batchData.id,
@@ -94,7 +120,10 @@ export async function importProblemBatch(batchData: {
     batchId: batchData.id
   }));
 
-  return addProblemBatch(batchInput, problemsInput);
+  console.log(`Importing ${isReplacement ? 'replacement' : 'new'} batch ${batchData.id} with ${batchData.problems.length} problems`);
+  await addProblemBatch(batchInput, problemsInput);
+
+  return isReplacement ? 'REPLACED_EXISTING' : 'IMPORTED_NEW';
 }
 
 export async function getProblemBatchById(id: string): Promise<ProblemBatch | null> {

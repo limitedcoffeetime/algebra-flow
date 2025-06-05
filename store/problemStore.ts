@@ -15,7 +15,7 @@ interface ProblemStore {
   loadNextProblem: () => Promise<void>;
   submitAnswer: (userAnswer: string, isCorrect: boolean) => Promise<void>;
   resetProgress: () => Promise<void>;
-  forceSync: () => Promise<void>;
+  forceSync: () => Promise<boolean>;
   getBatchesInfo: () => Promise<any[]>;
 }
 
@@ -119,12 +119,14 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
   // Force sync
   forceSync: async () => {
     try {
-      await ProblemSyncService.syncProblems();
+      const hasNewProblems = await ProblemSyncService.forceSyncCheck();
       const progress = await db.getUserProgress();
       set({ userProgress: progress });
+      return hasNewProblems;
     } catch (error) {
       console.error('Failed to force sync:', error);
       set({ error: 'Failed to force sync' });
+      return false;
     }
   },
 

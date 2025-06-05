@@ -34,6 +34,27 @@ const PROBLEM_TYPES = [
   'polynomial-simplification'
 ];
 
+// Map difficulty levels to the subset of problem types that are appropriate
+// for that difficulty. This prevents, for example, quadratic-formula problems
+// from ever appearing in the "easy" bucket.
+const PROBLEM_TYPES_BY_DIFFICULTY = {
+  easy: [
+    'linear-one-variable',
+    'polynomial-simplification'
+  ],
+  medium: [
+    'linear-two-variables',
+    'quadratic-factoring',
+    'polynomial-simplification'
+  ],
+  hard: [
+    'linear-two-variables',
+    'quadratic-factoring',
+    'quadratic-formula',
+    'polynomial-simplification'
+  ]
+};
+
 // Initialize services
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -388,11 +409,11 @@ Constraints:
 function getDifficultyDescription(difficulty) {
   switch (difficulty) {
     case 'easy':
-      return 'simple equations with basic operations, small integer coefficients, integer or simple fraction answers (like 1/2, 1/3). NO complex decimals that require a calculator';
+      return 'very simple, single step equations (e.g., x + 3 = 7), integer coefficients between -10 and 10, answers should be small integers or common simple fractions. A student should be able to mentally solve within a few seconds.';
     case 'medium':
-      return 'multi-step equations with some complexity, integer coefficients, answers should be integers or simple fractions (like 2/3, 3/4). NO decimals requiring calculator use';
+      return 'moderately challenging, 2-3 step equations (e.g., 3x - 4 = 2x + 5 or factoring quadratics with small coefficients) that a strong student could solve mentally in under 10 seconds. Use integer coefficients between -15 and 15 and answers that are integers or common simple fractions.';
     case 'hard':
-      return 'complex equations with multiple operations, larger integer coefficients, answers should be integers or simple fractions. NEVER require calculator for decimal computation';
+      return 'multi-step or multi-variable problems that typically require scratch work (e.g., simultaneous linear equations, quadratic formula, or polynomial simplification with several terms). Coefficients may be up to ±20 but remain integer, and answers must still be calculator-free (integers or simple fractions).';
     default:
       return 'moderate complexity with calculator-free answers';
   }
@@ -436,7 +457,16 @@ async function generateProblemBatch() {
   console.log('Starting problem generation...');
 
   const allProblems = [];
-  const batchId = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // Generate unique batch ID with timestamp to avoid conflicts on same day
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const timeStr = now.toISOString().split('T')[1].split('.')[0].replace(/:/g, ''); // HHMMSS
+  const randomSuffix = Math.random().toString(36).substring(2, 6); // 4 random chars
+  const batchId = `${dateStr}-${timeStr}-${randomSuffix}`; // e.g., "2025-06-05-143052-a7d2"
+
+  console.log(`📦 Generated unique batch ID: ${batchId}`);
+
   const generationStats = {
     attempted: 0,
     successful: 0,
@@ -452,12 +482,15 @@ async function generateProblemBatch() {
   for (const [difficulty, totalCount] of Object.entries(difficultyCounts)) {
     if (totalCount === 0) continue;
 
-    // Distribute problems across types, ensuring we get exactly the right total
-    const problemsPerType = Math.floor(totalCount / PROBLEM_TYPES.length);
-    const extraProblems = totalCount % PROBLEM_TYPES.length;
+    // Determine the subset of problem types allowed for this difficulty
+    const allowedTypes = PROBLEM_TYPES_BY_DIFFICULTY[difficulty] || PROBLEM_TYPES;
 
-    for (let i = 0; i < PROBLEM_TYPES.length; i++) {
-      const problemType = PROBLEM_TYPES[i];
+    // Distribute problems across the allowed types, ensuring we hit the exact total
+    const problemsPerType = Math.floor(totalCount / allowedTypes.length);
+    const extraProblems = totalCount % allowedTypes.length;
+
+    for (let i = 0; i < allowedTypes.length; i++) {
+      const problemType = allowedTypes[i];
       // Give extra problems to the first few types if needed
       const count = problemsPerType + (i < extraProblems ? 1 : 0);
 
@@ -504,7 +537,8 @@ async function generateProblemBatch() {
 
   const batch = {
     id: batchId,
-    generationDate: new Date().toISOString(),
+    generationDate: now.toISOString(), // Full ISO timestamp for when this batch was generated
+    generationDateOnly: dateStr, // Just the date part for grouping/comparison
     problemCount: shuffledProblems.length,
     targetCount: PROBLEMS_PER_BATCH,
     generationStats,
@@ -512,6 +546,7 @@ async function generateProblemBatch() {
   };
 
   console.log(`Generated ${shuffledProblems.length} problems for batch ${batchId}`);
+  console.log(`Generation date: ${batch.generationDate}`);
 
   // Log the actual difficulty distribution
   const actualDistribution = {};

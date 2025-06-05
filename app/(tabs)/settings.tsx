@@ -5,10 +5,11 @@ import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function SettingsScreen() {
-  const { resetProgress, getBatchesInfo } = useProblemStore();
+  const { resetProgress, getBatchesInfo, forceSync } = useProblemStore();
   const [isResetting, setIsResetting] = useState(false);
   const [batchesInfo, setBatchesInfo] = useState<any[]>([]);
   const [isLoadingBatches, setIsLoadingBatches] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Get current database type
   const databaseType = getDatabaseType();
@@ -70,6 +71,29 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleRefreshAndSync = async () => {
+    setIsSyncing(true);
+    try {
+      const hasNewProblems = await forceSync();
+
+      if (hasNewProblems) {
+        Alert.alert('Success', 'Downloaded new problem batches!');
+        // Add a small delay to ensure database transactions are complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } else {
+        Alert.alert('Up to Date', 'No new problem batches available.');
+      }
+
+      // Refresh the local data after sync
+      await loadBatchesInfo();
+    } catch (error) {
+      console.error('Sync failed:', error);
+      Alert.alert('Sync Failed', 'Could not check for new problems. Please check your internet connection.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.title}>Settings</Text>
@@ -79,8 +103,8 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>Problem Batch Status</Text>
           <View style={styles.buttonContainer}>
           <Button
-            label={isLoadingBatches ? "Loading..." : "Refresh"}
-            onPress={loadBatchesInfo}
+            label={isSyncing ? "Syncing..." : isLoadingBatches ? "Loading..." : "Refresh & Sync"}
+            onPress={handleRefreshAndSync}
             theme="primary"
           />
           </View>

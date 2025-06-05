@@ -240,8 +240,32 @@ export const mockDb = {
   },
 
   // Import problem batch (for sync service)
-  async importProblemBatch(batchData: { id: string; generationDate: string; problemCount: number; problems: any[] }) {
+  async importProblemBatch(batchData: { id: string; generationDate: string; problemCount: number; problems: any[] }): Promise<'SKIPPED_EXISTING' | 'REPLACED_EXISTING' | 'IMPORTED_NEW'> {
     await initializeMockData();
+
+    // Check if batch with exact same ID already exists
+    const existingBatch = batches.find(b => b.id === batchData.id);
+    if (existingBatch) {
+      console.log(`Batch ${batchData.id} already exists, skipping import`);
+      return 'SKIPPED_EXISTING';
+    }
+
+    // Check if a batch with the same generation date (but different ID) exists
+    const batchDateOnly = batchData.generationDate.split('T')[0];
+    const existingBatchSameDate = batches.find(b =>
+      b.generationDate.split('T')[0] === batchDateOnly && b.id !== batchData.id
+    );
+
+    let isReplacement = false;
+    if (existingBatchSameDate) {
+      console.log(`Replacing existing batch ${existingBatchSameDate.id} from same date with newer batch ${batchData.id}`);
+
+      // Remove the old batch and its problems
+      batches = batches.filter(b => b.id !== existingBatchSameDate.id);
+      problems = problems.filter(p => p.batchId !== existingBatchSameDate.id);
+      isReplacement = true;
+    }
+
     const now = new Date().toISOString();
 
     const newBatch: ProblemBatch = {
@@ -263,6 +287,7 @@ export const mockDb = {
       });
     });
 
-    return batchData.id;
+    console.log(`Importing ${isReplacement ? 'replacement' : 'new'} batch ${batchData.id} with ${batchData.problems.length} problems`);
+    return isReplacement ? 'REPLACED_EXISTING' : 'IMPORTED_NEW';
   }
 };

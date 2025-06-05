@@ -120,11 +120,20 @@ export class ProblemSyncService {
         return false;
       }
 
-      // Import into database
-      await db.importProblemBatch(batchData);
+      // Import into database and get the result
+      const result = await db.importProblemBatch(batchData);
 
-      console.log(`✅ Imported ${batchData.problems.length} problems`);
-      return true;
+      // The importProblemBatch now returns meaningful information
+      if (result === 'SKIPPED_EXISTING') {
+        console.log(`✅ Batch ${batchData.id} already exists locally - no import needed`);
+        return false; // No new content was actually imported
+      } else if (result === 'REPLACED_EXISTING') {
+        console.log(`✅ Replaced existing batch and imported ${batchData.problems.length} problems`);
+        return true; // New content was imported
+      } else {
+        console.log(`✅ Imported new batch with ${batchData.problems.length} problems`);
+        return true; // New content was imported
+      }
     } catch (error) {
       console.error('Error downloading/importing batch:', error);
       return false;
