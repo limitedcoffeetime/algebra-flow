@@ -321,12 +321,10 @@ Constraints:
       text: {
         format: {
           type: "json_schema",
-          json_schema: {
-            name: "algebra_problems_response",
-            description: "Response containing algebra problems with equations, answers, and solution steps",
-            schema: responseSchema,
-            strict: true
-          }
+          name: "algebra_problems_response",
+          description: "Response containing algebra problems with equations, answers, and solution steps",
+          schema: responseSchema,
+          strict: true
         }
       },
       // Disable storage to avoid server-side conversation state for this batch generation
