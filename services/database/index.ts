@@ -13,6 +13,8 @@ export * from './schema';
 // For now, let's always use mock DB in development to avoid SQLite issues
 const USE_MOCK_DB = process.env.EXPO_PUBLIC_USE_MOCK_DB === 'true';
 
+console.log(`🔧 Database: Using ${USE_MOCK_DB ? 'Mock Database' : 'SQLite'} (EXPO_PUBLIC_USE_MOCK_DB=${process.env.EXPO_PUBLIC_USE_MOCK_DB})`);
+
 // To use real SQLite:
 // 1. Change USE_MOCK_DB to false
 // 2. Run: npx expo run:ios (for local build)

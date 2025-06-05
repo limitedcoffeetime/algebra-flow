@@ -436,7 +436,16 @@ async function generateProblemBatch() {
   console.log('Starting problem generation...');
 
   const allProblems = [];
-  const batchId = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // Generate unique batch ID with timestamp to avoid conflicts on same day
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const timeStr = now.toISOString().split('T')[1].split('.')[0].replace(/:/g, ''); // HHMMSS
+  const randomSuffix = Math.random().toString(36).substring(2, 6); // 4 random chars
+  const batchId = `${dateStr}-${timeStr}-${randomSuffix}`; // e.g., "2025-06-05-143052-a7d2"
+
+  console.log(`📦 Generated unique batch ID: ${batchId}`);
+
   const generationStats = {
     attempted: 0,
     successful: 0,
@@ -504,7 +513,8 @@ async function generateProblemBatch() {
 
   const batch = {
     id: batchId,
-    generationDate: new Date().toISOString(),
+    generationDate: now.toISOString(), // Full ISO timestamp for when this batch was generated
+    generationDateOnly: dateStr, // Just the date part for grouping/comparison
     problemCount: shuffledProblems.length,
     targetCount: PROBLEMS_PER_BATCH,
     generationStats,
@@ -512,6 +522,7 @@ async function generateProblemBatch() {
   };
 
   console.log(`Generated ${shuffledProblems.length} problems for batch ${batchId}`);
+  console.log(`Generation date: ${batch.generationDate}`);
 
   // Log the actual difficulty distribution
   const actualDistribution = {};

@@ -19,6 +19,7 @@ export type ProblemInput = Omit<Problem, 'id' | 'createdAt' | 'updatedAt'> & { i
 export interface ProblemBatch {
   id: string; // UUID, primary key, e.g., YYYY-MM-DD
   generationDate: string; // ISO 8601 timestamp (when LLM generated it)
+  generationDateOnly?: string; // YYYY-MM-DD format for easier date comparisons and grouping
   sourceUrl?: string; // S3 URL from where it was fetched
   problemCount: number;
   importedAt: string; // ISO 8601 timestamp (when imported into local DB)
@@ -48,6 +49,7 @@ export const CREATE_PROBLEM_BATCHES_TABLE = `
 CREATE TABLE IF NOT EXISTS ProblemBatches (
   id TEXT PRIMARY KEY NOT NULL,
   generationDate TEXT NOT NULL,
+  generationDateOnly TEXT,
   sourceUrl TEXT,
   problemCount INTEGER NOT NULL,
   importedAt TEXT NOT NULL
