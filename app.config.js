@@ -37,7 +37,7 @@ export default {
     extra: {
       problemsLatestUrl: process.env.EXPO_PUBLIC_PROBLEMS_LATEST_URL || '',
       eas: {
-        projectId: "YOUR_PROJECT_ID_HERE"
+        projectId: "11d26774-eebd-4426-aa12-064a3460fc6a"
       }
     }
   }
