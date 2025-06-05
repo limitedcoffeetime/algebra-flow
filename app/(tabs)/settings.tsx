@@ -1,15 +1,43 @@
 import Button from '@/components/Button';
 import { getDatabaseType } from '@/services/database';
 import { useProblemStore } from '@/store/problemStore';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function SettingsScreen() {
-  const { resetProgress } = useProblemStore();
+  const { resetProgress, getBatchesInfo } = useProblemStore();
   const [isResetting, setIsResetting] = useState(false);
+  const [batchesInfo, setBatchesInfo] = useState<any[]>([]);
+  const [isLoadingBatches, setIsLoadingBatches] = useState(false);
 
   // Get current database type
   const databaseType = getDatabaseType();
+
+  // Load batch information on component mount
+  useEffect(() => {
+    loadBatchesInfo();
+  }, []);
+
+  const loadBatchesInfo = async () => {
+    setIsLoadingBatches(true);
+    try {
+      const info = await getBatchesInfo();
+      setBatchesInfo(info);
+    } catch (error) {
+      console.error('Failed to load batches info:', error);
+    } finally {
+      setIsLoadingBatches(false);
+    }
+  };
+
+  const formatDate = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleString();
+    } catch {
+      return 'Invalid date';
+    }
+  };
 
   const handleResetProgress = () => {
     Alert.alert(
@@ -28,6 +56,8 @@ export default function SettingsScreen() {
             try {
               await resetProgress();
               Alert.alert('Success', 'Your progress has been reset!');
+              // Reload batch info after reset
+              await loadBatchesInfo();
             } catch (error) {
               console.error('Failed to reset progress:', error);
               Alert.alert('Error', 'Failed to reset progress. Please try again.');
@@ -44,6 +74,65 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.title}>Settings</Text>
 
+      {/* Batch Status Section */}
+      <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Problem Batch Status</Text>
+          <View style={styles.buttonContainer}>
+          <Button
+            label={isLoadingBatches ? "Loading..." : "Refresh"}
+            onPress={loadBatchesInfo}
+            theme="primary"
+          />
+          </View>
+
+        {isLoadingBatches ? (
+          <Text style={styles.loadingText}>Loading batch information...</Text>
+        ) : batchesInfo.length === 0 ? (
+          <Text style={styles.noDataText}>No problem batches found</Text>
+        ) : (
+          <>
+            <Text style={styles.batchSummaryText}>
+              {batchesInfo.length} batch{batchesInfo.length !== 1 ? 'es' : ''} available on device
+            </Text>
+            {batchesInfo.map((batch, index) => (
+              <View key={batch.id} style={[styles.batchCard, batch.isCurrentBatch && styles.currentBatchCard]}>
+                <View style={styles.batchHeader}>
+                  <Text style={[styles.batchTitle, batch.isCurrentBatch && styles.currentBatchTitle]}>
+                    Batch {batch.id}
+                    {batch.isCurrentBatch && <Text style={styles.currentBadge}> (Current)</Text>}
+                  </Text>
+                </View>
+
+                <View style={styles.batchDetails}>
+                  <View style={styles.batchRow}>
+                    <Text style={styles.batchLabel}>Problems:</Text>
+                    <Text style={styles.batchValue}>
+                      {batch.completedCount}/{batch.problemCount} completed
+                    </Text>
+                  </View>
+
+                  <View style={styles.batchRow}>
+                    <Text style={styles.batchLabel}>Generated:</Text>
+                    <Text style={styles.batchValue}>{formatDate(batch.generationDate)}</Text>
+                  </View>
+
+                  <View style={styles.batchRow}>
+                    <Text style={styles.batchLabel}>Synced to device:</Text>
+                    <Text style={styles.batchValue}>{formatDate(batch.importedAt)}</Text>
+                  </View>
+
+                  {batch.sourceUrl && (
+                    <View style={styles.batchRow}>
+                      <Text style={styles.batchLabel}>Source:</Text>
+                      <Text style={styles.batchValueSmall} numberOfLines={1}>{batch.sourceUrl}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+      </View>
 
       {/* Database Status Section */}
       <View style={styles.section}>
@@ -109,12 +198,93 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#ffd33d',
     marginBottom: 15,
   },
+
+  // Batch Status Styles
+  loadingText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  batchSummaryText: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 15,
+    fontWeight: '600',
+  },
+  batchCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  currentBatchCard: {
+    borderColor: '#ffd33d',
+    backgroundColor: '#3a3520',
+  },
+  batchHeader: {
+    marginBottom: 10,
+  },
+  batchTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  currentBatchTitle: {
+    color: '#ffd33d',
+  },
+  currentBadge: {
+    fontSize: 14,
+    fontWeight: 'normal',
+    color: '#ffd33d',
+  },
+  batchDetails: {
+    gap: 6,
+  },
+  batchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  batchLabel: {
+    fontSize: 14,
+    color: '#ccc',
+    flex: 1,
+  },
+  batchValue: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '500',
+    flex: 2,
+    textAlign: 'right',
+  },
+  batchValueSmall: {
+    fontSize: 12,
+    color: '#aaa',
+    flex: 2,
+    textAlign: 'right',
+  },
+
+  // Database Status Styles
   databaseStatusContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

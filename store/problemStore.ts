@@ -16,6 +16,7 @@ interface ProblemStore {
   submitAnswer: (userAnswer: string, isCorrect: boolean) => Promise<void>;
   resetProgress: () => Promise<void>;
   forceSync: () => Promise<void>;
+  getBatchesInfo: () => Promise<any[]>;
 }
 
 export const useProblemStore = create<ProblemStore>((set, get) => ({
@@ -124,6 +125,36 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
     } catch (error) {
       console.error('Failed to force sync:', error);
       set({ error: 'Failed to force sync' });
+    }
+  },
+
+  // Get batches info for debugging
+  getBatchesInfo: async () => {
+    try {
+      const allBatches = await db.getAllBatches();
+      const userProgress = await db.getUserProgress();
+
+      const batchesInfo = await Promise.all(
+        allBatches.map(async (batch) => {
+          const problems = await db.getProblemsByBatch(batch.id);
+          const completedProblems = problems.filter(p => p.isCompleted);
+
+          return {
+            id: batch.id,
+            generationDate: batch.generationDate,
+            importedAt: batch.importedAt,
+            problemCount: batch.problemCount,
+            completedCount: completedProblems.length,
+            isCurrentBatch: batch.id === userProgress?.currentBatchId,
+            sourceUrl: batch.sourceUrl
+          };
+        })
+      );
+
+      return batchesInfo;
+    } catch (error) {
+      console.error('Failed to get batches info:', error);
+      return [];
     }
   }
 }));

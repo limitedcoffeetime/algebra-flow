@@ -19,7 +19,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 // Configuration
-const PROBLEMS_PER_BATCH = 20;
+const PROBLEMS_PER_BATCH = 5;
 const TARGET_DIFFICULTY_MIX = {
   easy: 40,    // 40% of total batch
   medium: 40,  // 40% of total batch
