@@ -303,7 +303,7 @@ Constraints:
     // MIGRATED TO RESPONSES API: Using the new Responses API with structured outputs
     const response = await openai.responses.create({
       // MODEL CHANGE LOCATION: Replace the model name below with your desired model
-      model: 'gpt-4o', // Change this to 'o4-mini-2025-04-16' or whatever model you want
+      model: 'gpt-o4-mini', // Change this to 'o4-mini-2025-04-16' or whatever model you want
       // RESPONSES API FORMAT: Using 'input' instead of 'messages'
       input: [
         {
