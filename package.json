@@ -38,6 +38,7 @@
     "react-native": "0.79.2",
     "react-native-fast-collapsible": "^1.1.2",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-katex": "^1.3.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Katex from 'react-native-katex';
 import { useCollapsible } from 'react-native-fast-collapsible';
 import Animated from 'react-native-reanimated';
 
@@ -46,7 +47,14 @@ const StepByStepSolution: React.FC<StepByStepSolutionProps> = ({
 
 // Individual step component for better modularity
 const SolutionStep: React.FC<{ step: string }> = ({ step }) => {
-  return <Text style={styles.solutionStep}>{step}</Text>;
+  return (
+    <Katex
+      expression={step}
+      style={styles.solutionStep}
+      displayMode
+      colorIsTextColor
+    />
+  );
 };
 
 const styles = StyleSheet.create({

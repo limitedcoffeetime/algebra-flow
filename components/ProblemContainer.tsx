@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Katex from 'react-native-katex';
 
 // Define the structure for a problem
 export interface Problem {
@@ -16,7 +17,11 @@ type Props = {
 const ProblemContainer = ({ problem }: Props) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.problemText}>{problem.equation}</Text>
+      <Katex
+        expression={problem.equation}
+        style={styles.problemText}
+        displayMode
+      />
     </View>
   );
 };

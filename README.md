@@ -83,6 +83,7 @@ UserProgress (id, currentBatchId, problemsAttempted, problemsCorrect, lastSyncTi
 - **Navigation**: Expo Router with file-based routing
 - **Language**: TypeScript with strict type checking
 - **Build**: EAS Build with multiple variants
+- **Math Rendering**: react-native-katex for LaTeX equations
 
 ### **Project Structure**
 ```
@@ -162,6 +163,7 @@ The daily problem generation system has been enhanced to address several issues:
 6. **Better Error Handling**: Continue generation even if some problem types fail
 7. **Enhanced Validation**: Validate answer formats match expected types and detect calculator-requiring answers
 8. **Detailed Statistics**: Track success/failure rates and provide better debugging info
+9. **LaTeX Output**: Problems and solution steps are now generated in LaTeX for rendering with `react-native-katex`
 
 ### Answer Quality Standards
 

@@ -287,6 +287,7 @@ ACCEPTABLE ANSWERS: 3, -2, 1/2, 2/3, 0, 7, -1/4, 5/3
 UNACCEPTABLE ANSWERS: 1.2839, 2.7182, 0.3333..., √2, 3.14159, 1.7320
 
 Generate problems following the exact JSON schema structure.
+All equations and solution steps must be written in LaTeX syntax so they can be rendered with KaTeX.
 
 Constraints:
 - ${difficulty} difficulty means: ${getDifficultyDescription(difficulty)}
