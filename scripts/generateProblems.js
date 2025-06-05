@@ -301,9 +301,10 @@ Constraints:
 
   try {
     // MIGRATED TO RESPONSES API: Using the new Responses API with structured outputs
+    console.log(`🔧 DEBUG: Making OpenAI Responses API call with model: o4-mini-2025-04-16`);
     const response = await openai.responses.create({
       // MODEL CHANGE LOCATION: Replace the model name below with your desired model
-      model: 'gpt-o4-mini', // Change this to 'o4-mini-2025-04-16' or whatever model you want
+      model: 'o4-mini-2025-04-16', // Using the correct model name from the official OpenAI models site
       // RESPONSES API FORMAT: Using 'input' instead of 'messages'
       input: [
         {
@@ -573,6 +574,13 @@ async function uploadToS3(batch) {
 async function main() {
   try {
     console.log('🔥 Starting daily problem generation...');
+    console.log('🔧 DEBUG: Configuration details:');
+    console.log(`   📦 OpenAI Model: o4-mini-2025-04-16`);
+    console.log(`   🚀 API Type: OpenAI Responses API (structured outputs)`);
+    console.log(`   📊 Target problems per batch: ${PROBLEMS_PER_BATCH}`);
+    console.log(`   🎯 Problem types: ${PROBLEM_TYPES.join(', ')}`);
+    console.log(`   📈 Difficulty mix: ${JSON.stringify(TARGET_DIFFICULTY_MIX)}`);
+    console.log('');
 
     // Generate problems
     const batch = await generateProblemBatch();
