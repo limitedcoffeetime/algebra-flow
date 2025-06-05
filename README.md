@@ -143,3 +143,64 @@ assets/data/        # Bundled data
 - Production: SQLite with persistent storage
 - Development: SQLite or mock (set `EXPO_PUBLIC_USE_MOCK_DB=true`)
 - Testing: In-memory mock database
+
+## Problem Generation Improvements
+
+The daily problem generation system has been enhanced to address several issues:
+
+### Recent Improvements
+
+1. **Robust JSON Parsing**: Fixed JSON parsing errors by handling OpenAI responses that sometimes include markdown formatting
+2. **Answer Format Consistency**: Added specific instructions for each problem type to ensure consistent answer formats:
+   - `linear-one-variable`: Single number (e.g., `3`)
+   - `linear-two-variables`: Expression for x in terms of y (e.g., `"x = 3 + 2y"`)
+   - `quadratic-factoring/formula`: Number or array of numbers (e.g., `[-1, -3]`)
+   - `polynomial-simplification`: Simplified expression (e.g., `"2x^2 + 3x - 1"`)
+3. **Calculator-Free Problems**: Enforced constraint that all problems must have integer or simple fraction answers (like 1/2, 2/3). NO complex decimals like 1.2839 that would require a calculator
+4. **Upgraded Model**: Switched from `gpt-4o-mini` to `gpt-4o` for better reliability
+5. **Retry Logic**: Added automatic retry with exponential backoff for failed generations
+6. **Better Error Handling**: Continue generation even if some problem types fail
+7. **Enhanced Validation**: Validate answer formats match expected types and detect calculator-requiring answers
+8. **Detailed Statistics**: Track success/failure rates and provide better debugging info
+
+### Answer Quality Standards
+
+All generated problems follow strict quality guidelines:
+
+**✅ ACCEPTABLE ANSWERS:**
+- Integers: `3`, `-2`, `0`, `7`
+- Simple fractions: `1/2`, `2/3`, `3/4`, `5/6`
+- Simple expressions: `"x = 3 + 2y"`, `"2x^2 + 3x - 1"`
+
+**❌ UNACCEPTABLE ANSWERS:**
+- Complex decimals: `1.2839`, `2.7182`, `0.3333...`
+- Irrational numbers: `√2`, `√3`, `π`
+- Calculator-requiring values: `3.14159`, `1.7320`
+
+This ensures students focus on algebraic reasoning rather than arithmetic computation.
+
+### Testing Locally
+
+To test the problem generation locally before deploying:
+
+1. Create a `.env` file in the project root:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
+
+2. Run the test script:
+   ```bash
+   node scripts/test-generation.js
+   ```
+
+This will generate a small batch of 5 problems and show detailed output including validation results.
+
+### Monitoring Generation Quality
+
+The system now provides detailed statistics after each run:
+- Success rate percentage
+- Failed problem types
+- Answer format validation warnings
+- Generation timing statistics
+
+Check the GitHub Actions logs for these metrics after each daily run.
