@@ -1,4 +1,5 @@
 // Mock database for development - avoids SQLite native module issues
+import { isAnswerCorrect } from '../../utils/answerUtils';
 import { getDummyBatchAndProblemsInput } from './dummyData';
 import { Problem, ProblemBatch, UserProgress } from './schema';
 
@@ -189,16 +190,11 @@ export const mockDb = {
       }
       stats[type].attempted += 1;
 
-      // Use the same validation logic as answer submission
+      // Use the proper validation logic from answerUtils
       const userAns = String(p.userAnswer ?? '').trim();
-      const correctAns = String(p.answer ?? '').trim();
+      const correctAns = p.answer; // Can be string or number
 
-      // Try numeric comparison (exact match for integer solutions)
-      const numericUserAnswer = parseFloat(userAns);
-      const numericCorrectAnswer = parseFloat(correctAns);
-
-      const isCorrect = !isNaN(numericUserAnswer) && !isNaN(numericCorrectAnswer) &&
-                       numericUserAnswer === numericCorrectAnswer;
+      const isCorrect = isAnswerCorrect(userAns, correctAns);
 
       if (isCorrect) {
         stats[type].correct += 1;

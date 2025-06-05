@@ -1,3 +1,4 @@
+import { isAnswerCorrect } from '../../utils/answerUtils';
 import { getDBConnection } from './db';
 import { Problem } from './schema';
 
@@ -151,16 +152,11 @@ export async function getTopicAccuracyStats() {
     }
     stats[type].attempted += 1;
 
-    // Use the same validation logic as answer submission
+    // Use the proper validation logic from answerUtils
     const userAns = String(row.userAnswer ?? '').trim();
-    const correctAns = String(row.answer ?? '').trim();
+    const correctAns = row.answer; // Can be string or number
 
-    // Try numeric comparison (exact match for integer solutions)
-    const numericUserAnswer = parseFloat(userAns);
-    const numericCorrectAnswer = parseFloat(correctAns);
-
-    const isCorrect = !isNaN(numericUserAnswer) && !isNaN(numericCorrectAnswer) &&
-                     numericUserAnswer === numericCorrectAnswer;
+    const isCorrect = isAnswerCorrect(userAns, correctAns);
 
     if (isCorrect) {
       stats[type].correct += 1;
