@@ -60,3 +60,6 @@ env.example
 
 # Environment variables
 .env
+
+# Documentation / guides
+june5thnotes.md

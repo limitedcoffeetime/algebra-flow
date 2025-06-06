@@ -29,6 +29,44 @@ A mobile algebra learning app built with React Native and Expo.
 - **Transaction support**: Robust database operations with error handling
 - **Progress persistence**: Statistics and state maintained across app restarts
 
+### **June 6, 2025** – Modular Refactor & Unified Logging
+
+The monolithic `scripts/generateProblems.js` file has been broken into a small
+collection of focused TypeScript **modules** located under
+`services/problemGeneration/`:
+
+| Module | Responsibility |
+| ------- | -------------- |
+| `constants.ts` | Shared enums / look-up tables for difficulty & problem types |
+| `instructions.ts` | Returns problem-type and difficulty-specific prompt snippets |
+| `validation.ts` | Utility helpers for calculator-free checks & answer-format validation |
+| `schema.ts` | Builds the JSON-Schema passed to the OpenAI Responses API |
+| `openaiGenerator.ts` | Calls the Responses API and returns typed `GeneratedProblem[]` |
+| `batchGenerator.ts` | Orchestrates multi-difficulty batches (exporting `configureProblemsPerBatch`) |
+| `s3Uploader.ts` | Uploads a batch and updates `latest.json` in S3 |
+
+
+#### Central logger
+
+A lightweight logger (`utils/logger.ts`) replaces scattered `console.*` calls.
+Verbosity can be tuned with `LOG_LEVEL` (`debug`, `info`, `warn`, `error`,
+`silent`). The logger is automatically used across the data layer and sync
+service – production builds are far less chatty now.
+
+```bash
+LOG_LEVEL=warn expo run:android   # silent except warnings & errors
+LOG_LEVEL=debug node someScript   # full debug output
+```
+
+#### Database interface
+
+`services/database/types.ts` defines an `IDatabase` contract that both
+`mockDb.ts` and the SQLite implementation now satisfy.  This removes much of
+the duplicated CRUD code.
+
+---
+
+
 ---
 
 ## Current Architecture
