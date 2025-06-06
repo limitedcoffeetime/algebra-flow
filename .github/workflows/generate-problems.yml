@@ -25,7 +25,7 @@ jobs:
       run: npm install
 
     - name: Generate problems
-      run: node scripts/generateProblems.js
+      run: ts-node scripts/generateProblems.ts
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
