@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { WebView } from 'react-native-webview';
 import SimpleMathRenderer from './SimpleMathRenderer';
@@ -18,6 +18,16 @@ const SmartMathRenderer: React.FC<SmartMathRendererProps> = ({
 }) => {
   const [useWebView, setUseWebView] = useState(true);
   const [webViewError, setWebViewError] = useState(false);
+  const timeoutRef = useRef<number | null>(null);
+
+  // Clear timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Detect if text needs advanced LaTeX rendering
   const needsLatexRendering = (input: string): boolean => {
@@ -123,14 +133,24 @@ const SmartMathRenderer: React.FC<SmartMathRendererProps> = ({
           setWebViewError(true);
         }}
         onLoadEnd={() => {
-          // Successfully loaded
+          // Successfully loaded - clear any pending timeout
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
         }}
         // Timeout fallback
         onLoadStart={() => {
-          setTimeout(() => {
-            if (!webViewError) {
-              setUseWebView(false);
-            }
+          // Clear any existing timeout
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
+
+          // Set a new timeout for fallback
+          timeoutRef.current = setTimeout(() => {
+            // If loading takes too long, fall back to SimpleMathRenderer
+            setUseWebView(false);
+            timeoutRef.current = null;
           }, 3000);
         }}
       />
