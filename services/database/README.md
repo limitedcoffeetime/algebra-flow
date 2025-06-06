@@ -2,121 +2,108 @@
 
 ## Overview
 
-This is a clean SQLite implementation for storing algebra problems, problem batches, and user progress. No complex testing setup - just working database code.
+Database layer supporting both SQLite (production) and Mock DB (development) for storing algebra problems, batches, and user progress. Features active S3 integration with daily problem generation and sync.
 
-## Structure
+## Database Mode
 
-### Tables
+**Environment Variable: `EXPO_PUBLIC_USE_MOCK_DB`**
+- `true`: Uses Mock Database (in-memory, for development)
+- `false/unset`: Uses SQLite (persistent, for production)
 
-1. **ProblemBatches** - Collections of problems (e.g., daily sets)
-   - `id`: Unique identifier
-   - `generationDate`: When the problems were generated
-   - `sourceUrl`: Future S3 URL reference
-   - `problemCount`: Number of problems in batch
-   - `importedAt`: When imported to local DB
+Check current mode via `getDatabaseType()`.
 
-2. **Problems** - Individual algebra problems
-   - `id`: Unique identifier
-   - `batchId`: Which batch this belongs to
-   - `equation`: The algebra equation (e.g., "3y - 7 = 14")
-   - `answer`: The correct answer
-   - `solutionSteps`: Array of step-by-step solution
-   - `difficulty`: easy/medium/hard
-   - `isCompleted`: Whether user has attempted
-   - `userAnswer`: What the user answered
+## Table Structure
 
-3. **UserProgress** - Tracks user's overall progress
-   - `currentBatchId`: Which batch they're working on
-   - `problemsAttempted`: Total attempted
-   - `problemsCorrect`: Total correct
-   - `lastSyncTimestamp`: For future S3 sync
+### ProblemBatches
+- `id` - Unique batch ID: `YYYY-MM-DD-HHMMSS-XXXX` (e.g., "2025-01-15-143052-a7d2")
+  - Date + time + random suffix to handle multiple batches per day
+- `generationDate` - ISO timestamp when generated
+- `sourceUrl` - S3 URL where batch was fetched from
+- `problemCount` - Number of problems in batch
+- `importedAt` - When imported to local DB
 
-## Basic Usage
+### Problems
+- `id` - UUID
+- `batchId` - Links to ProblemBatch
+- `equation` - Algebra equation string
+- `answer` - Correct answer (stored as string)
+- `solutionSteps` - JSON array of solution steps
+- `difficulty` - "easy", "medium", or "hard"
+- `problemType` - Problem category (e.g., "linear-one-variable")
+- `isCompleted` - User completion status
+- `userAnswer` - User's submitted answer
+- `solutionStepsShown` - Whether user viewed solution
 
-### Direct Database Access
+### UserProgress
+- `currentBatchId` - Active batch being worked on
+- `problemsAttempted` - Total problems attempted
+- `problemsCorrect` - Total correct answers
+- `lastSyncTimestamp` - Last S3 sync time
 
+## S3 Integration & Sync
+
+### Daily Problem Generation
+- **GitHub Action** runs daily at 2 AM UTC
+- **OpenAI API** generates 5 problems per batch (40% easy, 40% medium, 20% hard)
+- **S3 Storage**: Problems uploaded to S3 bucket with `latest.json` pointer
+
+### Sync Process
+- **ProblemSyncService** checks for new problems every 20+ hours
+- Downloads `latest.json` from S3 to check for updates
+- Compares hash to detect new content
+- Automatically imports new batches, replacing same-date batches if needed
+- **Manual sync** available in Settings screen
+
+### Sync Behavior
+- `SKIPPED_EXISTING` - Batch already exists (same ID)
+- `REPLACED_EXISTING` - Replaced same-date batch with newer version
+- `IMPORTED_NEW` - Imported completely new batch
+
+## Usage
+
+### Basic Database Operations
 ```javascript
 import { db } from '@/services/database';
 
-// Initialize database (run once on app start)
+// Initialize (creates tables, seeds dummy data if empty)
 await db.init();
 
-// Seed with dummy data (for development)
-await db.seedDummy();
-
-// Get next problem for user
+// Get next unsolved problem
 const problem = await db.getNextProblem();
 
-// Submit an answer
+// Submit answer
 await db.submitAnswer(problemId, userAnswer, isCorrect);
 
 // Get user progress
 const progress = await db.getUserProgress();
+
+// Reset all progress
+await db.resetUserProgress();
 ```
 
-### Using with Zustand Store (Recommended)
-
+### Using with Zustand Store
 ```javascript
 import { useProblemStore } from '@/store/problemStore';
 
-// In your component
-const {
-  currentProblem,
-  userProgress,
-  isLoading,
-  error,
-  initialize,
-  loadNextProblem,
-  submitAnswer
-} = useProblemStore();
-
-// Initialize on mount
-useEffect(() => {
-  initialize();
-}, []);
+const { currentProblem, userProgress, initialize, submitAnswer, forceSync } = useProblemStore();
 ```
 
-## Adding New Problems
-
-Currently using dummy data. To add new problems:
-
-1. Update `services/database/dummyData.ts`
-2. Or use `db.addBatch()` to add programmatically:
-
+### Manual Sync
 ```javascript
-await db.addBatch(
-  {
-    generationDate: new Date().toISOString(),
-    problemCount: 2
-  },
-  [
-    {
-      equation: "2x + 5 = 15",
-      answer: "5",
-      solutionSteps: ["Step 1...", "Step 2..."],
-      difficulty: "easy",
-      problemType: "linear-one-variable",
-      isCompleted: false
-    }
-  ]
-);
+import { ProblemSyncService } from '@/services/problemSyncService';
+
+// Check if sync needed
+const shouldSync = await ProblemSyncService.shouldSync();
+
+// Force sync
+const hasNewProblems = await ProblemSyncService.forceSyncCheck();
 ```
-
-## Future AWS S3 Integration
-
-The structure is ready for S3 integration:
-
-1. Problems will be generated via LLM and stored on S3
-2. App will sync daily to download new batches
-3. `sourceUrl` field will store the S3 URL
-4. `lastSyncTimestamp` tracks when last synced
 
 ## Files
 
-- `schema.ts` - Database table definitions
-- `db.ts` - Database connection management
-- `problemBatchService.ts` - Batch operations
-- `problemService.ts` - Problem operations
-- `userProgressService.ts` - User progress tracking
-- `dummyData.ts` - Sample data for development
-- `index.ts` - Main API interface
+- `index.ts` - Main database interface
+- `schema.ts` - Table definitions and types
+- `db.ts` - SQLite connection management
+- `mockDb.ts` - In-memory database for development
+- `*Service.ts` - Service layer for each table
+- `dummyData.ts` - Sample data for initialization
