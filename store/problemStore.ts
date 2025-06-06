@@ -1,6 +1,17 @@
 import { db, Problem, UserProgress } from '@/services/database';
 import { ProblemSyncService } from '@/services/problemSyncService';
+import { logger } from '@/utils/logger';
 import { create } from 'zustand';
+
+interface BatchInfo {
+  id: string;
+  generationDate: string;
+  importedAt: string;
+  problemCount: number;
+  completedCount: number;
+  isCurrentBatch: boolean;
+  sourceUrl?: string | null;
+}
 
 interface ProblemStore {
   // State
@@ -16,7 +27,7 @@ interface ProblemStore {
   submitAnswer: (userAnswer: string, isCorrect: boolean) => Promise<void>;
   resetProgress: () => Promise<void>;
   forceSync: () => Promise<boolean>;
-  getBatchesInfo: () => Promise<any[]>;
+  getBatchesInfo: () => Promise<BatchInfo[]>;
 }
 
 export const useProblemStore = create<ProblemStore>((set, get) => ({
@@ -43,14 +54,14 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
       // Check for new problems if we should sync
       const shouldSync = await ProblemSyncService.shouldSync();
       if (shouldSync) {
-        console.log('🔄 Checking for new problems...');
+        logger.info('🔄 Checking for new problems...');
         try {
           const newProblems = await ProblemSyncService.syncProblems();
           if (newProblems) {
-            console.log('✅ Downloaded new problems');
+            logger.info('✅ Downloaded new problems');
           }
         } catch (syncError) {
-          console.error('⚠️ Sync failed but continuing with local data:', syncError);
+          logger.error('⚠️ Sync failed but continuing with local data:', syncError);
           // Don't fail initialization if sync fails
         }
       }
@@ -63,7 +74,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
       // Load first problem
       await get().loadNextProblem();
     } catch (error) {
-      console.error('Initialization error:', error);
+      logger.error('Initialization error:', error);
       set({ error: 'Failed to initialize app' });
     } finally {
       set({ isLoading: false });
@@ -80,7 +91,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
         set({ error: 'No more problems available!' });
       }
     } catch (error) {
-      console.error('Failed to load problem:', error);
+      logger.error('Failed to load problem:', error);
       set({ error: 'Failed to load problem' });
     }
   },
@@ -97,7 +108,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
       const progress = await db.getUserProgress();
       set({ userProgress: progress, error: null });
     } catch (error) {
-      console.error('Failed to submit answer:', error);
+      logger.error('Failed to submit answer:', error);
       set({ error: 'Failed to save answer' });
     }
   },
@@ -111,7 +122,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
       set({ userProgress: progress });
       await get().loadNextProblem();
     } catch (error) {
-      console.error('Failed to reset progress:', error);
+      logger.error('Failed to reset progress:', error);
       set({ error: 'Failed to reset progress' });
     }
   },
@@ -124,7 +135,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
       set({ userProgress: progress });
       return hasNewProblems;
     } catch (error) {
-      console.error('Failed to force sync:', error);
+      logger.error('Failed to force sync:', error);
       set({ error: 'Failed to force sync' });
       return false;
     }
@@ -155,7 +166,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
 
       return batchesInfo;
     } catch (error) {
-      console.error('Failed to get batches info:', error);
+      logger.error('Failed to get batches info:', error);
       return [];
     }
   }

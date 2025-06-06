@@ -2,11 +2,20 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "target": "ES2021",
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "lib": ["ES2021", "DOM"],
+    "types": ["node"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "noImplicitAny": false
   },
   "include": [
     "**/*.ts",

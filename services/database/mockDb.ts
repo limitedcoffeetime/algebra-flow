@@ -1,7 +1,9 @@
 // Mock database for development - avoids SQLite native module issues
+import { logger } from '@/utils/logger';
 import { isAnswerCorrect } from '../../utils/answerUtils';
 import { getDummyBatchAndProblemsInput } from './dummyData';
 import { Problem, ProblemBatch, UserProgress } from './schema';
+import { IDatabase } from './types';
 
 // In-memory storage
 let problems: Problem[] = [];
@@ -52,9 +54,9 @@ async function initializeMockData() {
     };
 
     isInitialized = true;
-    console.log('Mock database initialized with data from JSON file');
+    logger.info('Mock database initialized with data from JSON file');
   } catch (error) {
-    console.error('Failed to initialize mock database with JSON data:', error);
+    logger.error('Failed to initialize mock database with JSON data:', error);
     // Initialize with empty data as fallback
     userProgress = {
       id: 'user-1',
@@ -68,15 +70,15 @@ async function initializeMockData() {
   }
 }
 
-export const mockDb = {
+export const mockDb: IDatabase = {
   async init() {
-    console.log('Initializing mock database...');
+    logger.info('Initializing mock database...');
     await initializeMockData();
     return true;
   },
 
   async seedDummy() {
-    console.log('Mock database already seeded with JSON data');
+    logger.info('Mock database already seeded with JSON data');
   },
 
   async getLatestBatch() {
@@ -128,6 +130,7 @@ export const mockDb = {
     if (userProgress) {
       userProgress = { ...userProgress, ...updates };
     }
+    return userProgress as UserProgress;
   },
 
   async resetUserProgress() {
@@ -142,6 +145,8 @@ export const mockDb = {
       problem.isCompleted = false;
       problem.userAnswer = null;
     });
+
+    return userProgress as UserProgress;
   },
 
   async getNextProblem() {
@@ -242,7 +247,7 @@ export const mockDb = {
     // Check if batch with exact same ID already exists
     const existingBatch = batches.find(b => b.id === batchData.id);
     if (existingBatch) {
-      console.log(`Batch ${batchData.id} already exists, skipping import`);
+      logger.info(`Batch ${batchData.id} already exists, skipping import`);
       return 'SKIPPED_EXISTING';
     }
 
@@ -254,7 +259,7 @@ export const mockDb = {
 
     let isReplacement = false;
     if (existingBatchSameDate) {
-      console.log(`Replacing existing batch ${existingBatchSameDate.id} from same date with newer batch ${batchData.id}`);
+      logger.info(`Replacing existing batch ${existingBatchSameDate.id} from same date with newer batch ${batchData.id}`);
 
       // Remove the old batch and its problems
       batches = batches.filter(b => b.id !== existingBatchSameDate.id);
@@ -283,7 +288,7 @@ export const mockDb = {
       });
     });
 
-    console.log(`Importing ${isReplacement ? 'replacement' : 'new'} batch ${batchData.id} with ${batchData.problems.length} problems`);
+    logger.info(`Importing ${isReplacement ? 'replacement' : 'new'} batch ${batchData.id} with ${batchData.problems.length} problems`);
     return isReplacement ? 'REPLACED_EXISTING' : 'IMPORTED_NEW';
   }
 };
