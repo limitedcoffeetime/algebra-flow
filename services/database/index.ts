@@ -1,6 +1,6 @@
 // Main database service - Clean and simple interface for the app
 import { logger } from '@/utils/logger';
-import { getDBConnection, runInTransactionAsync } from './db';
+import { getDBConnection } from './db';
 import { getDummyBatchAndProblemsInput } from './dummyData';
 import { mockDb } from './mockDb';
 import * as problemBatchService from './problemBatchService';
@@ -145,24 +145,22 @@ export const db: IDatabase = USE_MOCK_DB ? mockDb : {
     return null;
   },
 
-  // Submit answer and update progress
+    // Submit answer and update progress
   async submitAnswer(problemId: string, userAnswer: string, isCorrect: boolean) {
-    await runInTransactionAsync(async (db) => {
-      // Update the problem first
-      await problemService.updateProblem(problemId, {
-        isCompleted: true,
-        userAnswer: userAnswer
-      });
-
-      // Then update user progress
-      const progress = await userProgressService.getUserProgress();
-      if (progress) {
-        await userProgressService.updateUserProgress({
-          problemsAttempted: progress.problemsAttempted + 1,
-          problemsCorrect: progress.problemsCorrect + (isCorrect ? 1 : 0)
-        });
-      }
+    // Update the problem first
+    await problemService.updateProblem(problemId, {
+      isCompleted: true,
+      userAnswer: userAnswer
     });
+
+    // Then update user progress
+    const progress = await userProgressService.getUserProgress();
+    if (progress) {
+      await userProgressService.updateUserProgress({
+        problemsAttempted: progress.problemsAttempted + 1,
+        problemsCorrect: progress.problemsCorrect + (isCorrect ? 1 : 0)
+      });
+    }
   },
 
   // Get accuracy stats by topic
