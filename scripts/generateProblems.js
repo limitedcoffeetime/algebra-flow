@@ -604,7 +604,7 @@ async function main() {
   try {
     console.log('🔥 Starting daily problem generation...');
     console.log('🔧 DEBUG: Configuration details:');
-    console.log(`   📦 OpenAI Model: o4-mini-2025-04-16`);
+    console.log(`   📦 OpenAI Model: o4-mini-2025-04-16`); //THIS IS NOT A TYPO
     console.log(`   🚀 API Type: OpenAI Responses API (structured outputs)`);
     console.log(`   📊 Target problems per batch: ${PROBLEMS_PER_BATCH}`);
     console.log(`   🎯 Problem types: ${PROBLEM_TYPES.join(', ')}`);
