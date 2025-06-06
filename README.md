@@ -9,6 +9,7 @@ A mobile algebra learning app built with React Native and Expo.
 - **Robust answer validation**: Fixed mathjs-based validation for expressions like "30+6" vs 36
 - **Bug fixes**: Resolved validation inconsistencies across mock and SQLite databases
 - **Improved error handling**: Better sync failure recovery and user feedback
+- **New Model**: switched to o4-mini reasoning model (still cheap)
 
 ### **June 4, 2024** - Automated Problem Generation
 - **GitHub Actions setup**: Automated daily problem generation workflow
@@ -71,27 +72,5 @@ scripts/            # Problem generation and utilities
 
 **Answer Validation**
 - Supports mathematical expressions: "30+6" equals 36
-- Algebraic equivalence: "x*2" equals "2*x"
+- Algebraic equivalence: "x*2" equals "2*x" (still more to work on for more complex expression)
 - Integer and simple fraction answers only (no calculator required)
-
----
-
-## Development
-
-**Local Setup**
-```bash
-npm install
-npm run dev              # Development with SQLite
-npm run dev-mock         # Development with mock database
-```
-
-**Problem Generation Testing**
-```bash
-# Requires OPENAI_API_KEY in .env
-node scripts/test-generation.js
-```
-
-**Database Options**
-- SQLite: Default for mobile development
-- Mock: For testing and web compatibility
-- Environment variable: `EXPO_PUBLIC_USE_MOCK_DB=true` to use mock
