@@ -27,7 +27,7 @@ export default function Index() {
     initialize();
   }, [initialize]);
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (!currentProblem || !userAnswer.trim()) return;
 
     Keyboard.dismiss();

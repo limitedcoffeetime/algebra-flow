@@ -2,7 +2,7 @@ export interface Problem {
   id: string; // UUID, primary key
   batchId: string; // Foreign key to ProblemBatch
   equation: string;
-  answer: string | number;
+  answer: string | number | number[]; // Can be array for quadratic solutions
   solutionSteps: string[]; // Stored as JSON string
   difficulty: 'easy' | 'medium' | 'hard';
   problemType: string; // e.g., 'linear-one-variable', 'quadratic-factoring'

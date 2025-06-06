@@ -7,8 +7,19 @@ const nowISO = () => new Date().toISOString();
 
 // Helper to map DB row to Problem object (handles JSON and boolean)
 function mapRowToProblem(row: any): Problem {
+  // Parse answer from JSON if it's an array, otherwise keep as string/number
+  let answer = row.answer;
+  if (typeof answer === 'string' && answer.startsWith('[') && answer.endsWith(']')) {
+    try {
+      answer = JSON.parse(answer);
+    } catch {
+      // If parsing fails, keep as string
+    }
+  }
+
   return {
     ...row,
+    answer,
     solutionSteps: row.solutionSteps ? JSON.parse(row.solutionSteps) : [],
     isCompleted: !!row.isCompleted, // Convert 0/1 to boolean
     solutionStepsShown: !!row.solutionStepsShown, // Convert 0/1 to boolean

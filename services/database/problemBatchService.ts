@@ -58,7 +58,7 @@ export async function addProblemBatch(
         problemId,
         batchId,
         problem.equation,
-        String(problem.answer), // Ensure answer is string for DB
+        Array.isArray(problem.answer) ? JSON.stringify(problem.answer) : String(problem.answer), // Store arrays as JSON
         JSON.stringify(problem.solutionSteps), // Store array as JSON string
         problem.difficulty,
         problem.problemType,
