@@ -1,113 +1,170 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useCollapsible } from 'react-native-fast-collapsible';
-import Animated from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useRef } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SmartMathRenderer from './SmartMathRenderer';
 
+interface SolutionStep {
+  explanation: string;
+  mathExpression: string;
+  isEquation: boolean;
+}
+
 interface StepByStepSolutionProps {
-  steps: string[];
-  isExpanded: boolean;
+  solutionSteps: SolutionStep[] | string[]; // Support both old and new formats
+  isVisible: boolean;
   onToggle: () => void;
 }
 
 const StepByStepSolution: React.FC<StepByStepSolutionProps> = ({
-  steps,
-  isExpanded,
+  solutionSteps,
+  isVisible,
   onToggle
 }) => {
-  const { animatedStyles, onLayout } = useCollapsible({
-    isVisible: isExpanded,
-    duration: 300,
-  });
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Convert old string format to new structured format for backward compatibility
+  const normalizeSteps = (steps: SolutionStep[] | string[]): SolutionStep[] => {
+    if (!Array.isArray(steps) || steps.length === 0) return [];
+
+    // Check if it's the old string format
+    if (typeof steps[0] === 'string') {
+      return (steps as string[]).map((step, index) => ({
+        explanation: `Step ${index + 1}`,
+        mathExpression: step,
+        isEquation: step.includes('=')
+      }));
+    }
+
+    return steps as SolutionStep[];
+  };
+
+  const normalizedSteps = normalizeSteps(solutionSteps);
+
+  if (normalizedSteps.length === 0) {
+    return null;
+  }
 
   return (
-    <>
-      <Pressable onPress={onToggle} style={styles.toggleButton}>
-        <Text style={styles.toggleText}>
-          {isExpanded ? 'Hide' : 'Show'} step-by-step solution
-        </Text>
-      </Pressable>
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.header} onPress={onToggle}>
+        <Text style={styles.title}>Step-by-Step Solution</Text>
+        <Ionicons
+          name={isVisible ? "chevron-up" : "chevron-down"}
+          size={24}
+          color="#ffffff"
+        />
+      </TouchableOpacity>
 
-      <Animated.View
-        style={[animatedStyles, styles.collapsibleOverflow]}
-        pointerEvents={isExpanded ? 'auto' : 'none'}
-      >
-        <View onLayout={onLayout} style={styles.collapsibleContent}>
-          <View style={styles.solutionContainer}>
-            <Text style={styles.solutionTitle}>Step-by-step solution:</Text>
-            {steps.map((step, index) => (
-              <SolutionStep key={index} step={step} />
+      {isVisible && (
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.stepsContainer}>
+            {normalizedSteps.map((step, index) => (
+              <SolutionStep
+                key={index}
+                step={step}
+                stepNumber={index + 1}
+              />
             ))}
           </View>
-        </View>
-      </Animated.View>
-    </>
+        </ScrollView>
+      )}
+    </View>
   );
 };
 
 // Individual step component for better modularity
-const SolutionStep: React.FC<{ step: string }> = ({ step }) => {
-  // Check if the step contains math expressions
-  const hasMath = /[x-z]|[\^]|[\+\-\*\/]|=/.test(step);
+const SolutionStep: React.FC<{ step: SolutionStep; stepNumber: number }> = ({ step, stepNumber }) => {
+  return (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <View style={styles.stepNumber}>
+          <Text style={styles.stepNumberText}>{stepNumber}</Text>
+        </View>
+        <Text style={styles.stepExplanation}>{step.explanation}</Text>
+      </View>
 
-  if (hasMath) {
-    return (
-      <View style={styles.stepContainer}>
-                                 <SmartMathRenderer
-          text={step}
-          fontSize={16}
+      <View style={styles.mathContainer}>
+        <SmartMathRenderer
+          text={step.mathExpression}
+          fontSize={18}
           color="#ffffff"
           style={styles.stepMath}
         />
       </View>
-    );
-  }
-
-  return <Text style={styles.solutionStep}>{step}</Text>;
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-  toggleButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  toggleText: {
-    fontSize: 16,
-    color: '#ffd33d',
-    textDecorationLine: 'underline',
-  },
-  collapsibleOverflow: {
+  container: {
+    backgroundColor: '#1a1a2e',
+    borderRadius: 12,
+    margin: 16,
     overflow: 'hidden',
-    width: '100%',
   },
-  collapsibleContent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#16213e',
   },
-  solutionContainer: {
-    backgroundColor: '#333',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  solutionTitle: {
-    fontSize: 16,
-    color: '#ffd33d',
+  title: {
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  solutionStep: {
-    fontSize: 16,
     color: '#ffffff',
-    marginVertical: 3,
+  },
+  scrollView: {
+    maxHeight: 400,
+  },
+  stepsContainer: {
+    padding: 16,
   },
   stepContainer: {
-    marginVertical: 3,
+    marginBottom: 20,
+    backgroundColor: '#0f172a',
+    borderRadius: 8,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stepNumberText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  stepExplanation: {
+    fontSize: 16,
+    color: '#e2e8f0',
+    flex: 1,
+    lineHeight: 22,
+  },
+  mathContainer: {
+    backgroundColor: '#1e293b',
+    borderRadius: 6,
+    padding: 12,
+    marginTop: 8,
   },
   stepMath: {
-    minHeight: 30,
+    minHeight: 40,
   },
 });
 

@@ -41,12 +41,46 @@ export function getProblemTypeInstructions(problemType: ProblemType): {
 export function getDifficultyDescription(difficulty: Difficulty): string {
   switch (difficulty) {
     case 'easy':
-      return 'very simple, single step equations (e.g., x + 3 = 7), integer coefficients between -10 and 10, answers should be small integers or common simple fractions.';
+      return 'Simple problems with small integer coefficients (1-10)';
     case 'medium':
-      return 'moderately challenging, 2-3 step equations (e.g., 3x - 4 = 2x + 5 or factoring quadratics with small coefficients) using integer coefficients between -15 and 15.';
+      return 'Moderate problems with larger coefficients and some fractions';
     case 'hard':
-      return 'multi-step or multi-variable problems that typically require scratch work (e.g., simultaneous linear equations, quadratic formula, or polynomial simplification with several terms). Coefficients may be up to ±20 but remain integer.';
+      return 'Complex problems requiring multiple steps and algebraic manipulation';
     default:
-      return 'moderate complexity with calculator-free answers';
+      return 'Standard algebra problems';
   }
+}
+
+export function getSolutionStepsInstructions(): string {
+  return `
+SOLUTION STEPS FORMAT:
+Each step should be an object with three parts:
+1. "explanation": Plain English description of what you're doing (e.g., "Add 5 to both sides")
+2. "mathExpression": The actual math for this step (e.g., "x + 5 = 10" or "2x^2 + 3x - 1")
+3. "isEquation": true if the expression contains "=", false if it's just an expression
+
+EXAMPLES:
+{
+  "explanation": "Start with the original equation",
+  "mathExpression": "2x + 3 = 11",
+  "isEquation": true
+}
+{
+  "explanation": "Subtract 3 from both sides",
+  "mathExpression": "2x = 8",
+  "isEquation": true
+}
+{
+  "explanation": "Divide both sides by 2",
+  "mathExpression": "x = 4",
+  "isEquation": true
+}
+
+MATH EXPRESSION GUIDELINES:
+- Use plain text math that can be rendered (e.g., "x^2", "sqrt(x)", "3/4")
+- Keep expressions simple and readable
+- For fractions: use "/" (e.g., "3/4" not "\\frac{3}{4}")
+- For exponents: use "^" (e.g., "x^2" not "x²")
+- For roots: use "sqrt()" (e.g., "sqrt(16)" not "√16")
+`;
 }

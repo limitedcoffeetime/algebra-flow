@@ -1,6 +1,6 @@
 // Mock database for development - avoids SQLite native module issues
 import { logger } from '@/utils/logger';
-import { isAnswerCorrect } from '../../utils/answerUtils';
+import { isAnswerCorrect } from '../../utils/enhancedAnswerUtils';
 import { getDummyBatchAndProblemsInput } from './dummyData';
 import { Problem, ProblemBatch, UserProgress } from './schema';
 import { IDatabase } from './types';
@@ -35,6 +35,7 @@ async function initializeMockData() {
           ...problem,
           id: problem.id || `${batchId}-problem-${pIndex + 1}`,
           batchId,
+          variables: problem.variables,
           isCompleted: false,
           userAnswer: null,
           createdAt: now,
@@ -187,8 +188,9 @@ export const mockDb: IDatabase = {
   async getTopicAccuracyStats() {
     await initializeMockData();
     const stats: Record<string, { attempted: number; correct: number }> = {};
-    problems.forEach((p) => {
-      if (!p.isCompleted) return;
+
+    for (const p of problems) {
+      if (!p.isCompleted) continue;
       const type = p.problemType;
       if (!stats[type]) {
         stats[type] = { attempted: 0, correct: 0 };
@@ -199,12 +201,12 @@ export const mockDb: IDatabase = {
       const userAns = String(p.userAnswer ?? '').trim();
       const correctAns = p.answer; // Can be string or number
 
-      const isCorrect = isAnswerCorrect(userAns, correctAns);
+      const isCorrect = await isAnswerCorrect(userAns, correctAns);
 
       if (isCorrect) {
         stats[type].correct += 1;
       }
-    });
+    }
     return Object.entries(stats).map(([problemType, data]) => ({
       problemType,
       attempted: data.attempted,

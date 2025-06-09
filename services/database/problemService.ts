@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import { isAnswerCorrect } from '../../utils/answerUtils';
+import { isAnswerCorrect } from '../../utils/enhancedAnswerUtils';
 import { getDBConnection } from './db';
 import { Problem } from './schema';
 
@@ -21,6 +21,7 @@ function mapRowToProblem(row: any): Problem {
     ...row,
     answer,
     solutionSteps: row.solutionSteps ? JSON.parse(row.solutionSteps) : [],
+    variables: JSON.parse(row.variables),
     isCompleted: !!row.isCompleted, // Convert 0/1 to boolean
     solutionStepsShown: !!row.solutionStepsShown, // Convert 0/1 to boolean
   };
@@ -157,7 +158,7 @@ export async function getTopicAccuracyStats() {
 
   const stats: Record<string, { attempted: number; correct: number }> = {};
 
-  rows.forEach((row: any) => {
+  for (const row of rows) {
     const type = row.problemType as string;
     if (!stats[type]) {
       stats[type] = { attempted: 0, correct: 0 };
@@ -168,12 +169,12 @@ export async function getTopicAccuracyStats() {
     const userAns = String(row.userAnswer ?? '').trim();
     const correctAns = row.answer; // Can be string or number
 
-    const isCorrect = isAnswerCorrect(userAns, correctAns);
+    const isCorrect = await isAnswerCorrect(userAns, correctAns);
 
     if (isCorrect) {
       stats[type].correct += 1;
     }
-  });
+  }
 
   return Object.entries(stats).map(([problemType, data]) => ({
     problemType,

@@ -1,12 +1,5 @@
-import Button from '@/components/Button';
-import MathInput from '@/components/MathInput';
-import SmartMathRenderer from '@/components/SmartMathRenderer';
-import StepByStepSolution from '@/components/StepByStepSolution';
-import { useProblemStore } from '@/store/problemStore';
-import { getContextualHint, useRealTimeValidation } from '@/utils/useRealTimeValidation';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
-    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
@@ -16,63 +9,71 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SolutionStep } from '../services/problemGeneration/openaiGenerator';
+import { getContextualHint, useRealTimeValidation } from '../utils/useRealTimeValidation';
+import MathInput from './MathInput';
+import SmartMathRenderer from './SmartMathRenderer';
+import StepByStepSolution from './StepByStepSolution';
 
-export default function Index() {
+// Example problem data with new structured format
+const EXAMPLE_PROBLEM = {
+  equation: "2x + 5 = 13",
+  direction: "Solve for x",
+  answer: 4,
+  variables: ["x"],
+  solutionSteps: [
+    {
+      explanation: "Start with the original equation",
+      mathExpression: "2x + 5 = 13",
+      isEquation: true
+    },
+    {
+      explanation: "Subtract 5 from both sides to isolate the term with x",
+      mathExpression: "2x = 8",
+      isEquation: true
+    },
+    {
+      explanation: "Divide both sides by 2 to solve for x",
+      mathExpression: "x = 4",
+      isEquation: true
+    }
+  ] as SolutionStep[],
+  difficulty: "easy" as const,
+  problemType: "linear-one-variable" as const,
+  isCompleted: false
+};
+
+const ProblemScreen: React.FC = () => {
   const [userAnswer, setUserAnswer] = useState('');
   const [showSolution, setShowSolution] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    currentProblem,
-    userProgress,
-    isLoading,
-    error,
-    initialize,
-    loadNextProblem,
-    submitAnswer
-  } = useProblemStore();
-
-  // Initialize on mount
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
-
-  // Memoize validation props to prevent infinite re-renders
-  const validationProps = useMemo(() => ({
+  // Real-time validation
+  const validation = useRealTimeValidation({
     userInput: userAnswer,
-    correctAnswer: currentProblem?.answer || '',
-    problemDirection: currentProblem?.direction || '',
-    variables: currentProblem?.variables || ['x'],
-    debounceMs: 300,
-  }), [
-    userAnswer,
-    currentProblem?.answer,
-    currentProblem?.direction,
-    currentProblem?.variables,
-  ]);
+    correctAnswer: EXAMPLE_PROBLEM.answer,
+    problemDirection: EXAMPLE_PROBLEM.direction,
+    variables: EXAMPLE_PROBLEM.variables,
+    debounceMs: 300, // Faster for demo
+  });
 
-  // Real-time validation (only if we have a current problem)
-  const validation = useRealTimeValidation(validationProps);
-
-  const contextualHint = currentProblem ? getContextualHint(
-    currentProblem.direction,
-    currentProblem.variables,
+  const contextualHint = getContextualHint(
+    EXAMPLE_PROBLEM.direction,
+    EXAMPLE_PROBLEM.variables,
     userAnswer
-  ) : '';
+  );
 
   const handleSubmit = async () => {
-    if (!currentProblem || !userAnswer.trim()) {
+    if (!userAnswer.trim()) {
       Alert.alert('Please enter an answer');
       return;
     }
 
     setIsSubmitting(true);
 
-    try {
+    // Simulate API call
+    setTimeout(() => {
       const isCorrect = validation.isValid === true;
-
-      // Submit to store
-      await submitAnswer(userAnswer, isCorrect);
 
       if (isCorrect) {
         Alert.alert(
@@ -80,7 +81,7 @@ export default function Index() {
           'Great job! You solved the equation correctly.',
           [
             { text: 'View Solution', onPress: () => setShowSolution(true) },
-            { text: 'Next Problem', onPress: handleNextProblem },
+            { text: 'Next Problem', onPress: () => {} },
           ]
         );
       } else {
@@ -90,21 +91,12 @@ export default function Index() {
           [
             { text: 'Try Again', style: 'cancel' },
             { text: 'Show Solution', onPress: () => setShowSolution(true) },
-            { text: 'Next Problem', onPress: handleNextProblem },
           ]
         );
       }
-    } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
-    }
 
-    setIsSubmitting(false);
-  };
-
-  const handleNextProblem = async () => {
-    setUserAnswer('');
-    setShowSolution(false);
-    await loadNextProblem();
+      setIsSubmitting(false);
+    }, 1000);
   };
 
   const getValidationColor = (): string => {
@@ -120,42 +112,6 @@ export default function Index() {
     return '';
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading problems...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Error state
-  if (error && !currentProblem) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Button label="Retry" onPress={initialize} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // No problem state
-  if (!currentProblem) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>No problems available</Text>
-          <Button label="Retry" onPress={initialize} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -163,24 +119,15 @@ export default function Index() {
         style={styles.keyboardAvoid}
       >
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Progress indicator */}
-          {userProgress && (
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>
-                Progress: {userProgress.problemsCorrect}/{userProgress.problemsAttempted}
-              </Text>
-            </View>
-          )}
-
           {/* Problem Header */}
           <View style={styles.problemContainer}>
             <Text style={styles.problemTitle}>Algebra Practice</Text>
-            <Text style={styles.direction}>{currentProblem.direction}</Text>
+            <Text style={styles.direction}>{EXAMPLE_PROBLEM.direction}</Text>
 
             {/* Problem Equation */}
             <View style={styles.equationContainer}>
               <SmartMathRenderer
-                text={currentProblem.equation}
+                text={EXAMPLE_PROBLEM.equation}
                 fontSize={28}
                 color="#ffffff"
                 style={styles.equation}
@@ -190,7 +137,7 @@ export default function Index() {
             {/* Difficulty Badge */}
             <View style={styles.difficultyBadge}>
               <Text style={styles.difficultyText}>
-                {currentProblem.difficulty.toUpperCase()}
+                {EXAMPLE_PROBLEM.difficulty.toUpperCase()}
               </Text>
             </View>
           </View>
@@ -211,7 +158,7 @@ export default function Index() {
 
           {/* Step-by-step Solution */}
           <StepByStepSolution
-            solutionSteps={currentProblem.solutionSteps}
+            solutionSteps={EXAMPLE_PROBLEM.solutionSteps}
             isVisible={showSolution}
             onToggle={() => setShowSolution(!showSolution)}
           />
@@ -227,7 +174,7 @@ export default function Index() {
             onChangeText={setUserAnswer}
             onSubmit={handleSubmit}
             placeholder="Enter your answer"
-            variables={currentProblem.variables}
+            variables={EXAMPLE_PROBLEM.variables}
             isValidating={isSubmitting}
             showPreview={true}
           />
@@ -235,7 +182,7 @@ export default function Index() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -247,24 +194,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  centerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  progressContainer: {
-    backgroundColor: '#1a1a2e',
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  progressText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#3b82f6',
   },
   problemContainer: {
     backgroundColor: '#1a1a2e',
@@ -333,15 +262,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#374151',
   },
-  loadingText: {
-    color: '#ffffff',
-    marginTop: 10,
-    fontSize: 16,
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 16,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
 });
+
+export default ProblemScreen;
