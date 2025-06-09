@@ -1,15 +1,23 @@
 import { OpenAI } from 'openai';
 import { Difficulty, ProblemType } from './constants';
-import { getDifficultyDescription, getProblemTypeInstructions } from './instructions';
+import { getDifficultyDescription, getProblemTypeInstructions, getSolutionStepsInstructions } from './instructions';
 import { getProblemResponseSchema } from './schema';
 import { parseOpenAIResponse, validateAnswerFormat } from './validation';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+export interface SolutionStep {
+  explanation: string;
+  mathExpression: string;
+  isEquation: boolean;
+}
+
 export interface GeneratedProblem {
   equation: string;
+  direction: string;
   answer: unknown;
-  solutionSteps: string[];
+  solutionSteps: SolutionStep[];
+  variables: string[];
   difficulty: Difficulty;
   problemType: ProblemType;
   isCompleted: boolean;
@@ -28,6 +36,8 @@ export async function generateProblemsWithAI(
 Problem Type Specific Instructions:
 ${typeInstructions.instructions}
 
+${getSolutionStepsInstructions()}
+
 CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
 - Answers must be integers or simple fractions (like 1/2, 2/3, 3/4, 5/6)
 - NO complex decimals like 1.2839, 2.7182, 0.3333... etc.
@@ -35,27 +45,32 @@ CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
 - Design problems so the algebra works out to clean, simple answers
 - Students should never need a calculator to verify the answer
 
+ACCEPTABLE ANSWERS: 3, -2, 1/2, 2/3, 0, 7, -1/4, 5/3
+UNACCEPTABLE ANSWERS: 1.2839, 2.7182, 0.3333..., √2, 3.14159, 1.7320
+
 Generate problems following the exact JSON schema structure.
 
 Constraints:
 - ${difficulty} difficulty means: ${getDifficultyDescription(difficulty)}
 - For ${problemType}: ${typeInstructions.instructions}
-- Solution steps should be clear and educational
+- Solution steps should use the structured format with separated explanations and math
 - Each problem should be unique
 - CRITICAL: Ensure your answer matches the final step of your solution
-- CRITICAL: All answers must be calculator-free (integers or simple fractions only)`;
+- CRITICAL: All answers must be calculator-free (integers or simple fractions only)
+- CRITICAL: Direction must clearly state what to do, answer must be just the value
+- CRITICAL: List all variables used in the problem in the variables array`;
 
   const response = await openai.responses.create({
     model: 'o4-mini-2025-04-16',
     input: [
-      { role: 'system', content: 'You are a math teacher creating algebra problems. Follow the JSON schema exactly.' },
+      { role: 'system', content: 'You are a math teacher creating algebra problems. Follow the JSON schema exactly and separate math expressions from explanations.' },
       { role: 'user', content: prompt },
     ],
     text: {
       format: {
         type: 'json_schema',
         name: 'algebra_problems_response',
-        description: 'Response containing algebra problems with equations, answers, and solution steps',
+        description: 'Response containing algebra problems with structured solution steps',
         schema: responseSchema,
         strict: true,
       },
@@ -81,8 +96,10 @@ Constraints:
     }
     return {
       equation: p.equation,
+      direction: p.direction || `Solve for x`, // fallback for old data
       answer: p.answer,
       solutionSteps: Array.isArray(p.solutionSteps) ? p.solutionSteps : [p.solutionSteps],
+      variables: p.variables || ['x'], // fallback for old data
       difficulty,
       problemType,
       isCompleted: false,

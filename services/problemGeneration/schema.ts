@@ -33,18 +33,45 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
           type: 'object',
           properties: {
             equation: { type: 'string', description: 'The algebra problem equation' },
+            direction: {
+              type: 'string',
+              description: 'Clear instruction for what to do (e.g., "Solve for x", "Simplify", "Factor")'
+            },
             answer: {
               ...answerSchema,
-              description: 'The solution to the equation',
+              description: 'The solution value only (e.g., "5" not "x = 5")',
             },
             solutionSteps: {
               type: 'array',
-              items: { type: 'string' },
+              items: {
+                type: 'object',
+                properties: {
+                  explanation: {
+                    type: 'string',
+                    description: 'Plain English explanation of what we\'re doing in this step'
+                  },
+                  mathExpression: {
+                    type: 'string',
+                    description: 'The mathematical expression/equation for this step (LaTeX or plain text)'
+                  },
+                  isEquation: {
+                    type: 'boolean',
+                    description: 'Whether this expression is an equation (contains =) or just an expression'
+                  }
+                },
+                required: ['explanation', 'mathExpression', 'isEquation'],
+                additionalProperties: false
+              },
               minItems: 1,
-              description: 'Step-by-step solution process',
+              description: 'Step-by-step solution with separated explanations and math',
             },
+            variables: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'All variables used in this problem (e.g., ["x", "y"])'
+            }
           },
-          required: ['equation', 'answer', 'solutionSteps'],
+          required: ['equation', 'direction', 'answer', 'solutionSteps', 'variables'],
           additionalProperties: false,
         },
         minItems: count,
