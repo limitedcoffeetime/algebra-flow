@@ -4,6 +4,29 @@ A mobile algebra learning app built with React Native and Expo.
 
 ## Latest Updates
 
+### **June 6, 2024** – Modular Refactor & Math Rendering
+
+#### GitHub Job/S3/Sync Code Refactoring
+The monolithic GitHub Job/S3/Sync code was becoming unwieldy and has been refactored into a collection of focused TypeScript **modules** located under `services/problemGeneration/`:
+
+| Module | Responsibility |
+| ------- | -------------- |
+| `constants.ts` | Shared enums / look-up tables for difficulty & problem types |
+| `instructions.ts` | Returns problem-type and difficulty-specific prompt snippets |
+| `validation.ts` | Utility helpers for calculator-free checks & answer-format validation |
+| `schema.ts` | Builds the JSON-Schema passed to the OpenAI Responses API |
+| `openaiGenerator.ts` | Calls the Responses API and returns typed `GeneratedProblem[]` |
+| `batchGenerator.ts` | Orchestrates multi-difficulty batches (exporting `configureProblemsPerBatch`) |
+| `s3Uploader.ts` | Uploads a batch and updates `latest.json` in S3 |
+
+#### Math Rendering Research
+Began investigating approaches for rendering complex mathematical expressions, specifically **exponents** and **fractions**. Currently evaluating three potential solutions:
+- **WebView approach**: Embedding MathJax/KaTeX for full LaTeX support
+- **SVG rendering**: Custom or library-based SVG generation for math expressions
+- **Custom native implementation**: Building our own math renderer if feasible
+
+Decision still pending based on performance, bundle size, and maintenance considerations.
+
 ### **June 5, 2024** - Device Sync & Answer Validation
 - **S3 batch synchronization**: Problems now sync from S3 to device automatically
 - **Robust answer validation**: Fixed mathjs-based validation for expressions like "30+6" vs 36
@@ -28,50 +51,6 @@ A mobile algebra learning app built with React Native and Expo.
 - **Schema design**: Problem batches, user progress, and comprehensive tracking
 - **Transaction support**: Robust database operations with error handling
 - **Progress persistence**: Statistics and state maintained across app restarts
-
-### **June 6, 2024** – Modular Refactor & Math Rendering Investigation
-
-#### GitHub Job/S3/Sync Code Refactoring
-The monolithic GitHub Job/S3/Sync code was becoming unwieldy and has been refactored into a collection of focused TypeScript **modules** located under `services/problemGeneration/`:
-
-| Module | Responsibility |
-| ------- | -------------- |
-| `constants.ts` | Shared enums / look-up tables for difficulty & problem types |
-| `instructions.ts` | Returns problem-type and difficulty-specific prompt snippets |
-| `validation.ts` | Utility helpers for calculator-free checks & answer-format validation |
-| `schema.ts` | Builds the JSON-Schema passed to the OpenAI Responses API |
-| `openaiGenerator.ts` | Calls the Responses API and returns typed `GeneratedProblem[]` |
-| `batchGenerator.ts` | Orchestrates multi-difficulty batches (exporting `configureProblemsPerBatch`) |
-| `s3Uploader.ts` | Uploads a batch and updates `latest.json` in S3 |
-
-#### Math Rendering Research
-Began investigating approaches for rendering complex mathematical expressions, specifically **exponents** and **fractions**. Currently evaluating three potential solutions:
-- **WebView approach**: Embedding MathJax/KaTeX for full LaTeX support
-- **SVG rendering**: Custom or library-based SVG generation for math expressions
-- **Custom native implementation**: Building our own math renderer if feasible
-
-Decision still pending based on performance, bundle size, and maintenance considerations.
-
-#### Central logger
-
-A lightweight logger (`utils/logger.ts`) replaces scattered `console.*` calls.
-Verbosity can be tuned with `LOG_LEVEL` (`debug`, `info`, `warn`, `error`,
-`silent`). The logger is automatically used across the data layer and sync
-service – production builds are far less chatty now.
-
-```bash
-LOG_LEVEL=warn expo run:android   # silent except warnings & errors
-LOG_LEVEL=debug node someScript   # full debug output
-```
-
-#### Database interface
-
-`services/database/types.ts` defines an `IDatabase` contract that both
-`mockDb.ts` and the SQLite implementation now satisfy.  This removes much of
-the duplicated CRUD code.
-
----
-
 
 ---
 
@@ -118,3 +97,22 @@ scripts/            # Problem generation and utilities
 - Supports mathematical expressions: "30+6" equals 36
 - Algebraic equivalence: "x*2" equals "2*x" (still more to work on for more complex expression)
 - Integer and simple fraction answers only (no calculator required)
+
+
+#### Central logger
+
+A lightweight logger (`utils/logger.ts`) replaces scattered `console.*` calls.
+Verbosity can be tuned with `LOG_LEVEL` (`debug`, `info`, `warn`, `error`,
+`silent`). The logger is automatically used across the data layer and sync
+service – production builds are far less chatty now.
+
+```bash
+LOG_LEVEL=warn expo run:android   # silent except warnings & errors
+LOG_LEVEL=debug node someScript   # full debug output
+```
+
+#### Database interface
+
+`services/database/types.ts` defines an `IDatabase` contract that both
+`mockDb.ts` and the SQLite implementation now satisfy.  This removes much of
+the duplicated CRUD code.
