@@ -29,11 +29,10 @@ A mobile algebra learning app built with React Native and Expo.
 - **Transaction support**: Robust database operations with error handling
 - **Progress persistence**: Statistics and state maintained across app restarts
 
-### **June 6, 2025** – Modular Refactor & Unified Logging
+### **June 6, 2024** – Modular Refactor & Math Rendering Investigation
 
-The monolithic `scripts/generateProblems.js` file has been broken into a small
-collection of focused TypeScript **modules** located under
-`services/problemGeneration/`:
+#### GitHub Job/S3/Sync Code Refactoring
+The monolithic GitHub Job/S3/Sync code was becoming unwieldy and has been refactored into a collection of focused TypeScript **modules** located under `services/problemGeneration/`:
 
 | Module | Responsibility |
 | ------- | -------------- |
@@ -45,6 +44,13 @@ collection of focused TypeScript **modules** located under
 | `batchGenerator.ts` | Orchestrates multi-difficulty batches (exporting `configureProblemsPerBatch`) |
 | `s3Uploader.ts` | Uploads a batch and updates `latest.json` in S3 |
 
+#### Math Rendering Research
+Began investigating approaches for rendering complex mathematical expressions, specifically **exponents** and **fractions**. Currently evaluating three potential solutions:
+- **WebView approach**: Embedding MathJax/KaTeX for full LaTeX support
+- **SVG rendering**: Custom or library-based SVG generation for math expressions
+- **Custom native implementation**: Building our own math renderer if feasible
+
+Decision still pending based on performance, bundle size, and maintenance considerations.
 
 #### Central logger
 
