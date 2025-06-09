@@ -4,6 +4,26 @@ A mobile algebra learning app built with React Native and Expo.
 
 ## Latest Updates
 
+### **June 9, 2024** – Schema Overhaul & Enhanced Math UX
+
+#### Schema Restructuring
+- **Separated explanations from math expressions** in step-by-step solutions
+- **Structured solution steps**: `{explanation, mathExpression, isEquation}` objects vs simple strings
+- **Enhanced metadata**: Added `variables` array and `direction` fields
+
+#### Custom Math Input & Rendering
+- **Math keyboard**: Dedicated buttons for fractions, exponents, parentheses, and dynamic variables
+- **Real-time validation**: Live green/red/orange feedback as user types
+- **Improved step display**: Clean separation of explanatory text vs math expressions
+- **Still evaluating**: WebView rendering vs SVG/native alternatives for performance
+
+#### Batch Management
+- **Auto-cleanup**: Orphaned batches removed during sync
+- **Management UI**: Settings screen for manual batch deletion and storage stats
+- **Better control**: Individual batch deletion and force cleanup options
+
+Made solid UX progress with structured schema and custom input system, but math rendering approach still under evaluation.
+
 ### **June 6, 2024** – Modular Refactor & Math Rendering
 
 #### GitHub Job/S3/Sync Code Refactoring
