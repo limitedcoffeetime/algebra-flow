@@ -88,6 +88,10 @@ export const db: IDatabase = USE_MOCK_DB ? mockDb : {
   getLatestBatch: problemBatchService.getLatestProblemBatch,
   getAllBatches: problemBatchService.getAllProblemBatches,
   getBatchById: problemBatchService.getProblemBatchById,
+  deleteProblemBatch: problemBatchService.deleteProblemBatch,
+  deleteProblemBatches: problemBatchService.deleteProblemBatches,
+  cleanupOrphanedBatches: problemBatchService.cleanupOrphanedBatches,
+  getBatchStatistics: problemBatchService.getBatchStatistics,
 
   // Problems
   getProblemsByBatch: problemService.getProblemsByBatchId,

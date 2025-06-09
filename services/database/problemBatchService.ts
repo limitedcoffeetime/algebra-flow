@@ -1,9 +1,9 @@
 import { logger } from '@/utils/logger';
 import { getDBConnection, runInTransactionAsync } from './db';
 import {
-    ProblemBatch,
-    ProblemBatchInput,
-    ProblemInput
+  ProblemBatch,
+  ProblemBatchInput,
+  ProblemInput
 } from './schema';
 import { generateId } from './utils';
 
@@ -170,4 +170,97 @@ export async function deleteAllProblemBatches(): Promise<void> {
     await db.runAsync('DELETE FROM Problems'); // Delete problems first due to FK
     await db.runAsync('DELETE FROM ProblemBatches');
     logger.info('All problem batches and problems have been deleted.');
+}
+
+/**
+ * Deletes multiple problem batches by their IDs.
+ * Returns the number of successfully deleted batches.
+ */
+export async function deleteProblemBatches(batchIds: string[]): Promise<number> {
+  let deletedCount = 0;
+
+  for (const batchId of batchIds) {
+    try {
+      await deleteProblemBatch(batchId);
+      deletedCount++;
+    } catch (error) {
+      logger.error(`Failed to delete batch ${batchId}:`, error);
+      // Continue with other batches
+    }
+  }
+
+  logger.info(`Deleted ${deletedCount}/${batchIds.length} batches`);
+  return deletedCount;
+}
+
+/**
+ * Removes local batches that are no longer available in S3.
+ * Pass an array of valid batch IDs from S3 to keep only those.
+ */
+export async function cleanupOrphanedBatches(validBatchIds: string[]): Promise<number> {
+  const db = await getDBConnection();
+
+  try {
+    // Get all local batch IDs
+    const localBatches = await db.getAllAsync<{ id: string }>(
+      'SELECT id FROM ProblemBatches'
+    );
+
+    // Find batches that are local but not in S3
+    const orphanedBatchIds = localBatches
+      .map(b => b.id)
+      .filter(id => !validBatchIds.includes(id));
+
+    if (orphanedBatchIds.length === 0) {
+      logger.info('No orphaned batches found');
+      return 0;
+    }
+
+    logger.info(`Found ${orphanedBatchIds.length} orphaned batches: ${orphanedBatchIds.join(', ')}`);
+
+    // Delete orphaned batches
+    const deletedCount = await deleteProblemBatches(orphanedBatchIds);
+
+    return deletedCount;
+  } catch (error) {
+    logger.error('Failed to cleanup orphaned batches:', error);
+    throw error;
+  }
+}
+
+/**
+ * Gets statistics about problem batches and user progress.
+ */
+export async function getBatchStatistics() {
+  const db = await getDBConnection();
+
+  try {
+    const stats = await db.getFirstAsync<{
+      totalBatches: number;
+      totalProblems: number;
+      completedProblems: number;
+      oldestBatch: string;
+      newestBatch: string;
+    }>(
+      `SELECT
+        COUNT(DISTINCT b.id) as totalBatches,
+        COUNT(p.id) as totalProblems,
+        COUNT(CASE WHEN p.isCompleted = 1 THEN 1 END) as completedProblems,
+        MIN(b.generationDate) as oldestBatch,
+        MAX(b.generationDate) as newestBatch
+       FROM ProblemBatches b
+       LEFT JOIN Problems p ON b.id = p.batchId`
+    );
+
+    return stats || {
+      totalBatches: 0,
+      totalProblems: 0,
+      completedProblems: 0,
+      oldestBatch: null,
+      newestBatch: null
+    };
+  } catch (error) {
+    logger.error('Failed to get batch statistics:', error);
+    throw error;
+  }
 }

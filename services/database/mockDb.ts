@@ -292,5 +292,65 @@ export const mockDb: IDatabase = {
 
     logger.info(`Importing ${isReplacement ? 'replacement' : 'new'} batch ${batchData.id} with ${batchData.problems.length} problems`);
     return isReplacement ? 'REPLACED_EXISTING' : 'IMPORTED_NEW';
+  },
+
+  // Batch management functions
+  async deleteProblemBatch(batchId: string) {
+    await initializeMockData();
+    // Remove the batch and its problems
+    batches = batches.filter(b => b.id !== batchId);
+    problems = problems.filter(p => p.batchId !== batchId);
+    logger.info(`Deleted batch ${batchId} and its problems from mock DB`);
+  },
+
+  async deleteProblemBatches(batchIds: string[]) {
+    await initializeMockData();
+    let deletedCount = 0;
+
+    for (const batchId of batchIds) {
+      const batchExists = batches.some(b => b.id === batchId);
+      if (batchExists) {
+        batches = batches.filter(b => b.id !== batchId);
+        problems = problems.filter(p => p.batchId !== batchId);
+        deletedCount++;
+      }
+    }
+
+    logger.info(`Deleted ${deletedCount}/${batchIds.length} batches from mock DB`);
+    return deletedCount;
+  },
+
+  async cleanupOrphanedBatches(validBatchIds: string[]) {
+    await initializeMockData();
+
+    // Find batches that are local but not in the valid list
+    const orphanedBatchIds = batches
+      .map(b => b.id)
+      .filter(id => !validBatchIds.includes(id));
+
+    if (orphanedBatchIds.length === 0) {
+      logger.info('No orphaned batches found in mock DB');
+      return 0;
+    }
+
+    logger.info(`Found ${orphanedBatchIds.length} orphaned batches in mock DB: ${orphanedBatchIds.join(', ')}`);
+
+    // Delete orphaned batches
+    return await this.deleteProblemBatches(orphanedBatchIds);
+  },
+
+    async getBatchStatistics() {
+    await initializeMockData();
+
+    const completedProblems = problems.filter(p => p.isCompleted).length;
+    const generationDates = batches.map(b => b.generationDate).filter(d => d);
+
+    return {
+      totalBatches: batches.length,
+      totalProblems: problems.length,
+      completedProblems,
+      oldestBatch: generationDates.length > 0 ? generationDates.sort()[0] : null,
+      newestBatch: generationDates.length > 0 ? generationDates.sort().reverse()[0] : null
+    };
   }
 };

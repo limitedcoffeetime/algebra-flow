@@ -18,6 +18,16 @@ export interface IDatabase {
     problemCount: number;
     problems: any[];
   }): Promise<ImportResult>;
+  deleteProblemBatch(batchId: string): Promise<void>;
+  deleteProblemBatches(batchIds: string[]): Promise<number>;
+  cleanupOrphanedBatches(validBatchIds: string[]): Promise<number>;
+  getBatchStatistics(): Promise<{
+    totalBatches: number;
+    totalProblems: number;
+    completedProblems: number;
+    oldestBatch: string | null;
+    newestBatch: string | null;
+  }>;
 
   /* Problem queries */
   getProblemsByBatch(batchId: string): Promise<Problem[]>;

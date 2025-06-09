@@ -17,6 +17,15 @@ interface ProblemBatchData {
   problems: any[];
 }
 
+interface BatchManifest {
+  batches: Array<{
+    id: string;
+    url: string;
+    generatedAt: string;
+    problemCount: number;
+  }>;
+}
+
 export class ProblemSyncService {
   private static readonly LATEST_URL = process.env.EXPO_PUBLIC_PROBLEMS_LATEST_URL || '';
   private static readonly LAST_SYNC_KEY = 'lastSyncTimestamp';
@@ -46,6 +55,14 @@ export class ProblemSyncService {
       if (lastHash === latestInfo.hash) {
         logger.info('✅ Already have latest problems');
         await this.updateLastSyncTime();
+
+        // Still do cleanup check even if no new problems
+        try {
+          await this.cleanupOrphanedBatches();
+        } catch (error) {
+          logger.warn('Cleanup failed during sync, but continuing:', error);
+        }
+
         return false;
       }
 
@@ -56,6 +73,14 @@ export class ProblemSyncService {
       if (success) {
         await AsyncStorage.setItem(this.LAST_HASH_KEY, latestInfo.hash);
         await this.updateLastSyncTime();
+
+        // Clean up orphaned batches after successful sync
+        try {
+          await this.cleanupOrphanedBatches();
+        } catch (error) {
+          logger.warn('Cleanup failed after sync, but sync was successful:', error);
+        }
+
         logger.info('✅ Successfully synced new problems');
         return true;
       }
@@ -194,6 +219,93 @@ export class ProblemSyncService {
     } catch (error) {
       logger.error('Error checking if sync needed:', error);
       return true; // Default to sync on error
+    }
+  }
+
+  /**
+   * Clean up local batches that are no longer available on S3
+   */
+  static async cleanupOrphanedBatches(): Promise<number> {
+    try {
+      logger.info('🧹 Cleaning up orphaned batches...');
+
+      // Get available batches from S3
+      const availableBatchIds = await this.getAvailableBatchIds();
+      if (!availableBatchIds) {
+        logger.warn('⚠️ Could not fetch available batches, skipping cleanup');
+        return 0;
+      }
+
+      // Clean up orphaned batches
+      const deletedCount = await db.cleanupOrphanedBatches(availableBatchIds);
+
+      if (deletedCount > 0) {
+        logger.info(`✅ Cleaned up ${deletedCount} orphaned batches`);
+      } else {
+        logger.info('✅ No orphaned batches found');
+      }
+
+      return deletedCount;
+    } catch (error) {
+      logger.error('❌ Failed to cleanup orphaned batches:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get list of all available batch IDs from S3
+   */
+  private static async getAvailableBatchIds(): Promise<string[] | null> {
+    try {
+      // Try to fetch a manifest file that lists all available batches
+      const manifestUrl = this.LATEST_URL.replace('latest.json', 'manifest.json');
+
+      const response = await fetch(manifestUrl);
+      if (response.ok) {
+        const manifest: BatchManifest = await response.json();
+        return manifest.batches.map(b => b.id);
+      }
+
+      // Fallback: if no manifest, just return the latest batch ID
+      logger.warn('No manifest.json found, using latest batch only for cleanup reference');
+      const latestInfo = await this.fetchLatestInfo();
+      return latestInfo ? [latestInfo.batchId] : null;
+    } catch (error) {
+      logger.error('Error fetching available batch IDs:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get batch management information
+   */
+  static async getBatchInfo(): Promise<{
+    local: Awaited<ReturnType<typeof db.getBatchStatistics>>;
+    lastSync: string | null;
+  }> {
+    const [localStats, lastSync] = await Promise.all([
+      db.getBatchStatistics(),
+      this.getLastSyncTime()
+    ]);
+
+    return {
+      local: localStats,
+      lastSync
+    };
+  }
+
+  /**
+   * Delete specific local batches
+   */
+  static async deleteLocalBatches(batchIds: string[]): Promise<number> {
+    try {
+      logger.info(`🗑️ Deleting ${batchIds.length} local batches...`);
+      const deletedCount = await db.deleteProblemBatches(batchIds);
+      logger.info(`✅ Deleted ${deletedCount} batches`);
+      return deletedCount;
+    } catch (error) {
+      logger.error('❌ Failed to delete local batches:', error);
+      return 0;
     }
   }
 }

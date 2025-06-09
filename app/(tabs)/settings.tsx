@@ -1,8 +1,9 @@
+import BatchManager from '@/components/BatchManager';
 import Button from '@/components/Button';
 import { getDatabaseType } from '@/services/database';
 import { useProblemStore } from '@/store/problemStore';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function SettingsScreen() {
   const { resetProgress, getBatchesInfo, forceSync } = useProblemStore();
@@ -10,6 +11,7 @@ export default function SettingsScreen() {
   const [batchesInfo, setBatchesInfo] = useState<any[]>([]);
   const [isLoadingBatches, setIsLoadingBatches] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showBatchManager, setShowBatchManager] = useState(false);
 
   // Get current database type
   const databaseType = getDatabaseType();
@@ -109,6 +111,14 @@ export default function SettingsScreen() {
           />
           </View>
 
+          <View style={styles.buttonContainer}>
+          <Button
+            label="Manage Batches"
+            onPress={() => setShowBatchManager(true)}
+            theme="primary"
+          />
+          </View>
+
         {isLoadingBatches ? (
           <Text style={styles.loadingText}>Loading batch information...</Text>
         ) : batchesInfo.length === 0 ? (
@@ -196,6 +206,29 @@ export default function SettingsScreen() {
         </Text>
         <Text style={styles.versionText}>Version 1.0.0</Text>
       </View>
+
+      {/* Batch Manager Modal */}
+      <Modal
+        visible={showBatchManager}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Batch Manager</Text>
+            <Button
+              label="Done"
+              onPress={() => {
+                setShowBatchManager(false);
+                // Refresh the batch info when closing the modal
+                loadBatchesInfo();
+              }}
+              theme="primary"
+            />
+          </View>
+          <BatchManager />
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -350,5 +383,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#25292e',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });
