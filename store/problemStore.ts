@@ -85,6 +85,7 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
   loadNextProblem: async () => {
     try {
       const problem = await db.getNextProblem();
+
       if (problem) {
         set({ currentProblem: problem, error: null });
       } else {
@@ -148,19 +149,33 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
       const userProgress = await db.getUserProgress();
 
       const batchesInfo = await Promise.all(
-        allBatches.map(async (batch) => {
-          const problems = await db.getProblemsByBatch(batch.id);
-          const completedProblems = problems.filter(p => p.isCompleted);
+        allBatches.map(async (batch, index) => {
+          try {
+            const problems = await db.getProblemsByBatch(batch.id);
+            const completedProblems = problems.filter(p => p.isCompleted);
 
-          return {
-            id: batch.id,
-            generationDate: batch.generationDate,
-            importedAt: batch.importedAt,
-            problemCount: batch.problemCount,
-            completedCount: completedProblems.length,
-            isCurrentBatch: batch.id === userProgress?.currentBatchId,
-            sourceUrl: batch.sourceUrl
-          };
+            return {
+              id: batch.id,
+              generationDate: batch.generationDate,
+              importedAt: batch.importedAt,
+              problemCount: batch.problemCount,
+              completedCount: completedProblems.length,
+              isCurrentBatch: batch.id === userProgress?.currentBatchId,
+              sourceUrl: batch.sourceUrl
+            };
+          } catch (batchError) {
+            logger.error(`Failed to process batch ${batch.id}:`, batchError);
+            // Return partial info even if there's an error
+            return {
+              id: batch.id,
+              generationDate: batch.generationDate || 'Unknown',
+              importedAt: batch.importedAt || 'Unknown',
+              problemCount: batch.problemCount || 0,
+              completedCount: 0,
+              isCurrentBatch: false,
+              sourceUrl: batch.sourceUrl
+            };
+          }
         })
       );
 

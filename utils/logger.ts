@@ -14,8 +14,8 @@ type LogLevel = keyof typeof LEVELS;
 const env = (globalThis as any)?.process?.env ?? {};
 
 // Determine active log level. Defaults to 'debug' (dev) or 'warn' (prod)
-const envLevel = (env.LOG_LEVEL as LogLevel) ?? (env.NODE_ENV === 'production' ? 'warn' : 'debug');
-const activeLevel: LogLevel = envLevel in LEVELS ? envLevel : 'debug';
+const envLevel = (env.LOG_LEVEL as LogLevel) ?? (env.NODE_ENV === 'production' ? 'warn' : 'info');
+const activeLevel: LogLevel = envLevel in LEVELS ? envLevel : 'info';
 
 function shouldLog(level: LogLevel): boolean {
   return LEVELS[level] >= LEVELS[activeLevel] && activeLevel !== 'silent';

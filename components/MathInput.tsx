@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+    Animated,
     Dimensions,
     Platform,
     StyleSheet,
@@ -33,7 +34,9 @@ const MathInput: React.FC<MathInputProps> = ({
   showPreview = true,
 }) => {
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(true);
   const textInputRef = useRef<TextInput>(null);
+  const keyboardHeight = useRef(new Animated.Value(1)).current;
 
   // Track cursor position
   const handleSelectionChange = (event: any) => {
@@ -54,6 +57,18 @@ const MathInput: React.FC<MathInputProps> = ({
       onChangeText(newValue);
       setCursorPosition(cursorPosition - 1);
     }
+  };
+
+  // Toggle keyboard visibility
+  const toggleKeyboard = () => {
+    const toValue = keyboardVisible ? 0 : 1;
+    setKeyboardVisible(!keyboardVisible);
+
+    Animated.timing(keyboardHeight, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
   };
 
   // Focus input when component mounts
@@ -103,109 +118,139 @@ const MathInput: React.FC<MathInputProps> = ({
         {value.trim() && !showPreview && (
           <Text style={styles.inputText}>{value}</Text>
         )}
+
+        {/* Keyboard Toggle Button */}
+        <TouchableOpacity
+          style={styles.keyboardToggle}
+          onPress={toggleKeyboard}
+        >
+          <Ionicons
+            name={keyboardVisible ? "chevron-down" : "chevron-up"}
+            size={20}
+            color="#94a3b8"
+          />
+          <Text style={styles.toggleText}>
+            {keyboardVisible ? "Hide" : "Show"} Keyboard
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Custom Keyboard */}
-      <View style={styles.keyboard}>
-        {/* Top Row - Special Functions */}
-        <View style={styles.keyboardRow}>
-          <TouchableOpacity
-            style={styles.specialKey}
-            onPress={() => insertAtCursor('/')}
-          >
-            <View style={styles.fractionKey}>
-              <Text style={styles.keyText}>□</Text>
-              <View style={styles.fractionLine} />
-              <Text style={styles.keyText}>□</Text>
+      {/* Custom Keyboard - Animated */}
+      <Animated.View
+        style={[
+          styles.keyboard,
+          {
+            height: keyboardHeight.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 280], // Adjust this value based on your keyboard height
+            }),
+            opacity: keyboardHeight,
+          }
+        ]}
+      >
+        {keyboardVisible && (
+          <View style={styles.keyboardContent}>
+            {/* Top Row - Special Functions */}
+            <View style={styles.keyboardRow}>
+              <TouchableOpacity
+                style={styles.specialKey}
+                onPress={() => insertAtCursor('/')}
+              >
+                <View style={styles.fractionKey}>
+                  <Text style={styles.keyText}>□</Text>
+                  <View style={styles.fractionLine} />
+                  <Text style={styles.keyText}>□</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.specialKey}
+                onPress={() => insertAtCursor('^')}
+              >
+                <View style={styles.exponentKey}>
+                  <Text style={styles.keyText}>x</Text>
+                  <Text style={[styles.keyText, styles.superscript]}>n</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.specialKey}
+                onPress={() => insertAtCursor('sqrt(')}
+              >
+                <Text style={styles.keyText}>√</Text>
+              </TouchableOpacity>
+
+              {/* Variable buttons */}
+              {variables.map((variable) => (
+                <TouchableOpacity
+                  key={variable}
+                  style={styles.variableKey}
+                  onPress={() => insertAtCursor(variable)}
+                >
+                  <Text style={styles.keyText}>{variable}</Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity
+                style={styles.backspaceKey}
+                onPress={handleBackspace}
+              >
+                <Ionicons name="backspace" size={24} color="#ffffff" />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.specialKey}
-            onPress={() => insertAtCursor('^')}
-          >
-            <View style={styles.exponentKey}>
-              <Text style={styles.keyText}>x</Text>
-              <Text style={[styles.keyText, styles.superscript]}>n</Text>
+            {/* Number Pad */}
+            <View style={styles.numberPad}>
+              {/* Row 1 */}
+              <View style={styles.keyboardRow}>
+                <NumberKey number="7" onPress={() => insertAtCursor('7')} />
+                <NumberKey number="8" onPress={() => insertAtCursor('8')} />
+                <NumberKey number="9" onPress={() => insertAtCursor('9')} />
+                <OperatorKey operator="÷" onPress={() => insertAtCursor('/')} />
+              </View>
+
+              {/* Row 2 */}
+              <View style={styles.keyboardRow}>
+                <NumberKey number="4" onPress={() => insertAtCursor('4')} />
+                <NumberKey number="5" onPress={() => insertAtCursor('5')} />
+                <NumberKey number="6" onPress={() => insertAtCursor('6')} />
+                <OperatorKey operator="×" onPress={() => insertAtCursor('*')} />
+              </View>
+
+              {/* Row 3 */}
+              <View style={styles.keyboardRow}>
+                <NumberKey number="1" onPress={() => insertAtCursor('1')} />
+                <NumberKey number="2" onPress={() => insertAtCursor('2')} />
+                <NumberKey number="3" onPress={() => insertAtCursor('3')} />
+                <OperatorKey operator="-" onPress={() => insertAtCursor('-')} />
+              </View>
+
+              {/* Row 4 */}
+              <View style={styles.keyboardRow}>
+                <NumberKey number="0" onPress={() => insertAtCursor('0')} />
+                <NumberKey number="." onPress={() => insertAtCursor('.')} />
+                <OperatorKey operator="(" onPress={() => insertAtCursor('(')} />
+                <OperatorKey operator="+" onPress={() => insertAtCursor('+')} />
+              </View>
+
+              {/* Row 5 */}
+              <View style={styles.keyboardRow}>
+                <OperatorKey operator=")" onPress={() => insertAtCursor(')')} />
+                <OperatorKey operator="=" onPress={() => insertAtCursor('=')} />
+                <TouchableOpacity
+                  style={[styles.submitKey, isValidating && styles.submitKeyDisabled]}
+                  onPress={onSubmit}
+                  disabled={isValidating}
+                >
+                  <Text style={styles.submitKeyText}>
+                    {isValidating ? '...' : 'Submit'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.specialKey}
-            onPress={() => insertAtCursor('sqrt(')}
-          >
-            <Text style={styles.keyText}>√</Text>
-          </TouchableOpacity>
-
-          {/* Variable buttons */}
-          {variables.map((variable) => (
-            <TouchableOpacity
-              key={variable}
-              style={styles.variableKey}
-              onPress={() => insertAtCursor(variable)}
-            >
-              <Text style={styles.keyText}>{variable}</Text>
-            </TouchableOpacity>
-          ))}
-
-          <TouchableOpacity
-            style={styles.backspaceKey}
-            onPress={handleBackspace}
-          >
-            <Ionicons name="backspace" size={24} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Number Pad */}
-        <View style={styles.numberPad}>
-          {/* Row 1 */}
-          <View style={styles.keyboardRow}>
-            <NumberKey number="7" onPress={() => insertAtCursor('7')} />
-            <NumberKey number="8" onPress={() => insertAtCursor('8')} />
-            <NumberKey number="9" onPress={() => insertAtCursor('9')} />
-            <OperatorKey operator="÷" onPress={() => insertAtCursor('/')} />
           </View>
-
-          {/* Row 2 */}
-          <View style={styles.keyboardRow}>
-            <NumberKey number="4" onPress={() => insertAtCursor('4')} />
-            <NumberKey number="5" onPress={() => insertAtCursor('5')} />
-            <NumberKey number="6" onPress={() => insertAtCursor('6')} />
-            <OperatorKey operator="×" onPress={() => insertAtCursor('*')} />
-          </View>
-
-          {/* Row 3 */}
-          <View style={styles.keyboardRow}>
-            <NumberKey number="1" onPress={() => insertAtCursor('1')} />
-            <NumberKey number="2" onPress={() => insertAtCursor('2')} />
-            <NumberKey number="3" onPress={() => insertAtCursor('3')} />
-            <OperatorKey operator="-" onPress={() => insertAtCursor('-')} />
-          </View>
-
-          {/* Row 4 */}
-          <View style={styles.keyboardRow}>
-            <NumberKey number="0" onPress={() => insertAtCursor('0')} />
-            <NumberKey number="." onPress={() => insertAtCursor('.')} />
-            <OperatorKey operator="(" onPress={() => insertAtCursor('(')} />
-            <OperatorKey operator="+" onPress={() => insertAtCursor('+')} />
-          </View>
-
-          {/* Row 5 */}
-          <View style={styles.keyboardRow}>
-            <OperatorKey operator=")" onPress={() => insertAtCursor(')')} />
-            <OperatorKey operator="=" onPress={() => insertAtCursor('=')} />
-            <TouchableOpacity
-              style={[styles.submitKey, isValidating && styles.submitKeyDisabled]}
-              onPress={onSubmit}
-              disabled={isValidating}
-            >
-              <Text style={styles.submitKeyText}>
-                {isValidating ? '...' : 'Submit'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+        )}
+      </Animated.View>
     </View>
   );
 };
@@ -261,8 +306,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'monospace',
   },
+  keyboardToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    paddingVertical: 8,
+  },
+  toggleText: {
+    fontSize: 14,
+    color: '#94a3b8',
+    marginLeft: 4,
+  },
   keyboard: {
     backgroundColor: '#16213e',
+    overflow: 'hidden',
+  },
+  keyboardContent: {
     paddingTop: 16,
   },
   keyboardRow: {

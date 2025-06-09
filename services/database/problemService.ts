@@ -12,19 +12,63 @@ function mapRowToProblem(row: any): Problem {
   if (typeof answer === 'string' && answer.startsWith('[') && answer.endsWith(']')) {
     try {
       answer = JSON.parse(answer);
-    } catch {
+    } catch (error) {
+      logger.error('Failed to parse answer JSON:', { answer, error: error instanceof Error ? error.message : String(error) });
       // If parsing fails, keep as string
     }
   }
 
-  return {
+  // Parse solution steps with detailed error handling
+  let solutionSteps;
+  try {
+    if (!row.solutionSteps) {
+      logger.warn('Missing solutionSteps field, using empty array');
+      solutionSteps = [];
+    } else if (typeof row.solutionSteps === 'string') {
+      solutionSteps = JSON.parse(row.solutionSteps);
+    } else {
+      solutionSteps = row.solutionSteps;
+    }
+  } catch (error) {
+    logger.error('Failed to parse solutionSteps JSON:', {
+      solutionSteps: row.solutionSteps,
+      type: typeof row.solutionSteps,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    solutionSteps = [];
+  }
+
+  // Parse variables with detailed error handling
+  let variables;
+  try {
+    if (!row.variables) {
+      logger.warn('Missing variables field, using default ["x"]');
+      variables = ['x'];
+    } else if (typeof row.variables === 'string') {
+      variables = JSON.parse(row.variables);
+    } else {
+      variables = row.variables;
+    }
+  } catch (error) {
+    logger.error('Failed to parse variables JSON:', {
+      variables: row.variables,
+      type: typeof row.variables,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    variables = ['x'];
+  }
+
+  const result = {
     ...row,
     answer,
-    solutionSteps: row.solutionSteps ? JSON.parse(row.solutionSteps) : [],
-    variables: JSON.parse(row.variables),
+    solutionSteps,
+    variables,
+    direction: row.direction || 'Solve for x', // Default direction if missing
     isCompleted: !!row.isCompleted, // Convert 0/1 to boolean
     solutionStepsShown: !!row.solutionStepsShown, // Convert 0/1 to boolean
   };
+
+  return result;
 }
 
 export async function getProblemsByBatchId(batchId: string): Promise<Problem[]> {
