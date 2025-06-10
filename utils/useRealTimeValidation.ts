@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isAnswerCorrect } from './enhancedAnswerUtils';
+import { hasObviousSyntaxErrors } from './syntaxValidation';
 
 export interface ValidationResult {
   isValid: boolean | null; // null = unknown/still typing
@@ -16,6 +17,8 @@ export interface UseRealTimeValidationProps {
   debounceMs?: number;
   answerLHS?: string;
   answerRHS?: string | number | number[];
+  problemType?: string;
+  originalEquation?: string;
 }
 
 export const useRealTimeValidation = ({
@@ -26,6 +29,8 @@ export const useRealTimeValidation = ({
   debounceMs = 500,
   answerLHS,
   answerRHS,
+  problemType,
+  originalEquation,
 }: UseRealTimeValidationProps): ValidationResult => {
   const [debouncedInput, setDebouncedInput] = useState(userInput);
   const [validationResult, setValidationResult] = useState<ValidationResult>({
@@ -110,29 +115,6 @@ export const useRealTimeValidation = ({
       };
     }
   }, [answerLHS, answerRHS]);
-
-  // Simple syntax error checking
-  const hasObviousSyntaxErrors = useCallback((input: string): boolean => {
-    // Check for obvious issues
-    if (input.includes('//') || input.includes('**') || input.includes('++') || input.includes('--')) {
-      return true;
-    }
-
-    // Check for unmatched parentheses
-    let openParens = 0;
-    for (const char of input) {
-      if (char === '(') openParens++;
-      if (char === ')') openParens--;
-      if (openParens < 0) return true; // More closing than opening
-    }
-
-    // Check for basic invalid patterns
-    if (/[^0-9a-zA-Z+\-*/()^.\s=]/.test(input)) {
-      return true; // Invalid characters
-    }
-
-    return false;
-  }, []);
 
   useEffect(() => {
     const runValidation = async () => {

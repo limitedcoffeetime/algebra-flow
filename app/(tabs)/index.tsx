@@ -4,6 +4,7 @@ import SmartMathRenderer from '@/components/SmartMathRenderer';
 import StepByStepSolution from '@/components/StepByStepSolution';
 import { useProblemStore } from '@/store/problemStore';
 import { isAnswerCorrect } from '@/utils/enhancedAnswerUtils';
+import { hasObviousSyntaxErrors } from '@/utils/syntaxValidation';
 import { getContextualHint, useRealTimeValidation } from '@/utils/useRealTimeValidation';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -74,12 +75,22 @@ export default function Index() {
     setIsSubmitting(true);
 
     try {
+      // Check for syntax errors first (same as real-time validation)
+      const hasError = hasObviousSyntaxErrors(userAnswer.trim());
+      if (hasError) {
+        Alert.alert('Invalid Input', 'Please check your mathematical expression and try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
       // Use enhanced validation with LHS/RHS support
       const isCorrect = await isAnswerCorrect(
         userAnswer,
         currentProblem.answer,
         currentProblem.answerLHS,
-        currentProblem.answerRHS
+        currentProblem.answerRHS,
+        currentProblem.problemType,
+        currentProblem.equation
       );
 
       // Submit to store
