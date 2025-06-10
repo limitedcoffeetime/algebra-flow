@@ -31,9 +31,24 @@ async function testValidation() {
     { userAnswer: '1/2', correctAnswer: 0.5, expected: true },
     { userAnswer: '0.5', correctAnswer: '1/2', expected: true },
 
-    // Error cases that should fail gracefully
+        // Error cases that should fail gracefully
     { userAnswer: '', correctAnswer: 5, expected: false },
     { userAnswer: 'invalid', correctAnswer: 5, expected: false },
+
+    // Fractional string answers (new format to fix the bug)
+    { userAnswer: '-7/2', correctAnswer: ['-7/2', '5/3'], expected: true },
+    { userAnswer: '5/3', correctAnswer: ['-7/2', '5/3'], expected: true },
+    { userAnswer: '-3.5', correctAnswer: ['-7/2', '5/3'], expected: true },
+
+    // Integer string answers (ensuring consistency)
+    { userAnswer: '3', correctAnswer: ['3', '-2'], expected: true },
+    { userAnswer: '-2', correctAnswer: ['3', '-2'], expected: true },
+    { userAnswer: '4', correctAnswer: ['3', '-2'], expected: false },
+
+    // Linear answers as strings (new consistent format)
+    { userAnswer: '5', correctAnswer: '5', expected: true },
+    { userAnswer: '1/2', correctAnswer: '1/2', expected: true },
+    { userAnswer: '0.5', correctAnswer: '1/2', expected: true }, // Should work with string fractions
   ];
 
   let passed = 0;

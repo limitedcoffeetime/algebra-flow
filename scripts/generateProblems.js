@@ -137,8 +137,8 @@ function getProblemTypeInstructions(problemType) {
   switch (problemType) {
     case 'linear-one-variable':
       return {
-        instructions: 'Solve for x. Answer should be an integer or simple fraction (like 1/2, 2/3). NO complex decimals.',
-        answerFormat: 'number or simple fraction'
+        instructions: 'Solve for x. Provide answer as a string - either an integer ("5") or simple fraction ("1/2", "2/3"). NO complex decimals.',
+        answerFormat: 'string (integer or fraction)'
       };
     case 'linear-two-variables':
       return {
@@ -148,8 +148,8 @@ function getProblemTypeInstructions(problemType) {
     case 'quadratic-factoring':
     case 'quadratic-formula':
       return {
-        instructions: 'Find all solutions. Solutions should be integers or simple fractions. Always provide answers as an array, even for single solutions (e.g., [3] or [-2, 5]). NO irrational numbers or complex decimals.',
-        answerFormat: 'array of integer(s) or simple fraction(s)'
+        instructions: 'Find all solutions and ALWAYS format as strings. Keep fractions in their exact form like "-7/2", "5/3", "1/4", etc. For integers, also use strings like "3", "-2" (NOT numbers). Always provide answers as an array of strings, even for single solutions (e.g., ["3"] or ["-7/2", "5/3"]). NO irrational numbers.',
+        answerFormat: 'array of fraction/integer strings'
       };
     case 'polynomial-simplification':
       return {
@@ -212,20 +212,17 @@ function validateAnswerFormat(answer, problemType) {
   }
 
   switch (problemType) {
-    case 'linear-one-variable':
-      return typeof answer === 'number';
-
-    case 'linear-two-variables':
-    case 'polynomial-simplification':
-      return typeof answer === 'string';
-
     case 'quadratic-factoring':
     case 'quadratic-formula':
-      // Now always expecting array format for quadratic solutions
-      return Array.isArray(answer) && answer.every(a => typeof a === 'number');
+      // Expecting array of strings (fractions like "-7/2" or integers like "3")
+      return Array.isArray(answer) && answer.every(a => typeof a === 'string');
 
+    case 'linear-one-variable':
+    case 'linear-two-variables':
+    case 'polynomial-simplification':
     default:
-      return true; // Accept any format for unknown types
+      // All other answer types should be strings
+      return typeof answer === 'string';
   }
 }
 
@@ -237,25 +234,25 @@ function getProblemResponseSchema(problemType, count) {
   let answerSchema;
   switch (problemType) {
     case 'linear-one-variable':
-      answerSchema = { "type": "number" };
+      answerSchema = { "type": "string" };
       break;
     case 'linear-two-variables':
     case 'polynomial-simplification':
       answerSchema = { "type": "string" };
       break;
-    case 'quadratic-factoring':
+        case 'quadratic-factoring':
     case 'quadratic-formula':
-      // Use array format for all quadratic solutions to avoid oneOf restriction
+      // Use strings for quadratic solutions to allow fractions like "-7/2"
       answerSchema = {
         "type": "array",
-        "items": { "type": "number" },
+        "items": { "type": "string" },
         "minItems": 1,
         "maxItems": 3,
-        "description": "Array of solution(s). Use single-element array for one solution."
+        "description": "Array of solutions as strings. Use fractions like '-7/2', '5/3' or integers like '3', '-2'. Use single-element array for one solution."
       };
       break;
     default:
-      answerSchema = { "type": "number" };
+      answerSchema = { "type": "string" };
   }
 
   return {
@@ -311,14 +308,15 @@ Problem Type Specific Instructions:
 ${typeInstructions.instructions}
 
 CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
-- Answers must be integers or simple fractions (like 1/2, 2/3, 3/4, 5/6)
-- NO complex decimals like 1.2839, 2.7182, 0.3333... etc.
+- ALL ANSWERS MUST BE STRINGS: integers ("5"), fractions ("7/2"), expressions ("3x + 2"), arrays (["3", "-2"])
+- CONSISTENCY: Always use string format regardless of answer type for uniform parsing
+- NO complex decimals like 1.2839, 2.7182, etc.
 - NO irrational numbers like √2, √3 unless they simplify to integers
 - Design problems so the algebra works out to clean, simple answers
 - Students should never need a calculator to verify the answer
 
-ACCEPTABLE ANSWERS: 3, -2, 1/2, 2/3, 0, 7, -1/4, 5/3
-UNACCEPTABLE ANSWERS: 1.2839, 2.7182, 0.3333..., √2, 3.14159, 1.7320
+ACCEPTABLE ANSWER EXAMPLES: "5", "7/2", "3x + 2", ["3"], ["-7/2", "5/3"]
+UNACCEPTABLE ANSWERS: 1.2839, 2.7182, √2, 3.14159, 1.7320
 
 Generate problems following the exact JSON schema structure.
 
@@ -328,7 +326,7 @@ Constraints:
 - Solution steps should be clear and educational
 - Each problem should be unique
 - CRITICAL: Ensure your answer matches the final step of your solution
-- CRITICAL: All answers must be calculator-free (integers or simple fractions only)`;
+- CRITICAL: All answers must be strings and calculator-free (use "5", "7/2", ["3", "-2"], etc.)`;
 
   try {
     // MIGRATED TO RESPONSES API: Using the new Responses API with structured outputs

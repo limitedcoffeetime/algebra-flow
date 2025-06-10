@@ -1,9 +1,9 @@
 import { logger } from '@/utils/logger';
 import * as SQLite from 'expo-sqlite';
 import {
-  CREATE_PROBLEM_BATCHES_TABLE,
-  CREATE_PROBLEMS_TABLE,
-  CREATE_USER_PROGRESS_TABLE,
+    CREATE_PROBLEM_BATCHES_TABLE,
+    CREATE_PROBLEMS_TABLE,
+    CREATE_USER_PROGRESS_TABLE,
 } from './schema';
 
 const DATABASE_NAME = 'algebro.db';
@@ -62,10 +62,14 @@ async function logDatabaseSchema(database: SQLite.SQLiteDatabase) {
     // Check for missing columns
     const hasVariablesColumn = problemsTableInfo.some((col: any) => col.name === 'variables');
     const hasDirectionColumn = problemsTableInfo.some((col: any) => col.name === 'direction');
+    const hasAnswerLHSColumn = problemsTableInfo.some((col: any) => col.name === 'answerLHS');
+    const hasAnswerRHSColumn = problemsTableInfo.some((col: any) => col.name === 'answerRHS');
 
     logger.info('Database column status:', {
       variables: hasVariablesColumn,
-      direction: hasDirectionColumn
+      direction: hasDirectionColumn,
+      answerLHS: hasAnswerLHSColumn,
+      answerRHS: hasAnswerRHSColumn
     });
 
     // Add missing variables column
@@ -114,6 +118,34 @@ async function logDatabaseSchema(database: SQLite.SQLiteDatabase) {
         logger.info('✅ Updated existing records with appropriate directions');
       } catch (alterError) {
         logger.error('Failed to add direction column:', alterError);
+      }
+    }
+
+    // Add missing answerLHS column
+    if (!hasAnswerLHSColumn && problemsTableInfo.length > 0) {
+      logger.warn('❌ answerLHS column missing - adding it now!');
+      try {
+        await database.execAsync(`
+          ALTER TABLE Problems
+          ADD COLUMN answerLHS TEXT
+        `);
+        logger.info('✅ Added answerLHS column to existing table');
+      } catch (alterError) {
+        logger.error('Failed to add answerLHS column:', alterError);
+      }
+    }
+
+    // Add missing answerRHS column
+    if (!hasAnswerRHSColumn && problemsTableInfo.length > 0) {
+      logger.warn('❌ answerRHS column missing - adding it now!');
+      try {
+        await database.execAsync(`
+          ALTER TABLE Problems
+          ADD COLUMN answerRHS TEXT
+        `);
+        logger.info('✅ Added answerRHS column to existing table');
+      } catch (alterError) {
+        logger.error('Failed to add answerRHS column:', alterError);
       }
     }
 

@@ -29,12 +29,20 @@ async function validateAgainstAnswer(
   try {
     const { evaluate } = await import('mathjs');
 
-    // Handle array answers (quadratic solutions like [1, 3])
+    // Handle array answers (quadratic solutions like [1, 3] or ["-7/2", "5/3"])
     if (Array.isArray(correctAnswer)) {
       try {
         const userVal = evaluate(userInput);
         if (typeof userVal === 'number') {
-          return correctAnswer.some(sol => Math.abs(userVal - sol) < 1e-10);
+          return correctAnswer.some(sol => {
+            try {
+              // Evaluate the solution if it's a string (like "-7/2")
+              const solVal = typeof sol === 'string' ? evaluate(sol) : sol;
+              return typeof solVal === 'number' && Math.abs(userVal - solVal) < 1e-10;
+            } catch {
+              return false;
+            }
+          });
         }
       } catch {
         // If evaluation fails, try string matching for expressions
