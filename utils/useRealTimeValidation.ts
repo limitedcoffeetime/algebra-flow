@@ -8,7 +8,7 @@ export interface ValidationResult {
   errorType?: 'syntax' | 'incomplete' | 'wrong_answer' | 'missing_variable';
 }
 
-interface UseRealTimeValidationProps {
+export interface UseRealTimeValidationProps {
   userInput: string;
   correctAnswer: string | number | number[];
   problemDirection: string;
@@ -44,125 +44,49 @@ export const useRealTimeValidation = ({
     return () => clearTimeout(timer);
   }, [userInput, debounceMs]);
 
-  // Memoize validation functions to prevent re-creation
-  const checkSyntaxIssues = useCallback((input: string): { hasError: boolean; suggestion?: string } => {
-    // Check for mismatched parentheses
-    const openParens = (input.match(/\(/g) || []).length;
-    const closeParens = (input.match(/\)/g) || []).length;
-
-    if (openParens > closeParens) {
-      return {
-        hasError: false, // Not an error yet, just incomplete
-        suggestion: 'Missing closing parentheses',
-      };
-    }
-
-    if (closeParens > openParens) {
-      return {
-        hasError: true,
-        suggestion: 'Too many closing parentheses',
-      };
-    }
-
-    // Check for invalid operator sequences
-    if (/[\+\-\*\/]{2,}/.test(input) && !input.includes('--')) {
-      return {
-        hasError: true,
-        suggestion: 'Invalid operator sequence',
-      };
-    }
-
-    // Check for division by zero
-    if (/\/\s*0(?!\d)/.test(input)) {
-      return {
-        hasError: true,
-        suggestion: 'Division by zero is undefined',
-      };
-    }
-
-    // Check for incomplete fractions
-    if (input.endsWith('/') || /\/\s*$/.test(input)) {
-      return {
-        hasError: false,
-        suggestion: 'Complete the fraction',
-      };
-    }
-
-    // Check for incomplete exponents
-    if (input.endsWith('^') || /\^\s*$/.test(input)) {
-      return {
-        hasError: false,
-        suggestion: 'Complete the exponent',
-      };
-    }
-
-    return { hasError: false };
-  }, []);
-
-  const isIncomplete = useCallback((input: string): boolean => {
-    // Common patterns that suggest the user is still typing
-    const incompletePatterns = [
-      /[\+\-\*\/]$/, // Ends with operator
-      /sqrt\($/, // Incomplete sqrt
-      /\($/, // Just opened parenthesis
-      /\d+\.$/, // Number with decimal but no digits after
-    ];
-
-    return incompletePatterns.some(pattern => pattern.test(input));
-  }, []);
-
-  const checkMissingVariables = useCallback((
-    input: string,
-    direction: string,
-    expectedVars: string[]
-  ): string[] => {
-    // If the problem asks to "solve for x" but input doesn't contain x
-    const solveForMatch = direction.match(/solve for (\w+)/i);
-    if (solveForMatch) {
-      const targetVar = solveForMatch[1].toLowerCase();
-      if (!input.toLowerCase().includes(targetVar) && !isNumericAnswer(input)) {
-        // Only suggest missing variable if the answer isn't purely numeric
-        return [targetVar];
-      }
-    }
-
-    // For "express x in terms of y" type problems
-    const expressMatch = direction.match(/express (\w+) in terms of (\w+)/i);
-    if (expressMatch) {
-      const [, targetVar, dependentVar] = expressMatch;
-      const missing: string[] = [];
-
-      if (!input.toLowerCase().includes(targetVar.toLowerCase())) {
-        missing.push(targetVar);
-      }
-      if (!input.toLowerCase().includes(dependentVar.toLowerCase()) &&
-          !isNumericAnswer(input)) {
-        missing.push(dependentVar);
-      }
-
-      return missing;
-    }
-
-    return [];
-  }, []);
-
-  const isNumericAnswer = useCallback((input: string): boolean => {
-    // Check if the input is purely numeric (including fractions and decimals)
-    return /^[\d\.\+\-\/\(\)\s]+$/.test(input) && !/[a-zA-Z]/.test(input);
-  }, []);
-
+  // Simplified validation function
   const validateAnswer = useCallback(async (
     userInput: string,
     correctAnswer: string | number | number[]
   ): Promise<ValidationResult> => {
+    const trimmed = userInput.trim();
+
+    // Empty input
+    if (!trimmed) {
+      return {
+        isValid: null,
+        confidence: 'none',
+      };
+    }
+
+    // Check for obvious syntax errors first
+    if (hasObviousSyntaxErrors(trimmed)) {
+      return {
+        isValid: false,
+        confidence: 'high',
+        errorType: 'syntax',
+        suggestion: 'Check your mathematical expression',
+      };
+    }
+
+    // Check if input appears incomplete
+    if (trimmed.endsWith('+') || trimmed.endsWith('-') || trimmed.endsWith('*') || trimmed.endsWith('/') || trimmed.endsWith('^')) {
+      return {
+        isValid: null,
+        confidence: 'low',
+        errorType: 'incomplete',
+        suggestion: 'Keep typing...',
+      };
+    }
+
     try {
-      const isCorrect = await isAnswerCorrect(userInput, correctAnswer);
+      const isCorrect = await isAnswerCorrect(trimmed, correctAnswer);
 
       if (isCorrect) {
         return {
           isValid: true,
           confidence: 'high',
-          suggestion: 'Correct!',
+          suggestion: 'Correct! 🎉',
         };
       } else {
         return {
@@ -178,101 +102,71 @@ export const useRealTimeValidation = ({
         isValid: false,
         confidence: 'medium',
         errorType: 'syntax',
-        suggestion: 'Mathematical expression has an error',
+        suggestion: 'Check your mathematical expression',
       };
     }
   }, []);
 
+  // Simple syntax error checking
+  const hasObviousSyntaxErrors = useCallback((input: string): boolean => {
+    // Check for obvious issues
+    if (input.includes('//') || input.includes('**') || input.includes('++') || input.includes('--')) {
+      return true;
+    }
+
+    // Check for unmatched parentheses
+    let openParens = 0;
+    for (const char of input) {
+      if (char === '(') openParens++;
+      if (char === ')') openParens--;
+      if (openParens < 0) return true; // More closing than opening
+    }
+
+    // Check for basic invalid patterns
+    if (/[^0-9a-zA-Z+\-*/()^.\s=]/.test(input)) {
+      return true; // Invalid characters
+    }
+
+    return false;
+  }, []);
+
   useEffect(() => {
-    const validateInput = async () => {
-      const trimmed = debouncedInput.trim();
-
-      // Empty input
-      if (!trimmed) {
-        setValidationResult({
-          isValid: null,
-          confidence: 'none',
-        });
-        return;
-      }
-
-      // Check for obvious syntax errors
-      const syntaxIssues = checkSyntaxIssues(trimmed);
-      if (syntaxIssues.hasError) {
-        setValidationResult({
-          isValid: false,
-          confidence: 'high',
-          errorType: 'syntax',
-          suggestion: syntaxIssues.suggestion,
-        });
-        return;
-      }
-
-      // Check if input appears incomplete
-      if (isIncomplete(trimmed)) {
-        setValidationResult({
-          isValid: null,
-          confidence: 'low',
-          errorType: 'incomplete',
-          suggestion: 'Keep typing...',
-        });
-        return;
-      }
-
-      // Check for missing expected variables
-      const missingVars = checkMissingVariables(trimmed, problemDirection, memoizedVariables);
-      if (missingVars.length > 0) {
-        setValidationResult({
-          isValid: false,
-          confidence: 'medium',
-          errorType: 'missing_variable',
-          suggestion: `Consider including: ${missingVars.join(', ')}`,
-        });
-        return;
-      }
-
-      // Perform actual mathematical validation
-      const result = await validateAnswer(trimmed, memoizedCorrectAnswer);
+    const runValidation = async () => {
+      const result = await validateAnswer(debouncedInput, memoizedCorrectAnswer);
       setValidationResult(result);
     };
 
-    validateInput();
+    runValidation();
   }, [
     debouncedInput,
     memoizedCorrectAnswer,
-    problemDirection,
-    memoizedVariables,
-    checkSyntaxIssues,
-    isIncomplete,
-    checkMissingVariables,
     validateAnswer
   ]);
 
   return validationResult;
 };
 
-// Additional utility for providing contextual hints
+// Simple contextual hint function
 export function getContextualHint(
   direction: string,
   variables: string[],
-  currentInput: string
+  userInput: string
 ): string {
-  if (!currentInput.trim()) {
-    if (direction.toLowerCase().includes('solve for')) {
-      return `Enter a value or expression`;
-    }
-    if (direction.toLowerCase().includes('simplify')) {
-      return `Enter the simplified form`;
-    }
-    if (direction.toLowerCase().includes('factor')) {
-      return `Enter the factored form`;
-    }
+  const trimmed = userInput.trim();
+
+  if (!trimmed) {
+    return `Enter your answer. ${direction}`;
   }
 
-  // Provide hints based on common patterns
-  if (variables.length > 1 && !currentInput.includes('=')) {
-    if (direction.toLowerCase().includes('in terms of')) {
-      return `Try format like: ${variables[0]} = ...`;
+  // If the direction mentions solving for a variable, remind them
+  if (direction.toLowerCase().includes('solve for') && !trimmed.match(/[a-zA-Z]/)) {
+    return 'Looks like you entered a number. Check if the problem asks for an expression.';
+  }
+
+  // If they should include variables but don't
+  if (variables.length > 0 && !variables.some(v => trimmed.includes(v))) {
+    if (direction.toLowerCase().includes('express') || direction.toLowerCase().includes('terms of')) {
+      return `Consider including variable: ${variables.join(', ')}`;
     }
   }
 

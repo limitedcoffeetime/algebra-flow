@@ -6,14 +6,14 @@ import { useProblemStore } from '@/store/problemStore';
 import { getContextualHint, useRealTimeValidation } from '@/utils/useRealTimeValidation';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -123,41 +123,35 @@ export default function Index() {
   // Loading state
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading problems...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.centerContent}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text style={styles.loadingText}>Loading problems...</Text>
+      </View>
     );
   }
 
   // Error state
   if (error && !currentProblem) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Button label="Retry" onPress={initialize} />
-        </View>
-      </SafeAreaView>
+      <View style={styles.centerContent}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Button label="Retry" onPress={initialize} />
+      </View>
     );
   }
 
   // No problem state
   if (!currentProblem) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>No problems available</Text>
-          <Button label="Retry" onPress={initialize} />
-        </View>
-      </SafeAreaView>
+      <View style={styles.centerContent}>
+        <Text style={styles.errorText}>No problems available</Text>
+        <Button label="Retry" onPress={initialize} />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
@@ -326,12 +320,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   spacer: {
-    height: 100, // Space for the fixed input
+    height: 80, // Reduced to pull keyboard higher
   },
   inputSection: {
     backgroundColor: '#0f172a',
     borderTopWidth: 1,
     borderTopColor: '#374151',
+    // Removed maxHeight and minHeight constraints
   },
   loadingText: {
     color: '#ffffff',
