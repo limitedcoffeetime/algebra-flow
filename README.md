@@ -57,7 +57,7 @@ Decision still pending based on performance, bundle size, and maintenance consid
 ### **June 4, 2024** - Automated Problem Generation
 - **GitHub Actions setup**: Automated daily problem generation workflow
 - **S3 integration**: Generated problems uploaded to S3 bucket for distribution
-- **OpenAI API integration**: GPT-4o-mini generates algebra problems with structured output
+- **OpenAI API integration**: OpenAI Responses API (o4-mini-2025-04-16) generates algebra problems with structured output
 - **CI/CD pipeline**: Secure API key management and automated deployment
 
 ### **June 3, 2024** - UI Polish & Data Architecture

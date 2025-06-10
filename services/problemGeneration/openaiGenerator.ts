@@ -63,19 +63,44 @@ Constraints:
 - CRITICAL: List all variables used in the problem in the variables array`;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.8,
+    // Using the OpenAI Responses API with structured outputs
+    const response = await openai.responses.create({
+      model: 'o4-mini-2025-04-16',
+      input: [
+        {
+          role: 'system',
+          content: 'You are a math teacher creating algebra problems. Follow the JSON schema exactly and separate math expressions from explanations.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'algebra_problems_response',
+          description: 'Response containing algebra problems with structured solution steps',
+          schema: responseSchema,
+          strict: true
+        }
+      },
+      store: false
     });
 
-    const responseText = completion.choices[0]?.message?.content;
-    if (!responseText) {
-      throw new Error('No response from OpenAI');
+    // Extract content from the responses API format
+    const content = response.output_text.trim();
+
+    // Parse the response
+    let responseObj;
+    try {
+      responseObj = JSON.parse(content);
+    } catch (error) {
+      // Fallback to our cleaning function for any edge cases
+      responseObj = parseOpenAIResponse(content);
     }
 
-    const { problems } = parseOpenAIResponse(responseText);
+    const problems = responseObj.problems;
 
     if (!Array.isArray(problems) || problems.length !== count) {
       throw new Error(`Expected ${count} problems, got ${problems.length}`);
