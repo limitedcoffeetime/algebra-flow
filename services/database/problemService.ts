@@ -18,6 +18,17 @@ function mapRowToProblem(row: any): Problem {
     }
   }
 
+  // Parse answerRHS from JSON if it's an array, otherwise keep as string/number
+  let answerRHS = row.answerRHS;
+  if (answerRHS && typeof answerRHS === 'string' && answerRHS.startsWith('[') && answerRHS.endsWith(']')) {
+    try {
+      answerRHS = JSON.parse(answerRHS);
+    } catch (error) {
+      logger.error('Failed to parse answerRHS JSON:', { answerRHS, error: error instanceof Error ? error.message : String(error) });
+      // If parsing fails, keep as string
+    }
+  }
+
   // Parse solution steps with detailed error handling
   let solutionSteps;
   try {
@@ -42,8 +53,8 @@ function mapRowToProblem(row: any): Problem {
   let variables;
   try {
     if (!row.variables) {
-      logger.warn('Missing variables field, using default ["x"]');
-      variables = ['x'];
+      logger.error('Missing variables field - this should not happen with new schema');
+      variables = [];
     } else if (typeof row.variables === 'string') {
       variables = JSON.parse(row.variables);
     } else {
@@ -55,15 +66,17 @@ function mapRowToProblem(row: any): Problem {
       type: typeof row.variables,
       error: error instanceof Error ? error.message : String(error)
     });
-    variables = ['x'];
+    variables = [];
   }
 
   const result = {
     ...row,
     answer,
+    answerLHS: row.answerLHS || undefined, // Keep as undefined if null/empty
+    answerRHS: answerRHS || undefined, // Keep as undefined if null/empty
     solutionSteps,
     variables,
-    direction: row.direction || 'Solve for x', // Default direction if missing
+    direction: row.direction, // No default - should always be present
     isCompleted: !!row.isCompleted, // Convert 0/1 to boolean
     solutionStepsShown: !!row.solutionStepsShown, // Convert 0/1 to boolean
   };

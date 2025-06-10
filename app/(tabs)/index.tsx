@@ -3,6 +3,7 @@ import MathInput from '@/components/MathInput';
 import SmartMathRenderer from '@/components/SmartMathRenderer';
 import StepByStepSolution from '@/components/StepByStepSolution';
 import { useProblemStore } from '@/store/problemStore';
+import { isAnswerCorrect } from '@/utils/enhancedAnswerUtils';
 import { getContextualHint, useRealTimeValidation } from '@/utils/useRealTimeValidation';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -44,11 +45,15 @@ export default function Index() {
     problemDirection: currentProblem?.direction || '',
     variables: currentProblem?.variables || ['x'],
     debounceMs: 300,
+    answerLHS: currentProblem?.answerLHS,
+    answerRHS: currentProblem?.answerRHS,
   }), [
     userAnswer,
     currentProblem?.answer,
     currentProblem?.direction,
     currentProblem?.variables,
+    currentProblem?.answerLHS,
+    currentProblem?.answerRHS,
   ]);
 
   // Real-time validation (only if we have a current problem)
@@ -69,7 +74,13 @@ export default function Index() {
     setIsSubmitting(true);
 
     try {
-      const isCorrect = validation.isValid === true;
+      // Use enhanced validation with LHS/RHS support
+      const isCorrect = await isAnswerCorrect(
+        userAnswer,
+        currentProblem.answer,
+        currentProblem.answerLHS,
+        currentProblem.answerRHS
+      );
 
       // Submit to store
       await submitAnswer(userAnswer, isCorrect);
@@ -224,6 +235,7 @@ export default function Index() {
             variables={currentProblem.variables}
             isValidating={isSubmitting}
             showPreview={true}
+            answerPrefix={currentProblem.answerLHS}
           />
         </View>
       </KeyboardAvoidingView>

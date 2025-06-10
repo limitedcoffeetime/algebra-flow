@@ -1,24 +1,45 @@
 /**
- * Simplified and more reliable math answer checker
+ * Clean LHS/RHS answer checker - no backwards compatibility
  */
-export async function isAnswerCorrect(userAnswer: string, correctAnswer: string | number | number[]): Promise<boolean> {
+export async function isAnswerCorrect(
+  userAnswer: string,
+  correctAnswer: string | number | number[],
+  answerLHS?: string,
+  answerRHS?: string | number | number[]
+): Promise<boolean> {
   const trimmedUser = userAnswer.trim();
   if (!trimmedUser) return false;
 
+  // If we have LHS/RHS structure, validate against RHS only
+  if (answerLHS && answerRHS !== undefined) {
+    return validateAgainstAnswer(trimmedUser, answerRHS);
+  }
+
+  // For problems without LHS/RHS (like simplification), validate against answer
+  return validateAgainstAnswer(trimmedUser, correctAnswer);
+}
+
+/**
+ * Core validation logic
+ */
+async function validateAgainstAnswer(
+  userInput: string,
+  correctAnswer: string | number | number[]
+): Promise<boolean> {
   try {
     const { evaluate } = await import('mathjs');
 
     // Handle array answers (quadratic solutions like [1, 3])
     if (Array.isArray(correctAnswer)) {
       try {
-        const userVal = evaluate(trimmedUser);
+        const userVal = evaluate(userInput);
         if (typeof userVal === 'number') {
           return correctAnswer.some(sol => Math.abs(userVal - sol) < 1e-10);
         }
       } catch {
         // If evaluation fails, try string matching for expressions
         return correctAnswer.some(sol =>
-          trimmedUser.toLowerCase() === String(sol).toLowerCase()
+          userInput.toLowerCase() === String(sol).toLowerCase()
         );
       }
     }
@@ -28,19 +49,19 @@ export async function isAnswerCorrect(userAnswer: string, correctAnswer: string 
     if (correctStr.includes(',')) {
       try {
         const solutions = correctStr.split(',').map(s => evaluate(s.trim()));
-        const userVal = evaluate(trimmedUser);
+        const userVal = evaluate(userInput);
         if (typeof userVal === 'number') {
           return solutions.some(sol => Math.abs(userVal - sol) < 1e-10);
         }
       } catch {
         // Fallback to string comparison
-        return correctStr.toLowerCase().includes(trimmedUser.toLowerCase());
+        return correctStr.toLowerCase().includes(userInput.toLowerCase());
       }
     }
 
     // Primary method: Direct numerical comparison
     try {
-      const userVal = evaluate(trimmedUser);
+      const userVal = evaluate(userInput);
       const correctVal = evaluate(correctStr);
 
       if (typeof userVal === 'number' && typeof correctVal === 'number') {
@@ -51,16 +72,16 @@ export async function isAnswerCorrect(userAnswer: string, correctAnswer: string 
     }
 
     // Secondary method: Simple algebraic forms (basic substitution test)
-    if (await areExpressionsEquivalent(trimmedUser, correctStr)) {
+    if (await areExpressionsEquivalent(userInput, correctStr)) {
       return true;
     }
 
     // Fallback: String comparison for exact matches
-    return trimmedUser.toLowerCase() === correctStr.toLowerCase();
+    return userInput.toLowerCase() === correctStr.toLowerCase();
 
   } catch {
     // Final fallback: string comparison
-    return trimmedUser.toLowerCase() === String(correctAnswer).toLowerCase();
+    return userInput.toLowerCase() === String(correctAnswer).toLowerCase();
   }
 }
 

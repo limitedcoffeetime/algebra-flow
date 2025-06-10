@@ -6,6 +6,8 @@ export interface Problem {
   equation: string;
   direction: string; // e.g., "Solve for x", "Simplify", "Factor"
   answer: string | number | number[]; // Can be array for quadratic solutions
+  answerLHS?: string; // e.g., "x = " - for problems that solve for a variable
+  answerRHS?: string | number | number[]; // The RHS when LHS is present
   solutionSteps: SolutionStep[]; // Structured solution steps
   variables: string[]; // Variables used in the problem
   difficulty: 'easy' | 'medium' | 'hard';
@@ -63,15 +65,17 @@ CREATE TABLE IF NOT EXISTS Problems (
   id TEXT PRIMARY KEY NOT NULL,
   batchId TEXT NOT NULL,
   equation TEXT NOT NULL,
-  direction TEXT NOT NULL, -- e.g., "Solve for x", "Simplify"
-  answer TEXT NOT NULL, -- Store numbers as text to simplify
-  solutionSteps TEXT NOT NULL, -- JSON string of SolutionStep[]
-  variables TEXT NOT NULL, -- JSON string of variables array
+  direction TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  answerLHS TEXT,
+  answerRHS TEXT,
+  solutionSteps TEXT NOT NULL,
+  variables TEXT NOT NULL,
   difficulty TEXT NOT NULL CHECK(difficulty IN ('easy', 'medium', 'hard')),
   problemType TEXT NOT NULL,
-  isCompleted INTEGER NOT NULL DEFAULT 0, -- 0 for false, 1 for true
+  isCompleted INTEGER NOT NULL DEFAULT 0,
   userAnswer TEXT,
-  solutionStepsShown INTEGER NOT NULL DEFAULT 0, -- 0 for false, 1 for true
+  solutionStepsShown INTEGER NOT NULL DEFAULT 0,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
   FOREIGN KEY (batchId) REFERENCES ProblemBatches(id) ON DELETE CASCADE

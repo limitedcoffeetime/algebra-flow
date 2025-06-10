@@ -19,13 +19,32 @@
       "batchId": "batch_sample_001",
       "equation": "2x + 5 = 15",
       "direction": "Solve for x",
-      "answer": "5",
+      "answer": "x = 5",
+      "answerLHS": "x = ",
+      "answerRHS": 5,
       "solutionSteps": [
-        "2x + 5 - 5 = 15 - 5",
-        "2x = 10",
-        "x = 10 / 2",
-        "x = 5"
+        {
+          "explanation": "Subtract 5 from both sides",
+          "mathExpression": "2x + 5 - 5 = 15 - 5",
+          "isEquation": true
+        },
+        {
+          "explanation": "Simplify",
+          "mathExpression": "2x = 10",
+          "isEquation": true
+        },
+        {
+          "explanation": "Divide both sides by 2",
+          "mathExpression": "x = 10 / 2",
+          "isEquation": true
+        },
+        {
+          "explanation": "Final answer",
+          "mathExpression": "x = 5",
+          "isEquation": true
+        }
       ],
+      "variables": ["x"],
       "difficulty": "easy",
       "problemType": "linear-one-variable",
       "isCompleted": false
@@ -35,13 +54,32 @@
       "batchId": "batch_sample_001",
       "equation": "3y - 7 = 14",
       "direction": "Solve for y",
-      "answer": "7",
+      "answer": "y = 7",
+      "answerLHS": "y = ",
+      "answerRHS": 7,
       "solutionSteps": [
-        "3y - 7 + 7 = 14 + 7",
-        "3y = 21",
-        "y = 21 / 3",
-        "y = 7"
+        {
+          "explanation": "Add 7 to both sides",
+          "mathExpression": "3y - 7 + 7 = 14 + 7",
+          "isEquation": true
+        },
+        {
+          "explanation": "Simplify",
+          "mathExpression": "3y = 21",
+          "isEquation": true
+        },
+        {
+          "explanation": "Divide both sides by 3",
+          "mathExpression": "y = 21 / 3",
+          "isEquation": true
+        },
+        {
+          "explanation": "Final answer",
+          "mathExpression": "y = 7",
+          "isEquation": true
+        }
       ],
+      "variables": ["y"],
       "difficulty": "easy",
       "problemType": "linear-one-variable",
       "isCompleted": false
@@ -52,11 +90,26 @@
       "equation": "x^2 - 4 = 0",
       "direction": "Solve for x",
       "answer": [2, -2],
+      "answerLHS": "x = ",
+      "answerRHS": [2, -2],
       "solutionSteps": [
-        "x^2 = 4",
-        "x = sqrt(4)",
-        "x = ±2"
+        {
+          "explanation": "Add 4 to both sides",
+          "mathExpression": "x^2 = 4",
+          "isEquation": true
+        },
+        {
+          "explanation": "Take square root of both sides",
+          "mathExpression": "x = ±√4",
+          "isEquation": true
+        },
+        {
+          "explanation": "Simplify",
+          "mathExpression": "x = ±2",
+          "isEquation": true
+        }
       ],
+      "variables": ["x"],
       "difficulty": "medium",
       "problemType": "quadratic-simple",
       "isCompleted": false
@@ -66,11 +119,22 @@
       "batchId": "batch_sample_002",
       "equation": "a / 3 = 7",
       "direction": "Solve for a",
-      "answer": "21",
+      "answer": "a = 21",
+      "answerLHS": "a = ",
+      "answerRHS": 21,
       "solutionSteps": [
-        "a / 3 * 3 = 7 * 3",
-        "a = 21"
+        {
+          "explanation": "Multiply both sides by 3",
+          "mathExpression": "a / 3 × 3 = 7 × 3",
+          "isEquation": true
+        },
+        {
+          "explanation": "Final answer",
+          "mathExpression": "a = 21",
+          "isEquation": true
+        }
       ],
+      "variables": ["a"],
       "difficulty": "easy",
       "problemType": "linear-one-variable",
       "isCompleted": false
@@ -78,15 +142,29 @@
     {
       "id": "prob_005",
       "batchId": "batch_sample_002",
-      "equation": "b + 9 = 3",
-      "direction": "Solve for b",
-      "answer": "-6",
+      "equation": "3x^2 + 2x^2 + 5x - 3x",
+      "direction": "Simplify",
+      "answer": "5x^2 + 2x",
       "solutionSteps": [
-        "b + 9 - 9 = 3 - 9",
-        "b = -6"
+        {
+          "explanation": "Combine like terms for x^2",
+          "mathExpression": "3x^2 + 2x^2 = 5x^2",
+          "isEquation": false
+        },
+        {
+          "explanation": "Combine like terms for x",
+          "mathExpression": "5x - 3x = 2x",
+          "isEquation": false
+        },
+        {
+          "explanation": "Final simplified expression",
+          "mathExpression": "5x^2 + 2x",
+          "isEquation": false
+        }
       ],
+      "variables": ["x"],
       "difficulty": "easy",
-      "problemType": "linear-one-variable",
+      "problemType": "polynomial-simplification",
       "isCompleted": false
     }
   ]

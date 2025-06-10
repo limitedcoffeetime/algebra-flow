@@ -1,7 +1,7 @@
 import { logger } from '@/utils/logger';
 import { ProblemBatchInput, ProblemInput } from "./schema";
 
-// Define the structure of our JSON file
+// Define the structure of our JSON file - updated for new schema
 interface SampleProblemsData {
   batches: Array<{
     id: string;
@@ -15,7 +15,14 @@ interface SampleProblemsData {
     equation: string;
     direction: string;
     answer: string | number[];
-    solutionSteps: string[];
+    answerLHS?: string;
+    answerRHS?: string | number | number[];
+    solutionSteps: Array<{
+      explanation: string;
+      mathExpression: string;
+      isEquation: boolean;
+    }>;
+    variables: string[];
     difficulty: 'easy' | 'medium' | 'hard';
     problemType: string;
     isCompleted: boolean;
@@ -55,7 +62,10 @@ export const getSampleBatchAndProblemsInput = async () => {
         equation: problem.equation,
         direction: problem.direction,
         answer: problem.answer,
+        answerLHS: problem.answerLHS,
+        answerRHS: problem.answerRHS,
         solutionSteps: problem.solutionSteps,
+        variables: problem.variables,
         difficulty: problem.difficulty,
         problemType: problem.problemType,
         isCompleted: problem.isCompleted
@@ -89,7 +99,10 @@ export const getSampleProblems = async (): Promise<ProblemInput[]> => {
     equation: problem.equation,
     direction: problem.direction,
     answer: problem.answer,
+    answerLHS: problem.answerLHS,
+    answerRHS: problem.answerRHS,
     solutionSteps: problem.solutionSteps,
+    variables: problem.variables || ['x'], // Default variables if missing
     difficulty: problem.difficulty,
     problemType: problem.problemType,
     isCompleted: problem.isCompleted

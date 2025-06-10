@@ -32,6 +32,20 @@ export const styles = StyleSheet.create({
   preview: {
     minHeight: 40,
   },
+  prefixContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prefixText: {
+    marginRight: 4,
+  },
+  prefixFallbackText: {
+    fontSize: 20,
+    color: '#94a3b8',
+    fontFamily: 'monospace',
+    marginRight: 4,
+  },
   placeholderText: {
     fontSize: 18,
     color: '#666',

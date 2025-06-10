@@ -15,6 +15,7 @@ const MathInput: React.FC<MathInputProps> = ({
   variables = ['x'],
   isValidating = false,
   showPreview = true,
+  answerPrefix,
 }) => {
   // Custom hooks for clean separation of concerns
   const { insertAtCursor, handleBackspace, cursorPosition, setCursorPosition } = useCursorPosition(value, onChangeText);
@@ -33,6 +34,7 @@ const MathInput: React.FC<MathInputProps> = ({
         placeholder={placeholder}
         showPreview={showPreview}
         keyboardVisible={keyboardVisible}
+        answerPrefix={answerPrefix}
         onToggleKeyboard={toggleKeyboard}
         onChangeText={onChangeText}
         onSelectionChange={handleSelectionChange}

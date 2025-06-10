@@ -15,6 +15,7 @@ export const InputDisplay: React.FC<InputDisplayExtendedProps> = ({
   placeholder,
   showPreview,
   keyboardVisible,
+  answerPrefix,
   onToggleKeyboard,
   onChangeText,
   onSelectionChange,
@@ -28,9 +29,13 @@ export const InputDisplay: React.FC<InputDisplayExtendedProps> = ({
     }
   }, []);
 
+  // Combine prefix with user input for display
+  const displayValue = answerPrefix ? `${answerPrefix}${value}` : value;
+  const actualPlaceholder = answerPrefix ? `${answerPrefix}${placeholder}` : placeholder;
+
   return (
     <View style={styles.inputContainer}>
-      {/* Hidden TextInput for system integration */}
+      {/* Hidden TextInput for system integration - only handles user input part */}
       <TextInput
         ref={textInputRef}
         style={styles.hiddenInput}
@@ -47,26 +52,48 @@ export const InputDisplay: React.FC<InputDisplayExtendedProps> = ({
         accessibilityLabel="Math input field"
       />
 
-      {/* Math Preview */}
-      {showPreview && value.trim() ? (
+      {/* Math Preview with prefix */}
+      {showPreview && displayValue.trim() ? (
         <View style={styles.previewContainer}>
-          <SmartMathRenderer
-            text={value}
-            fontSize={20}
-            color="#ffffff"
-            style={styles.preview}
-          />
+          {answerPrefix ? (
+            <View style={styles.prefixContainer}>
+              <SmartMathRenderer
+                text={answerPrefix}
+                fontSize={20}
+                color="#94a3b8"
+                style={styles.prefixText}
+              />
+              <SmartMathRenderer
+                text={value || ' '}
+                fontSize={20}
+                color="#ffffff"
+                style={styles.preview}
+              />
+            </View>
+          ) : (
+            <SmartMathRenderer
+              text={displayValue}
+              fontSize={20}
+              color="#ffffff"
+              style={styles.preview}
+            />
+          )}
         </View>
       ) : (
         <>
           {/* Placeholder text when empty */}
-          {!value.trim() && (
-            <Text style={styles.placeholderText}>{placeholder}</Text>
+          {!displayValue.trim() && (
+            <Text style={styles.placeholderText}>{actualPlaceholder}</Text>
           )}
 
           {/* Fallback text display when preview disabled */}
-          {value.trim() && !showPreview && (
-            <Text style={styles.inputText}>{value}</Text>
+          {displayValue.trim() && !showPreview && (
+            <View style={answerPrefix ? styles.prefixContainer : undefined}>
+              {answerPrefix && (
+                <Text style={styles.prefixFallbackText}>{answerPrefix}</Text>
+              )}
+              <Text style={styles.inputText}>{value}</Text>
+            </View>
           )}
         </>
       )}

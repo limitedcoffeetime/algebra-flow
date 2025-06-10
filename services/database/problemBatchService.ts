@@ -1,9 +1,9 @@
 import { logger } from '@/utils/logger';
 import { getDBConnection, runInTransactionAsync } from './db';
 import {
-  ProblemBatch,
-  ProblemBatchInput,
-  ProblemInput
+    ProblemBatch,
+    ProblemBatchInput,
+    ProblemInput
 } from './schema';
 import { generateId } from './utils';
 
@@ -39,11 +39,11 @@ export async function addProblemBatch(
     // Insert Problems
     const problemInsertSql = `
       INSERT INTO Problems (
-        id, batchId, equation, answer, solutionSteps,
+        id, batchId, equation, direction, answer, answerLHS, answerRHS, solutionSteps, variables,
         difficulty, problemType, isCompleted, userAnswer,
         solutionStepsShown, createdAt, updatedAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
 
     for (const problem of problemsInput) {
@@ -58,15 +58,19 @@ export async function addProblemBatch(
         problemId,
         batchId,
         problem.equation,
-        Array.isArray(problem.answer) ? JSON.stringify(problem.answer) : String(problem.answer), // Store arrays as JSON
-        JSON.stringify(problem.solutionSteps), // Store array as JSON string
+        problem.direction,
+        Array.isArray(problem.answer) ? JSON.stringify(problem.answer) : String(problem.answer),
+        problem.answerLHS || null,
+        problem.answerRHS ? (Array.isArray(problem.answerRHS) ? JSON.stringify(problem.answerRHS) : String(problem.answerRHS)) : null,
+        JSON.stringify(problem.solutionSteps),
+        JSON.stringify(problem.variables),
         problem.difficulty,
         problem.problemType,
-        problem.isCompleted ? 1 : 0, // Boolean to integer
+        problem.isCompleted ? 1 : 0,
         problem.userAnswer ? String(problem.userAnswer) : null,
-        problem.solutionStepsShown ? 1 : 0, // Boolean to integer
-        currentTime, // createdAt
-        currentTime  // updatedAt
+        problem.solutionStepsShown ? 1 : 0,
+        currentTime,
+        currentTime
       );
       logger.info(`Problem ${problemId} for batch ${batchId} inserted.`);
     }

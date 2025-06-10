@@ -14,6 +14,8 @@ export interface UseRealTimeValidationProps {
   problemDirection: string;
   variables: string[];
   debounceMs?: number;
+  answerLHS?: string;
+  answerRHS?: string | number | number[];
 }
 
 export const useRealTimeValidation = ({
@@ -22,6 +24,8 @@ export const useRealTimeValidation = ({
   problemDirection,
   variables,
   debounceMs = 500,
+  answerLHS,
+  answerRHS,
 }: UseRealTimeValidationProps): ValidationResult => {
   const [debouncedInput, setDebouncedInput] = useState(userInput);
   const [validationResult, setValidationResult] = useState<ValidationResult>({
@@ -80,7 +84,7 @@ export const useRealTimeValidation = ({
     }
 
     try {
-      const isCorrect = await isAnswerCorrect(trimmed, correctAnswer);
+      const isCorrect = await isAnswerCorrect(trimmed, correctAnswer, answerLHS, answerRHS);
 
       if (isCorrect) {
         return {
@@ -105,7 +109,7 @@ export const useRealTimeValidation = ({
         suggestion: 'Check your mathematical expression',
       };
     }
-  }, []);
+  }, [answerLHS, answerRHS]);
 
   // Simple syntax error checking
   const hasObviousSyntaxErrors = useCallback((input: string): boolean => {

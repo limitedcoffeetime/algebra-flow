@@ -2,7 +2,7 @@ import { OpenAI } from 'openai';
 import { Difficulty, ProblemType } from './constants';
 import { getDifficultyDescription, getProblemTypeInstructions, getSolutionStepsInstructions } from './instructions';
 import { getProblemResponseSchema } from './schema';
-import { parseOpenAIResponse, validateAnswerFormat } from './validation';
+import { parseOpenAIResponse } from './validation';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -16,6 +16,8 @@ export interface GeneratedProblem {
   equation: string;
   direction: string;
   answer: unknown;
+  answerLHS?: string; // e.g., "x = " - for problems that solve for a variable
+  answerRHS?: unknown; // The RHS when LHS is present
   solutionSteps: SolutionStep[];
   variables: string[];
   difficulty: Difficulty;
@@ -60,49 +62,39 @@ Constraints:
 - CRITICAL: Direction must clearly state what to do, answer must be just the value
 - CRITICAL: List all variables used in the problem in the variables array`;
 
-  const response = await openai.responses.create({
-    model: 'o4-mini-2025-04-16',
-    input: [
-      { role: 'system', content: 'You are a math teacher creating algebra problems. Follow the JSON schema exactly and separate math expressions from explanations.' },
-      { role: 'user', content: prompt },
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'algebra_problems_response',
-        description: 'Response containing algebra problems with structured solution steps',
-        schema: responseSchema,
-        strict: true,
-      },
-    },
-    store: false,
-  });
-
-  let data;
   try {
-    data = JSON.parse(response.output_text.trim());
-  } catch {
-    data = parseOpenAIResponse(response.output_text.trim());
-  }
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.8,
+    });
 
-  const problems = data.problems as any[];
-  if (!Array.isArray(problems) || problems.length !== count) {
-    throw new Error('Invalid number of problems in LLM response');
-  }
-
-  return problems.map((p: any): GeneratedProblem => {
-    if (!validateAnswerFormat(p.answer, problemType)) {
-      // we still return but mark
+    const responseText = completion.choices[0]?.message?.content;
+    if (!responseText) {
+      throw new Error('No response from OpenAI');
     }
-    return {
+
+    const { problems } = parseOpenAIResponse(responseText);
+
+    if (!Array.isArray(problems) || problems.length !== count) {
+      throw new Error(`Expected ${count} problems, got ${problems.length}`);
+    }
+
+    return problems.map((p, index) => ({
+      id: crypto.randomUUID(),
       equation: p.equation,
-      direction: p.direction || `Solve for x`, // fallback for old data
+      direction: p.direction,
       answer: p.answer,
+      answerLHS: p.answerLHS,
+      answerRHS: p.answerRHS,
       solutionSteps: Array.isArray(p.solutionSteps) ? p.solutionSteps : [p.solutionSteps],
-      variables: p.variables || ['x'], // fallback for old data
+      variables: p.variables,
       difficulty,
       problemType,
       isCompleted: false,
-    };
-  });
+    }));
+  } catch (error) {
+    throw error;
+  }
 }

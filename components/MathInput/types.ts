@@ -6,6 +6,7 @@ export interface MathInputProps {
   variables?: string[];
   isValidating?: boolean;
   showPreview?: boolean;
+  answerPrefix?: string;
 }
 
 export interface InputDisplayProps {
@@ -13,6 +14,7 @@ export interface InputDisplayProps {
   placeholder: string;
   showPreview: boolean;
   keyboardVisible: boolean;
+  answerPrefix?: string;
   onToggleKeyboard: () => void;
 }
 
