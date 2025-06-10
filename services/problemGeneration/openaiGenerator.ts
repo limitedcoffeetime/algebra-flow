@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { OpenAI } from 'openai';
 import { Difficulty, ProblemType } from './constants';
 import { getDifficultyDescription, getProblemTypeInstructions, getSolutionStepsInstructions } from './instructions';
