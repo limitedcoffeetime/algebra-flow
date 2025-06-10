@@ -106,19 +106,43 @@ Constraints:
       throw new Error(`Expected ${count} problems, got ${problems.length}`);
     }
 
-    return problems.map((p, index) => ({
-      id: crypto.randomUUID(),
-      equation: p.equation,
-      direction: p.direction,
-      answer: p.answer,
-      answerLHS: p.answerLHS,
-      answerRHS: p.answerRHS,
-      solutionSteps: Array.isArray(p.solutionSteps) ? p.solutionSteps : [p.solutionSteps],
-      variables: p.variables,
-      difficulty,
-      problemType,
-      isCompleted: false,
-    }));
+    return problems.map((p, index) => {
+      console.log(`🔍 Processing problem ${index + 1}:`, {
+        equation: p.equation,
+        direction: p.direction,
+        hasAnswer: p.answer !== undefined,
+        hasLHS: p.answerLHS !== undefined,
+        hasRHS: p.answerRHS !== undefined,
+        answer: p.answer,
+        answerLHS: p.answerLHS,
+        answerRHS: p.answerRHS
+      });
+
+      // For LHS/RHS problems, use answerRHS for validation
+      // For traditional problems, use answer
+      const answerToValidate = p.answerLHS ? p.answerRHS : p.answer;
+
+      if (answerToValidate === undefined) {
+        console.log(`❌ Problem ${index + 1} has no valid answer to validate`);
+        throw new Error(`Problem ${index + 1} missing valid answer field`);
+      }
+
+      console.log(`✅ Problem ${index + 1} validation target:`, answerToValidate);
+
+      return {
+        id: crypto.randomUUID(),
+        equation: p.equation,
+        direction: p.direction,
+        answer: p.answer || answerToValidate, // Fallback to answerRHS if no answer
+        answerLHS: p.answerLHS,
+        answerRHS: p.answerRHS,
+        solutionSteps: Array.isArray(p.solutionSteps) ? p.solutionSteps : [p.solutionSteps],
+        variables: p.variables,
+        difficulty,
+        problemType,
+        isCompleted: false,
+      };
+    });
   } catch (error) {
     throw error;
   }

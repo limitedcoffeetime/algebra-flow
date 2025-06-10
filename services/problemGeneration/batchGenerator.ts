@@ -62,10 +62,13 @@ export async function generateProblemBatch(): Promise<ProblemBatch> {
       if (count === 0) continue;
       generationStats.attempted += count;
       try {
+        console.log(`🚀 Generating ${count} ${difficulty} ${type} problems...`);
         const problems = await generateProblemsWithAI(type, difficulty, count);
+        console.log(`✅ Successfully generated ${problems.length} ${difficulty} ${type} problems`);
         allProblems.push(...problems);
         generationStats.successful += problems.length;
       } catch (e) {
+        console.error(`❌ Failed to generate ${type} ${difficulty} problems:`, e);
         generationStats.failed += count;
         generationStats.failedTypes.push(`${type}-${difficulty}`);
       }
@@ -79,6 +82,15 @@ export async function generateProblemBatch(): Promise<ProblemBatch> {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }));
+
+  console.log(`📊 Generation Statistics:`);
+  console.log(`  Attempted: ${generationStats.attempted} problems`);
+  console.log(`  Successful: ${generationStats.successful} problems`);
+  console.log(`  Failed: ${generationStats.failed} problems`);
+  if (generationStats.failedTypes.length > 0) {
+    console.log(`  Failed types: ${generationStats.failedTypes.join(', ')}`);
+  }
+  console.log(`🎲 Final batch: ${shuffled.length} problems ready`);
 
   return {
     id: batchId,

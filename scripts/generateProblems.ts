@@ -6,7 +6,24 @@ import { logger } from '../utils/logger';
 async function main() {
   try {
     logger.info('🔥 Starting daily problem generation (modular version)...');
+    console.log('🛠️ Environment check:');
+    console.log(`  OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing'}`);
+    console.log(`  PROBLEMS_PER_BATCH: ${process.env.PROBLEMS_PER_BATCH || '5 (default)'}`);
+
+    console.log('📦 Generating problem batch...');
     const batch = await generateProblemBatch();
+
+    console.log(`🎯 Batch generation completed:`);
+    console.log(`  Batch ID: ${batch.id}`);
+    console.log(`  Target: ${batch.targetCount} problems`);
+    console.log(`  Generated: ${batch.problemCount} problems`);
+
+    if (batch.problemCount === 0) {
+      logger.error('❌ No problems were generated! Check the logs above for errors.');
+      process.exit(1);
+    }
+
+    console.log('☁️ Uploading to S3...');
     const latestUrl = await uploadToS3(batch);
 
     logger.info('✅ Problem generation complete!');
