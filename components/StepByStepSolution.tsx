@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useRef } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SmartMathRenderer from './SmartMathRenderer';
 
 interface SolutionStep {
@@ -20,8 +20,6 @@ const StepByStepSolution: React.FC<StepByStepSolutionProps> = ({
   isVisible,
   onToggle
 }) => {
-  const scrollViewRef = useRef<ScrollView>(null);
-
   // Convert old string format to new structured format for backward compatibility
   const normalizeSteps = (steps: SolutionStep[] | string[]): SolutionStep[] => {
     if (!Array.isArray(steps) || steps.length === 0) return [];
@@ -56,21 +54,15 @@ const StepByStepSolution: React.FC<StepByStepSolutionProps> = ({
       </TouchableOpacity>
 
       {isVisible && (
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.stepsContainer}>
-            {normalizedSteps.map((step, index) => (
-              <SolutionStep
-                key={index}
-                step={step}
-                stepNumber={index + 1}
-              />
-            ))}
-          </View>
-        </ScrollView>
+        <View style={styles.stepsContainer}>
+          {normalizedSteps.map((step, index) => (
+            <SolutionStep
+              key={index}
+              step={step}
+              stepNumber={index + 1}
+            />
+          ))}
+        </View>
       )}
     </View>
   );
@@ -117,9 +109,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#ffffff',
-  },
-  scrollView: {
-    maxHeight: 400,
   },
   stepsContainer: {
     padding: 16,
