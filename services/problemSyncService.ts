@@ -267,7 +267,7 @@ export class ProblemSyncService {
       }
 
       // Fallback: if no manifest, just return the latest batch ID
-      logger.warn('No manifest.json found, using latest batch only for cleanup reference');
+      logger.info('No manifest.json found, using latest batch only for cleanup reference');
       const latestInfo = await this.fetchLatestInfo();
       return latestInfo ? [latestInfo.batchId] : null;
     } catch (error) {

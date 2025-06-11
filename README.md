@@ -4,6 +4,20 @@ A mobile algebra learning app built with React Native and Expo.
 
 ## Latest Updates
 
+### **June 10, 2024** – Mathematical Expression Equivalence
+
+#### Answer validation now handles equivalent expressions
+- `2(x+2)` correctly accepts `2x+4` and vice versa
+- Tests expressions with multiple variable values to check if they're mathematically identical
+- Uses mathjs to parse expressions and evaluate equivalence
+
+#### Fixed simplification problems being too easy
+- Can't just submit the original problem with minor tweaks on simplification questions
+- Still allows equivalent expressions for regular solving problems
+- Checks that polynomial answers are actually simplified ( "2x + 3x" is wrong for simplification problems)
+
+Basically made the validation smarter about when mathematical equivalence should count vs when you need to actually do the work.
+
 ### **June 9, 2024** – Schema Overhaul & Enhanced Math UX
 
 #### Schema Restructuring
