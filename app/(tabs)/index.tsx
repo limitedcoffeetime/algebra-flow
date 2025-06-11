@@ -4,23 +4,24 @@ import SmartMathRenderer from '@/components/SmartMathRenderer';
 import StepByStepSolution from '@/components/StepByStepSolution';
 import { useProblemStore } from '@/store/problemStore';
 import { isAnswerCorrect } from '@/utils/enhancedAnswerUtils';
+import { MathExpression, MathExpressionImpl } from '@/utils/mathObjects';
 import { hasObviousSyntaxErrors } from '@/utils/syntaxValidation';
 import { getContextualHint, useRealTimeValidation } from '@/utils/useRealTimeValidation';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Index() {
-  const [userAnswer, setUserAnswer] = useState('');
+  const [userAnswer, setUserAnswer] = useState(new MathExpressionImpl());
   const [showSolution, setShowSolution] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,9 +40,20 @@ export default function Index() {
     initialize();
   }, [initialize]);
 
+  // Handle expression changes from MathInput
+  const handleExpressionChange = (expression: MathExpression) => {
+    // Convert to MathExpressionImpl if needed
+    if (expression instanceof MathExpressionImpl) {
+      setUserAnswer(expression);
+    } else {
+      const newExpression = new MathExpressionImpl(expression.components);
+      setUserAnswer(newExpression);
+    }
+  };
+
   // Memoize validation props to prevent infinite re-renders
   const validationProps = useMemo(() => ({
-    userInput: userAnswer,
+    userInput: userAnswer.toValue(), // Use mathematical value for validation
     correctAnswer: currentProblem?.answer || '',
     problemDirection: currentProblem?.direction || '',
     variables: currentProblem?.variables || ['x'],
@@ -63,11 +75,11 @@ export default function Index() {
   const contextualHint = currentProblem ? getContextualHint(
     currentProblem.direction,
     currentProblem.variables,
-    userAnswer
+    userAnswer.toValue()
   ) : '';
 
   const handleSubmit = async () => {
-    if (!currentProblem || !userAnswer.trim()) {
+    if (!currentProblem || userAnswer.components.length === 0) {
       Alert.alert('Please enter an answer');
       return;
     }
@@ -76,7 +88,7 @@ export default function Index() {
 
     try {
       // Check for syntax errors first (same as real-time validation)
-      const hasError = hasObviousSyntaxErrors(userAnswer.trim());
+      const hasError = hasObviousSyntaxErrors(userAnswer.toValue());
       if (hasError) {
         Alert.alert('Invalid Input', 'Please check your mathematical expression and try again.');
         setIsSubmitting(false);
@@ -85,7 +97,7 @@ export default function Index() {
 
       // Use enhanced validation with LHS/RHS support
       const isCorrect = await isAnswerCorrect(
-        userAnswer,
+        userAnswer.toValue(),
         currentProblem.answer,
         currentProblem.answerLHS,
         currentProblem.answerRHS,
@@ -94,7 +106,7 @@ export default function Index() {
       );
 
       // Submit to store
-      await submitAnswer(userAnswer, isCorrect);
+      await submitAnswer(userAnswer.toValue(), isCorrect);
 
       if (isCorrect) {
         Alert.alert(
@@ -124,7 +136,7 @@ export default function Index() {
   };
 
   const handleNextProblem = async () => {
-    setUserAnswer('');
+    setUserAnswer(new MathExpressionImpl());
     setShowSolution(false);
     await loadNextProblem();
   };
@@ -212,7 +224,7 @@ export default function Index() {
           </View>
 
           {/* Real-time Feedback */}
-          {userAnswer.trim() && validation.suggestion && (
+          {userAnswer.components.length > 0 && validation.suggestion && (
             <View style={[styles.feedbackContainer, { borderLeftColor: getValidationColor() }]}>
               <Text style={[styles.feedbackText, { color: getValidationColor() }]}>
                 {getValidationMessage()}
@@ -240,7 +252,7 @@ export default function Index() {
         <View style={styles.inputSection}>
           <MathInput
             value={userAnswer}
-            onChangeText={setUserAnswer}
+            onChangeExpression={handleExpressionChange}
             onSubmit={handleSubmit}
             placeholder="Enter your answer"
             variables={currentProblem.variables}

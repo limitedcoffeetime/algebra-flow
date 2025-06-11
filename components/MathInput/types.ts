@@ -1,6 +1,8 @@
+import { MathComponent, MathExpression } from '../../utils/mathObjects';
+
 export interface MathInputProps {
-  value: string;
-  onChangeText: (text: string) => void;
+  value: MathExpression;
+  onChangeExpression: (expression: MathExpression) => void;
   onSubmit: () => void;
   placeholder?: string;
   variables?: string[];
@@ -10,18 +12,22 @@ export interface MathInputProps {
 }
 
 export interface InputDisplayProps {
-  value: string;
+  value: MathExpression;
   placeholder: string;
   showPreview: boolean;
   keyboardVisible: boolean;
   answerPrefix?: string;
   onToggleKeyboard: () => void;
+  onFocusComponent: (componentId?: string) => void;
+  focusedComponentId?: string;
+  onPositionCursor?: (position: number) => void;
 }
 
 export interface CustomKeyboardProps {
   visible: boolean;
   keyboardHeight: any; // Animated.Value type
   variables: string[];
+  onInsertComponent: (component: MathComponent) => void;
   onInsertText: (text: string) => void;
   onBackspace: () => void;
   onSubmit: () => void;
@@ -64,7 +70,9 @@ export interface CursorPosition {
 }
 
 export interface TextInsertionHandlers {
-  insertAtCursor: (text: string) => void;
+  insertComponentAtCursor: (component: MathComponent) => void;
+  insertTextAtCursor: (text: string) => void;
   handleBackspace: () => void;
-  cursorPosition: number;
+  cursorPosition: number; // Index of the component we're at
+  focusedComponentId?: string; // ID of component with focus (for editing)
 }

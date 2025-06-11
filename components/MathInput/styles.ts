@@ -51,6 +51,11 @@ export const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  placeholderArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 40,
+  },
   inputText: {
     fontSize: 20,
     color: '#ffffff',
@@ -68,6 +73,27 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     color: '#94a3b8',
     marginLeft: 4,
+  },
+
+  // Interactive Math Styles
+  interactiveMathContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  componentWrapper: {
+    // No additional styling needed, just a wrapper
+  },
+  cursorArea: {
+    minWidth: 20,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cursorIndicator: {
+    width: 2,
+    height: 20,
+    backgroundColor: 'transparent', // Hidden but clickable
   },
 
   // Keyboard Container Styles

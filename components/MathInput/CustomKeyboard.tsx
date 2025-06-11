@@ -1,14 +1,15 @@
 import React from 'react';
 import { Animated, View } from 'react-native';
+import { createEmptyFraction } from '../../utils/mathObjects';
 import {
-  BackspaceKey,
-  ExponentKey,
-  FractionKey,
-  NumberKey,
-  OperatorKey,
-  SqrtKey,
-  SubmitKey,
-  VariableKey,
+    BackspaceKey,
+    ExponentKey,
+    FractionKey,
+    NumberKey,
+    OperatorKey,
+    SqrtKey,
+    SubmitKey,
+    VariableKey,
 } from './KeyboardKeys';
 import { styles } from './styles';
 import type { CustomKeyboardProps } from './types';
@@ -19,11 +20,22 @@ export const CustomKeyboard: React.FC<CustomKeyboardProps> = ({
   visible,
   keyboardHeight,
   variables,
+  onInsertComponent,
   onInsertText,
   onBackspace,
   onSubmit,
   isValidating,
 }) => {
+  // Custom handler for fraction insertion - creates a proper fraction object
+  const handleFractionInsert = () => {
+    const fraction = createEmptyFraction();
+    onInsertComponent({
+      type: 'fraction',
+      fraction,
+      id: fraction.id
+    });
+  };
+
   return (
     <Animated.View
       style={[
@@ -41,7 +53,7 @@ export const CustomKeyboard: React.FC<CustomKeyboardProps> = ({
         <View style={styles.keyboardContent}>
           {/* Top Row - Special Functions */}
           <View style={styles.keyboardRow}>
-            <FractionKey onPress={() => onInsertText('/')} />
+            <FractionKey onPress={handleFractionInsert} />
             <ExponentKey onPress={() => onInsertText('^')} />
             <SqrtKey onPress={() => onInsertText('sqrt(')} />
 

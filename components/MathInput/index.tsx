@@ -1,15 +1,15 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { View } from 'react-native';
 import { CustomKeyboard } from './CustomKeyboard';
-import { useCursorPosition } from './hooks/useCursorPosition';
 import { useKeyboardAnimation } from './hooks/useKeyboardAnimation';
+import { useMathCursor } from './hooks/useMathCursor';
 import { InputDisplay } from './InputDisplay';
 import { styles } from './styles';
 import type { MathInputProps } from './types';
 
 const MathInput: React.FC<MathInputProps> = ({
   value,
-  onChangeText,
+  onChangeExpression,
   onSubmit,
   placeholder = "Enter your answer",
   variables = ['x'],
@@ -18,13 +18,16 @@ const MathInput: React.FC<MathInputProps> = ({
   answerPrefix,
 }) => {
   // Custom hooks for clean separation of concerns
-  const { insertAtCursor, handleBackspace, cursorPosition, setCursorPosition } = useCursorPosition(value, onChangeText);
+  const {
+    insertComponentAtCursor,
+    insertTextAtCursor,
+    handleBackspace,
+    cursorPosition,
+    setCursorPosition,
+    setFocusedComponent,
+    focusedComponentId
+  } = useMathCursor(value, onChangeExpression);
   const { keyboardVisible, keyboardHeight, toggleKeyboard } = useKeyboardAnimation();
-
-  // Handle cursor position changes from TextInput
-  const handleSelectionChange = useCallback((event: any) => {
-    setCursorPosition(event.nativeEvent.selection.start);
-  }, [setCursorPosition]);
 
   return (
     <View style={styles.container}>
@@ -36,8 +39,9 @@ const MathInput: React.FC<MathInputProps> = ({
         keyboardVisible={keyboardVisible}
         answerPrefix={answerPrefix}
         onToggleKeyboard={toggleKeyboard}
-        onChangeText={onChangeText}
-        onSelectionChange={handleSelectionChange}
+        onFocusComponent={setFocusedComponent}
+        focusedComponentId={focusedComponentId}
+        onPositionCursor={setCursorPosition}
       />
 
       {/* Custom Keyboard */}
@@ -45,7 +49,8 @@ const MathInput: React.FC<MathInputProps> = ({
         visible={keyboardVisible}
         keyboardHeight={keyboardHeight}
         variables={variables}
-        onInsertText={insertAtCursor}
+        onInsertComponent={insertComponentAtCursor}
+        onInsertText={insertTextAtCursor}
         onBackspace={handleBackspace}
         onSubmit={onSubmit}
         isValidating={isValidating}

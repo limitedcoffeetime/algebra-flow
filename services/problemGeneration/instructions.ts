@@ -77,10 +77,11 @@ EXAMPLES:
 }
 
 MATH EXPRESSION GUIDELINES:
-- Use plain text math that can be rendered (e.g., "x^2", "sqrt(x)", "3/4")
-- Keep expressions simple and readable
-- For fractions: use "/" (e.g., "3/4" not "\\frac{3}{4}")
-- For exponents: use "^" (e.g., "x^2" not "x²")
-- For roots: use "sqrt()" (e.g., "sqrt(16)" not "√16")
+- Use LaTeX formatting for better visual representation
+- For fractions: ALWAYS use "\\frac{numerator}{denominator}" (e.g., "\\frac{3}{4}" not "3/4")
+- For exponents: use "^{power}" (e.g., "x^{2}" for complex exponents, "x^2" for simple ones)
+- For roots: use "\\sqrt{expression}" (e.g., "\\sqrt{16}")
+- Keep expressions clear and properly formatted
+- Examples: "\\frac{x + 1}{2}", "x^{2} + 3x + 1", "\\frac{\\sqrt{x}}{x - 1}"
 `;
 }
