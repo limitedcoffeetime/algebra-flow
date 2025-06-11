@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import { logger } from '@/utils/logger';
 import { OpenAI } from 'openai';
 import { Difficulty, ProblemType } from './constants';
 import { getDifficultyDescription, getProblemTypeInstructions, getSolutionStepsInstructions } from './instructions';
@@ -108,41 +108,28 @@ Constraints:
     }
 
     return problems.map((p, index) => {
-      console.log(`🔍 Processing problem ${index + 1}:`, {
-        equation: p.equation,
-        direction: p.direction,
-        hasAnswer: p.answer !== undefined,
-        hasLHS: p.answerLHS !== undefined,
-        hasRHS: p.answerRHS !== undefined,
-        answer: p.answer,
-        answerLHS: p.answerLHS,
-        answerRHS: p.answerRHS
+      logger.info(`🔍 Processing problem ${index + 1}:`, {
+        type: p.type,
+        difficulty: p.difficulty,
+        problem: p.problem.substring(0, 50) + '...',
+        hasAnswer: !!p.answer,
+        hasLHS: !!p.answerLHS,
+        hasRHS: !!p.answerRHS
       });
 
-      // For LHS/RHS problems, use answerRHS for validation
-      // For traditional problems, use answer
-      const answerToValidate = p.answerLHS ? p.answerRHS : p.answer;
-
-      if (answerToValidate === undefined) {
-        console.log(`❌ Problem ${index + 1} has no valid answer to validate`);
+      // Determine what to validate
+      let answerToValidate: string | number | number[];
+      if (p.answerRHS !== undefined && p.answerRHS !== null) {
+        answerToValidate = p.answerRHS;
+      } else if (p.answer !== undefined && p.answer !== null) {
+        answerToValidate = p.answer;
+      } else {
+        logger.warn(`❌ Problem ${index + 1} has no valid answer to validate`);
         throw new Error(`Problem ${index + 1} missing valid answer field`);
       }
 
-      console.log(`✅ Problem ${index + 1} validation target:`, answerToValidate);
+      logger.info(`✅ Problem ${index + 1} validation target:`, answerToValidate);
 
-      return {
-        id: crypto.randomUUID(),
-        equation: p.equation,
-        direction: p.direction,
-        answer: p.answer || answerToValidate, // Fallback to answerRHS if no answer
-        answerLHS: p.answerLHS,
-        answerRHS: p.answerRHS,
-        solutionSteps: Array.isArray(p.solutionSteps) ? p.solutionSteps : [p.solutionSteps],
-        variables: p.variables,
-        difficulty,
-        problemType,
-        isCompleted: false,
-      };
     });
   } catch (error) {
     throw error;

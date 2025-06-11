@@ -2,6 +2,7 @@ import BatchManager from '@/components/BatchManager';
 import Button from '@/components/Button';
 import { getDatabaseType } from '@/services/database';
 import { useProblemStore } from '@/store/problemStore';
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -27,7 +28,7 @@ export default function SettingsScreen() {
       const info = await getBatchesInfo();
       setBatchesInfo(info);
     } catch (error) {
-      console.error('Failed to load batches info:', error);
+      logger.error('Failed to load batches info:', error);
     } finally {
       setIsLoadingBatches(false);
     }
@@ -62,8 +63,8 @@ export default function SettingsScreen() {
               // Reload batch info after reset
               await loadBatchesInfo();
             } catch (error) {
-              console.error('Failed to reset progress:', error);
-              Alert.alert('Error', 'Failed to reset progress. Please try again.');
+              logger.error('Failed to reset progress:', error);
+              Alert.alert('Error', 'Failed to reset progress');
             } finally {
               setIsResetting(false);
             }
@@ -89,8 +90,8 @@ export default function SettingsScreen() {
       // Refresh the local data after sync
       await loadBatchesInfo();
     } catch (error) {
-      console.error('Sync failed:', error);
-      Alert.alert('Sync Failed', 'Could not check for new problems. Please check your internet connection.');
+      logger.error('Sync failed:', error);
+      Alert.alert('Error', 'Failed to force sync');
     } finally {
       setIsSyncing(false);
     }

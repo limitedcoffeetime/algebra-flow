@@ -3,6 +3,8 @@
  * the correct form of answer based on problem type.
  */
 
+import { logger } from './logger';
+
 /**
  * Main validation function with problem type awareness
  */
@@ -19,7 +21,7 @@ export async function isAnswerCorrect(
 
   // Prevent users from submitting the original equation/problem
   if (originalEquation && await isSubmittingOriginalProblem(trimmedUser, originalEquation, problemType)) {
-    console.warn('🚫 User submitted original problem:', trimmedUser);
+    logger.warn('🚫 User submitted original problem:', trimmedUser);
     return false;
   }
 
