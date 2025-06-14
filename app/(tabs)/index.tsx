@@ -1,10 +1,8 @@
 import Button from '@/components/Button';
-import MathInput from '@/components/MathInput';
-import SmartMathRenderer from '@/components/SmartMathRenderer';
 import StepByStepSolution from '@/components/StepByStepSolution';
 import { useProblemStore } from '@/store/problemStore';
 import { isAnswerCorrect } from '@/utils/enhancedAnswerUtils';
-import { MathExpression, MathExpressionImpl } from '@/utils/mathObjects';
+import { ErrorStrategy, handleError } from '@/utils/errorHandler';
 import { hasObviousSyntaxErrors } from '@/utils/syntaxValidation';
 import { getContextualHint, useRealTimeValidation } from '@/utils/useRealTimeValidation';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -16,12 +14,14 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
+    TouchableOpacity,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Index() {
-  const [userAnswer, setUserAnswer] = useState(new MathExpressionImpl());
+  const [userAnswer, setUserAnswer] = useState('');
   const [showSolution, setShowSolution] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,26 +40,17 @@ export default function Index() {
     initialize();
   }, [initialize]);
 
-  // Handle expression changes from MathInput
-  const handleExpressionChange = (expression: MathExpression) => {
-    // Convert to MathExpressionImpl if needed
-    if (expression instanceof MathExpressionImpl) {
-      setUserAnswer(expression);
-    } else {
-      const newExpression = new MathExpressionImpl(expression.components);
-      setUserAnswer(newExpression);
-    }
-  };
-
   // Memoize validation props to prevent infinite re-renders
   const validationProps = useMemo(() => ({
-    userInput: userAnswer.toValue(), // Use mathematical value for validation
+    userInput: userAnswer,
     correctAnswer: currentProblem?.answer || '',
     problemDirection: currentProblem?.direction || '',
     variables: currentProblem?.variables || ['x'],
     debounceMs: 300,
     answerLHS: currentProblem?.answerLHS,
     answerRHS: currentProblem?.answerRHS,
+    problemType: currentProblem?.problemType,
+    originalEquation: currentProblem?.equation,
   }), [
     userAnswer,
     currentProblem?.answer,
@@ -67,6 +58,8 @@ export default function Index() {
     currentProblem?.variables,
     currentProblem?.answerLHS,
     currentProblem?.answerRHS,
+    currentProblem?.problemType,
+    currentProblem?.equation,
   ]);
 
   // Real-time validation (only if we have a current problem)
@@ -75,11 +68,11 @@ export default function Index() {
   const contextualHint = currentProblem ? getContextualHint(
     currentProblem.direction,
     currentProblem.variables,
-    userAnswer.toValue()
+    userAnswer
   ) : '';
 
   const handleSubmit = async () => {
-    if (!currentProblem || userAnswer.components.length === 0) {
+    if (!currentProblem || userAnswer.trim() === '') {
       Alert.alert('Please enter an answer');
       return;
     }
@@ -88,7 +81,7 @@ export default function Index() {
 
     try {
       // Check for syntax errors first (same as real-time validation)
-      const hasError = hasObviousSyntaxErrors(userAnswer.toValue());
+      const hasError = hasObviousSyntaxErrors(userAnswer);
       if (hasError) {
         Alert.alert('Invalid Input', 'Please check your mathematical expression and try again.');
         setIsSubmitting(false);
@@ -97,7 +90,7 @@ export default function Index() {
 
       // Use enhanced validation with LHS/RHS support
       const isCorrect = await isAnswerCorrect(
-        userAnswer.toValue(),
+        userAnswer,
         currentProblem.answer,
         currentProblem.answerLHS,
         currentProblem.answerRHS,
@@ -106,7 +99,7 @@ export default function Index() {
       );
 
       // Submit to store
-      await submitAnswer(userAnswer.toValue(), isCorrect);
+      await submitAnswer(userAnswer, isCorrect);
 
       if (isCorrect) {
         Alert.alert(
@@ -129,6 +122,7 @@ export default function Index() {
         );
       }
     } catch (error) {
+      handleError(error, 'submitting answer', ErrorStrategy.SILENT);
       Alert.alert('Error', 'Something went wrong. Please try again.');
     }
 
@@ -136,7 +130,7 @@ export default function Index() {
   };
 
   const handleNextProblem = async () => {
-    setUserAnswer(new MathExpressionImpl());
+    setUserAnswer('');
     setShowSolution(false);
     await loadNextProblem();
   };
@@ -207,12 +201,7 @@ export default function Index() {
 
             {/* Problem Equation */}
             <View style={styles.equationContainer}>
-              <SmartMathRenderer
-                text={currentProblem.equation}
-                fontSize={28}
-                color="#ffffff"
-                style={styles.equation}
-              />
+              <Text style={styles.equation}>{currentProblem.equation}</Text>
             </View>
 
             {/* Difficulty Badge */}
@@ -224,7 +213,7 @@ export default function Index() {
           </View>
 
           {/* Real-time Feedback */}
-          {userAnswer.components.length > 0 && validation.suggestion && (
+          {userAnswer.length > 0 && validation.suggestion && (
             <View style={[styles.feedbackContainer, { borderLeftColor: getValidationColor() }]}>
               <Text style={[styles.feedbackText, { color: getValidationColor() }]}>
                 {getValidationMessage()}
@@ -250,16 +239,43 @@ export default function Index() {
 
         {/* Math Input - Fixed at bottom */}
         <View style={styles.inputSection}>
-          <MathInput
-            value={userAnswer}
-            onChangeExpression={handleExpressionChange}
-            onSubmit={handleSubmit}
-            placeholder="Enter your answer"
-            variables={currentProblem.variables}
-            isValidating={isSubmitting}
-            showPreview={true}
-            answerPrefix={currentProblem.answerLHS}
-          />
+          <View style={styles.inputContainer}>
+            {/* Answer display */}
+            <View style={styles.inputDisplay}>
+              <Text style={styles.answerPrefix}>
+                {currentProblem.answerLHS ? `${currentProblem.answerLHS}  ` : ''}
+                {userAnswer || 'Enter your answer'}
+              </Text>
+            </View>
+
+            {/* Text input */}
+            <TextInput
+              style={styles.textInput}
+              value={userAnswer}
+              onChangeText={setUserAnswer}
+              placeholder="Type your answer..."
+              placeholderTextColor="#666"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="default"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+            />
+
+            {/* Submit button */}
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                isSubmitting && styles.submitButtonDisabled
+              ]}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.submitButtonText}>
+                {isSubmitting ? 'Checking...' : 'Submit Answer'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -323,7 +339,11 @@ const styles = StyleSheet.create({
     borderColor: '#3b82f6',
   },
   equation: {
-    minHeight: 60,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    fontFamily: 'monospace',
   },
   difficultyBadge: {
     backgroundColor: '#10b981',
@@ -355,13 +375,53 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   spacer: {
-    height: 80, // Reduced to pull keyboard higher
+    height: 80,
   },
   inputSection: {
     backgroundColor: '#0f172a',
     borderTopWidth: 1,
     borderTopColor: '#374151',
-    // Removed maxHeight and minHeight constraints
+  },
+  inputContainer: {
+    padding: 16,
+  },
+  inputDisplay: {
+    backgroundColor: '#1a1a2e',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+  },
+  answerPrefix: {
+    fontSize: 20,
+    color: '#ffffff',
+    fontFamily: 'monospace',
+    textAlign: 'center',
+  },
+  textInput: {
+    backgroundColor: '#374151',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 18,
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#4b5563',
+    marginBottom: 12,
+  },
+  submitButton: {
+    backgroundColor: '#10b981',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#6b7280',
+  },
+  submitButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
   loadingText: {
     color: '#ffffff',

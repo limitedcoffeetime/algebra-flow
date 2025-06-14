@@ -89,7 +89,7 @@ export const useRealTimeValidation = ({
     }
 
     try {
-      const isCorrect = await isAnswerCorrect(trimmed, correctAnswer, answerLHS, answerRHS);
+      const isCorrect = await isAnswerCorrect(trimmed, correctAnswer, answerLHS, answerRHS, problemType, originalEquation);
 
       if (isCorrect) {
         return {
@@ -114,7 +114,7 @@ export const useRealTimeValidation = ({
         suggestion: 'Check your mathematical expression',
       };
     }
-  }, [answerLHS, answerRHS]);
+  }, [answerLHS, answerRHS, problemType, originalEquation]);
 
   useEffect(() => {
     const runValidation = async () => {

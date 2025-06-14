@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import SmartMathRenderer from './SmartMathRenderer';
 
 interface SolutionStep {
   explanation: string;
@@ -10,7 +9,7 @@ interface SolutionStep {
 }
 
 interface StepByStepSolutionProps {
-  solutionSteps: SolutionStep[] | string[]; // Support both old and new formats
+  solutionSteps: SolutionStep[];
   isVisible: boolean;
   onToggle: () => void;
 }
@@ -20,25 +19,7 @@ const StepByStepSolution: React.FC<StepByStepSolutionProps> = ({
   isVisible,
   onToggle
 }) => {
-  // Convert old string format to new structured format for backward compatibility
-  const normalizeSteps = (steps: SolutionStep[] | string[]): SolutionStep[] => {
-    if (!Array.isArray(steps) || steps.length === 0) return [];
-
-    // Check if it's the old string format
-    if (typeof steps[0] === 'string') {
-      return (steps as string[]).map((step, index) => ({
-        explanation: `Step ${index + 1}`,
-        mathExpression: step,
-        isEquation: step.includes('=')
-      }));
-    }
-
-    return steps as SolutionStep[];
-  };
-
-  const normalizedSteps = normalizeSteps(solutionSteps);
-
-  if (normalizedSteps.length === 0) {
+  if (!solutionSteps || solutionSteps.length === 0) {
     return null;
   }
 
@@ -55,7 +36,7 @@ const StepByStepSolution: React.FC<StepByStepSolutionProps> = ({
 
       {isVisible && (
         <View style={styles.stepsContainer}>
-          {normalizedSteps.map((step, index) => (
+          {solutionSteps.map((step, index) => (
             <SolutionStep
               key={index}
               step={step}
@@ -80,12 +61,7 @@ const SolutionStep: React.FC<{ step: SolutionStep; stepNumber: number }> = ({ st
       </View>
 
       <View style={styles.mathContainer}>
-        <SmartMathRenderer
-          text={step.mathExpression}
-          fontSize={18}
-          color="#ffffff"
-          style={styles.stepMath}
-        />
+        <Text style={styles.stepMath}>{step.mathExpression}</Text>
       </View>
     </View>
   );
@@ -153,7 +129,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   stepMath: {
-    minHeight: 40,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    fontFamily: 'monospace',
+    textAlign: 'center',
   },
 });
 

@@ -1,4 +1,4 @@
-import { db } from '@/services/database';
+import { databaseService } from '@/services/domain';
 import { ProblemSyncService } from '@/services/problemSyncService';
 import { alertHelpers } from '@/utils/alertHelpers';
 import { commonStyles } from '@/utils/commonStyles';
@@ -6,13 +6,13 @@ import { logger } from '@/utils/logger';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface BatchInfo {
@@ -38,7 +38,7 @@ export default function BatchManager() {
     try {
       const [info, allBatches] = await Promise.all([
         ProblemSyncService.getBatchInfo(),
-        db.getAllBatches()
+        databaseService.batches.getAll()
       ]);
 
       setBatchInfo(info);
@@ -121,7 +121,7 @@ export default function BatchManager() {
     if (!confirmed) return;
 
     try {
-      await db.deleteProblemBatch(batchId);
+      await databaseService.batches.delete(batchId);
       alertHelpers.success('Batch deleted successfully');
       await loadBatchInfo();
     } catch (error) {
@@ -130,8 +130,9 @@ export default function BatchManager() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | Date) => {
+    const date = dateString instanceof Date ? dateString : new Date(dateString);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

@@ -1,109 +1,65 @@
-# SQLite Database for Algebro
+# Database Infrastructure
 
-## Overview
+This directory contains the core database infrastructure components that support the new repository pattern implementation.
 
-Database layer supporting both SQLite (production) and Mock DB (development) for storing algebra problems, batches, and user progress. Features active S3 integration with daily problem generation and sync.
+## Architecture Change
 
-## Database Mode
+⚠️ **Important**: The database service files (`problemService.ts`, `problemBatchService.ts`, etc.) have been **removed** and replaced with a clean repository pattern implementation.
 
-**Environment Variable: `EXPO_PUBLIC_USE_MOCK_DB`**
-- `true`: Uses Mock Database (in-memory, for development)
-- `false/unset`: Uses SQLite (persistent, for production)
-
-Check current mode via `getDatabaseType()`.
-
-## Table Structure
-
-### ProblemBatches
-- `id` - Unique batch ID: `YYYY-MM-DD-HHMMSS-XXXX` (e.g., "2025-01-15-143052-a7d2")
-  - Date + time + random suffix to handle multiple batches per day
-- `generationDate` - ISO timestamp when generated
-- `sourceUrl` - S3 URL where batch was fetched from
-- `problemCount` - Number of problems in batch
-- `importedAt` - When imported to local DB
-
-### Problems
-- `id` - UUID
-- `batchId` - Links to ProblemBatch
-- `equation` - Algebra equation string
-- `answer` - Correct answer (stored as string)
-- `solutionSteps` - JSON array of solution steps
-- `difficulty` - "easy", "medium", or "hard"
-- `problemType` - Problem category (e.g., "linear-one-variable")
-- `isCompleted` - User completion status
-- `userAnswer` - User's submitted answer
-- `solutionStepsShown` - Whether user viewed solution
-
-### UserProgress
-- `currentBatchId` - Active batch being worked on
-- `problemsAttempted` - Total problems attempted
-- `problemsCorrect` - Total correct answers
-- `lastSyncTimestamp` - Last S3 sync time
-
-## S3 Integration & Sync
-
-### Daily Problem Generation
-- **GitHub Action** runs daily at 2 AM UTC
-- **OpenAI API** generates 5 problems per batch (40% easy, 40% medium, 20% hard)
-- **S3 Storage**: Problems uploaded to S3 bucket with `latest.json` pointer
-
-### Sync Process
-- **ProblemSyncService** checks for new problems every 20+ hours
-- Downloads `latest.json` from S3 to check for updates
-- Compares hash to detect new content
-- Automatically imports new batches, replacing same-date batches if needed
-- **Manual sync** available in Settings screen
-
-### Sync Behavior
-- `SKIPPED_EXISTING` - Batch already exists (same ID)
-- `REPLACED_EXISTING` - Replaced same-date batch with newer version
-- `IMPORTED_NEW` - Imported completely new batch
-
-## Usage
-
-### Basic Database Operations
-```javascript
+**Use the new services instead:**
+```typescript
+// OLD (removed)
 import { db } from '@/services/database';
 
-// Initialize (creates tables, seeds dummy data if empty)
-await db.init();
-
-// Get next unsolved problem
-const problem = await db.getNextProblem();
-
-// Submit answer
-await db.submitAnswer(problemId, userAnswer, isCorrect);
-
-// Get user progress
-const progress = await db.getUserProgress();
-
-// Reset all progress
-await db.resetUserProgress();
+// NEW (use this)
+import { databaseService } from '@/services/domain';
 ```
 
-### Using with Zustand Store
-```javascript
-import { useProblemStore } from '@/store/problemStore';
+## What Remains
 
-const { currentProblem, userProgress, initialize, submitAnswer, forceSync } = useProblemStore();
+This directory now contains only the **core infrastructure** needed by the repository implementations:
+
+### Core Files
+
+- **`db.ts`** - SQLite database connection and transaction utilities
+- **`schema.ts`** - Database table definitions and SQL schema
+- **`utils.ts`** - Utility functions (ID generation, etc.)
+
+### Data Loading
+
+- **`dummyData.ts`** - Dummy data provider for development/testing
+- **`sampleDataLoader.ts`** - JSON data loader for sample problems
+
+## Migration Guide
+
+If you have code importing from `@/services/database`, update it:
+
+```typescript
+// OLD - these no longer exist
+import { getProblemById } from '@/services/database/problemService';
+import { importProblemBatch } from '@/services/database/problemBatchService';
+import { getUserProgress } from '@/services/database/userProgressService';
+import { db } from '@/services/database';
+
+// NEW - use domain services
+import { databaseService } from '@/services/domain';
+
+// Examples:
+const problem = await databaseService.problems.getById(id);
+const result = await databaseService.batches.import(batchData);
+const progress = await databaseService.userProgress.get();
 ```
 
-### Manual Sync
-```javascript
-import { ProblemSyncService } from '@/services/problemSyncService';
+## Repository Pattern
 
-// Check if sync needed
-const shouldSync = await ProblemSyncService.shouldSync();
+The new architecture separates concerns:
 
-// Force sync
-const hasNewProblems = await ProblemSyncService.forceSyncCheck();
-```
+- **Infrastructure** (this directory): Database connection, schema, utilities
+- **Repositories** (`/repositories`): Clean data access interfaces and implementations
+- **Domain Services** (`/services/domain`): High-level business operations
 
-## Files
+See `/repositories/README.md` for complete documentation.
 
-- `index.ts` - Main database interface
-- `schema.ts` - Table definitions and types
-- `db.ts` - SQLite connection management
-- `mockDb.ts` - In-memory database for development
-- `*Service.ts` - Service layer for each table
-- `dummyData.ts` - Sample data for initialization
+## Database Schema
+
+The SQLite schema is defined in `schema.ts` and remains unchanged. The new repository implementations are fully compatible with the existing database structure.

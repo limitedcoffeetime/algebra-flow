@@ -1,10 +1,13 @@
 import BatchManager from '@/components/BatchManager';
 import Button from '@/components/Button';
-import { getDatabaseType } from '@/services/database';
 import { useProblemStore } from '@/store/problemStore';
+import { ErrorStrategy, handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+// Simple function to get database type - will remain SQLite for now
+const getDatabaseType = () => 'SQLite';
 
 export default function SettingsScreen() {
   const { resetProgress, getBatchesInfo, forceSync } = useProblemStore();
@@ -38,7 +41,8 @@ export default function SettingsScreen() {
     try {
       const date = new Date(isoString);
       return date.toLocaleString();
-    } catch {
+    } catch (error) {
+      handleError(error, `formatting date string: ${isoString}`, ErrorStrategy.SILENT);
       return 'Invalid date';
     }
   };
@@ -177,10 +181,7 @@ export default function SettingsScreen() {
           <Text style={styles.databaseTypeValue}>{databaseType}</Text>
         </View>
         <Text style={styles.databaseHelpText}>
-          {databaseType === 'Mock Database'
-            ? 'Using in-memory mock database for development. Data will be lost when app is closed.'
-            : 'Using SQLite database. Data is persisted locally on your device.'
-          }
+          Using SQLite database with clean repository pattern. Data is persisted locally on your device.
         </Text>
       </View>
 

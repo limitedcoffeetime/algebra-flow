@@ -51,7 +51,7 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
           },
           mathExpression: {
             type: 'string',
-            description: 'The mathematical expression/equation for this step (LaTeX or plain text)'
+            description: 'The mathematical expression/equation for this step in plain text format'
           },
           isEquation: {
             type: 'boolean',

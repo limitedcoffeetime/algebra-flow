@@ -4,6 +4,28 @@ A mobile algebra learning app built with React Native and Expo.
 
 ## Latest Updates
 
+### **June 13, 2024** – Full Codebase Cleanup for MathLive Integration
+
+#### Removed all math rendering and validation systems
+- **Clean slate**: Eliminated all LaTeX, WebView, and native math rendering code
+- **Dependency cleanup**: Removed unused react-native-webview and related packages
+- **Schema updates**: Updated problem generation to use plain text format
+- **Documentation updates**: Cleaned up all math rendering references
+
+#### Preparing for MathLive integration
+- **Target: Desmos-like UX**: Planning MathLive integration for professional math input experience
+- **DOM components approach**: Leveraging Expo's new DOM support for web-based math rendering
+- **Validation strategy**: MathLive has built-in answer validation, eliminating custom validation complexity
+- **Reference**: Using [Expo DOM Components](https://docs.expo.dev/guides/dom-components/) for web component integration
+
+### **June 12, 2024** – Math Input UX Issues and Pivot Decision
+
+#### Discovered critical UX problems with native approach
+- **Fraction input problems**: Clicking around fraction components created poor user experience
+- **Unicode limitations**: Native math renderer restricted to Unicode exponents, inadequate for complex expressions
+- **Validation complexity**: Custom validation system becoming unwieldy and error-prone
+- **Decision to pivot**: Realized need for a better math input solution
+
 ### **June 11, 2024** – Native Math Rendering & Interactive Fractions
 
 #### Implemented fully native math rendering system
@@ -121,9 +143,8 @@ Decision still pending based on performance, bundle size, and maintenance consid
 - Offline functionality with bundled problems
 - Automated problem generation via GitHub Actions
 
-**Database Modes**
-- Production: SQLite with persistent storage
-- Development: SQLite or mock (set `EXPO_PUBLIC_USE_MOCK_DB=true`)
+**Database**
+- SQLite with persistent storage
 
 ---
 
@@ -163,6 +184,4 @@ LOG_LEVEL=debug node someScript   # full debug output
 
 #### Database interface
 
-`services/database/types.ts` defines an `IDatabase` contract that both
-`mockDb.ts` and the SQLite implementation now satisfy.  This removes much of
-the duplicated CRUD code.
+`services/database/types.ts` defines an `IDatabase` contract that the SQLite implementation uses for consistent CRUD operations.

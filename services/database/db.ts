@@ -1,9 +1,9 @@
 import { logger } from '@/utils/logger';
 import * as SQLite from 'expo-sqlite';
 import {
-    CREATE_PROBLEM_BATCHES_TABLE,
-    CREATE_PROBLEMS_TABLE,
-    CREATE_USER_PROGRESS_TABLE,
+  CREATE_PROBLEM_BATCHES_TABLE,
+  CREATE_PROBLEMS_TABLE,
+  CREATE_USER_PROGRESS_TABLE,
 } from './schema';
 
 const DATABASE_NAME = 'algebro.db';
