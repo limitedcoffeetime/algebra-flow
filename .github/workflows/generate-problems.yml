@@ -25,7 +25,7 @@ jobs:
       run: npm install
 
     - name: Generate problems
-      run: npx ts-node scripts/generateProblems.ts
+      run: npx ts-node -r tsconfig-paths/register scripts/generateProblems.ts
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
