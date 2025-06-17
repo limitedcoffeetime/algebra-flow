@@ -1,12 +1,7 @@
+import { SolutionStep } from '@/services/problemGeneration/openaiGenerator';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-interface SolutionStep {
-  explanation: string;
-  mathExpression: string;
-  isEquation: boolean;
-}
 
 interface StepByStepSolutionProps {
   solutionSteps: SolutionStep[];
@@ -37,7 +32,7 @@ const StepByStepSolution: React.FC<StepByStepSolutionProps> = ({
       {isVisible && (
         <View style={styles.stepsContainer}>
           {solutionSteps.map((step, index) => (
-            <SolutionStep
+            <SolutionStepComponent
               key={index}
               step={step}
               stepNumber={index + 1}
@@ -50,7 +45,7 @@ const StepByStepSolution: React.FC<StepByStepSolutionProps> = ({
 };
 
 // Individual step component for better modularity
-const SolutionStep: React.FC<{ step: SolutionStep; stepNumber: number }> = ({ step, stepNumber }) => {
+const SolutionStepComponent: React.FC<{ step: SolutionStep; stepNumber: number }> = ({ step, stepNumber }) => {
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>

@@ -2,16 +2,17 @@ import { logger } from '@/utils/logger';
 import { getDBConnection } from '../../../services/database/db';
 import { IUserProgressRepository } from '../../interfaces/IUserProgressRepository';
 import { UpdateUserProgressInput, UserProgress } from '../../models/UserProgress';
+import { UserProgressRow } from '../../types/database';
 
 const USER_PROGRESS_ID = 'currentUser'; // Singleton ID for user progress row
 
 export class SqliteUserProgressRepository implements IUserProgressRepository {
-  private mapRowToUserProgress(row: any): UserProgress {
+  private mapRowToUserProgress(row: UserProgressRow): UserProgress {
     return {
       id: row.id,
-      currentBatchId: row.currentBatchId === undefined || row.currentBatchId === null ? null : row.currentBatchId,
-      problemsAttempted: row.problemsAttempted || 0,
-      problemsCorrect: row.problemsCorrect || 0,
+      currentBatchId: row.currentBatchId || null,
+      problemsAttempted: row.problemsAttempted,
+      problemsCorrect: row.problemsCorrect,
       lastSyncTimestamp: row.lastSyncTimestamp ? new Date(row.lastSyncTimestamp) : null,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt),

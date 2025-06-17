@@ -1,5 +1,5 @@
 import { databaseService } from '@/services/domain';
-import { useProblemStore } from '@/store/problemStore';
+import { useUserProgressStore } from '@/store';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -13,7 +13,7 @@ interface TopicAccuracy {
 }
 
 export default function ProgressScreen() {
-  const { userProgress } = useProblemStore();
+  const { userProgress } = useUserProgressStore();
   const [topicStats, setTopicStats] = useState<TopicAccuracy[]>([]);
 
   useEffect(() => {

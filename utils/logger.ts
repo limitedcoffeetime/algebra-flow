@@ -10,8 +10,7 @@ type LogLevel = keyof typeof LEVELS;
 
 // Safely read environment variables in both Node (process.env) and React Native (__DEV__)
 // Using globalThis to avoid direct Node type dependency so that bundlers without Node typings do not complain.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const env = (globalThis as any)?.process?.env ?? {};
+const env = (globalThis as { process?: { env?: Record<string, string> } })?.process?.env ?? {};
 
 // Determine active log level. Defaults to 'debug' (dev) or 'warn' (prod)
 const envLevel = (env.LOG_LEVEL as LogLevel) ?? (env.NODE_ENV === 'production' ? 'warn' : 'info');
@@ -27,8 +26,7 @@ function formatPrefix(level: LogLevel): string {
 }
 
 function createLogger(level: LogLevel) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (...args: any[]) => {
+  return (...args: unknown[]) => {
     if (!shouldLog(level)) return;
     if (level === 'error') {
       // eslint-disable-next-line no-console

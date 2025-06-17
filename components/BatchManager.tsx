@@ -1,10 +1,12 @@
+import { ProblemBatch } from '@/repositories/models/ProblemBatch';
 import { databaseService } from '@/services/domain';
-import { ProblemSyncService } from '@/services/problemSyncService';
+import { BatchManagerInfo } from '@/services/types/api';
+import { useSyncStore } from '@/store';
 import { alertHelpers } from '@/utils/alertHelpers';
 import { commonStyles } from '@/utils/commonStyles';
 import { logger } from '@/utils/logger';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -15,35 +17,36 @@ import {
   View
 } from 'react-native';
 
-interface BatchInfo {
-  local: {
-    totalBatches: number;
-    totalProblems: number;
-    completedProblems: number;
-    oldestBatch: string | null;
-    newestBatch: string | null;
-  };
-  lastSync: string | null;
-}
-
 export default function BatchManager() {
-  const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
-  const [batches, setBatches] = useState<any[]>([]);
+  const syncStore = useSyncStore();
+
+  const [batchInfo, setBatchInfo] = useState<BatchManagerInfo | null>(null);
+  const [batches, setBatches] = useState<ProblemBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [cleaning, setCleaning] = useState(false);
 
-  const loadBatchInfo = async () => {
+  const loadBatchInfo = useCallback(async () => {
     try {
       const [info, allBatches] = await Promise.all([
-        ProblemSyncService.getBatchInfo(),
+        syncStore.getBatchesInfo(),
         databaseService.batches.getAll()
       ]);
 
-      setBatchInfo(info);
+      // Transform getBatchesInfo result to match expected BatchInfo format
+      const batchInfoFormatted = {
+        local: {
+          totalBatches: allBatches.length,
+          totalProblems: allBatches.reduce((sum, batch) => sum + batch.problemCount, 0),
+          completedProblems: info.reduce((sum, batch) => sum + batch.completedCount, 0),
+          oldestBatch: allBatches.length > 0 ? allBatches[allBatches.length - 1]?.generationDate?.toISOString() || null : null,
+          newestBatch: allBatches.length > 0 ? allBatches[0]?.generationDate?.toISOString() || null : null,
+        },
+        lastSync: syncStore.lastSyncTime
+      };
+
+      setBatchInfo(batchInfoFormatted);
       setBatches(allBatches.sort((a, b) =>
-        new Date(b.generationDate).getTime() - new Date(a.generationDate).getTime()
+        b.generationDate.getTime() - a.generationDate.getTime()
       ));
     } catch (error) {
       logger.error('Failed to load batch info:', error);
@@ -52,11 +55,11 @@ export default function BatchManager() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [syncStore]);
 
   useEffect(() => {
     loadBatchInfo();
-  }, []);
+  }, [loadBatchInfo]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -64,10 +67,8 @@ export default function BatchManager() {
   };
 
   const handleSync = async () => {
-    setSyncing(true);
-
     try {
-      const hasNewProblems = await ProblemSyncService.syncProblems();
+      const hasNewProblems = await syncStore.forceSync();
       if (hasNewProblems) {
         alertHelpers.success('New problems synced successfully!');
         await loadBatchInfo();
@@ -77,8 +78,6 @@ export default function BatchManager() {
     } catch (error) {
       logger.error('Sync failed:', error);
       alertHelpers.error('Failed to sync problems');
-    } finally {
-      setSyncing(false);
     }
   };
 
@@ -92,10 +91,8 @@ export default function BatchManager() {
 
     if (!confirmed) return;
 
-    setCleaning(true);
-
     try {
-      const deletedCount = await ProblemSyncService.cleanupOrphanedBatches();
+      const deletedCount = await syncStore.cleanupOrphanedBatches();
       if (deletedCount > 0) {
         alertHelpers.success(`Removed ${deletedCount} old batches`);
         await loadBatchInfo();
@@ -105,8 +102,6 @@ export default function BatchManager() {
     } catch (error) {
       logger.error('Cleanup failed:', error);
       alertHelpers.error('Failed to clean up old batches');
-    } finally {
-      setCleaning(false);
     }
   };
 
@@ -198,22 +193,22 @@ export default function BatchManager() {
         <TouchableOpacity
           style={[commonStyles.actionButton, commonStyles.primaryBackground]}
           onPress={handleSync}
-          disabled={syncing}
+          disabled={syncStore.isSyncing}
         >
           <Ionicons name="cloud-download-outline" size={20} color="white" />
           <Text style={commonStyles.buttonText}>
-            {syncing ? 'Syncing...' : 'Sync New Problems'}
+            {syncStore.isSyncing ? 'Syncing...' : 'Sync New Problems'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[commonStyles.actionButton, commonStyles.warningBackground]}
           onPress={handleCleanup}
-          disabled={cleaning}
+          disabled={syncStore.isCleaningUp}
         >
           <Ionicons name="trash-outline" size={20} color="white" />
           <Text style={commonStyles.buttonText}>
-            {cleaning ? 'Cleaning...' : 'Clean Up Old Batches'}
+            {syncStore.isCleaningUp ? 'Cleaning...' : 'Clean Up Old Batches'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -230,7 +225,7 @@ export default function BatchManager() {
                 <Text style={styles.batchDate}>{formatDate(batch.generationDate)}</Text>
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={() => handleDeleteBatch(batch.id, batch.generationDate)}
+                  onPress={() => handleDeleteBatch(batch.id, batch.generationDate.toISOString())}
                 >
                   <Ionicons name="trash-outline" size={16} color="#FF3B30" />
                 </TouchableOpacity>

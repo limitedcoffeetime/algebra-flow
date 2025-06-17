@@ -34,7 +34,7 @@ export async function generateProblemsWithAI(
   const typeInstructions = getProblemTypeInstructions(problemType);
   const responseSchema = getProblemResponseSchema(problemType, count);
 
-  const prompt = `Generate exactly ${count} ${difficulty} algebra problems of type "${problemType}".
+  const systemInstructions = `You are a math teacher creating algebra problems. Follow the JSON schema exactly and separate math expressions from explanations.
 
 Problem Type Specific Instructions:
 ${typeInstructions.instructions}
@@ -63,20 +63,14 @@ Constraints:
 - CRITICAL: Direction must clearly state what to do, answer must be just the value
 - CRITICAL: List all variables used in the problem in the variables array`;
 
+  const userInput = `Generate exactly ${count} ${difficulty} algebra problems of type "${problemType}".`;
+
   try {
     // Using the OpenAI Responses API with structured outputs
     const response = await openai.responses.create({
       model: 'o4-mini-2025-04-16',
-      input: [
-        {
-          role: 'system',
-          content: 'You are a math teacher creating algebra problems. Follow the JSON schema exactly and separate math expressions from explanations.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
+      instructions: systemInstructions,
+      input: userInput,
       text: {
         format: {
           type: 'json_schema',
@@ -109,9 +103,9 @@ Constraints:
 
     return problems.map((p, index) => {
       logger.info(`🔍 Processing problem ${index + 1}:`, {
-        type: p.type,
+        type: p.problemType,
         difficulty: p.difficulty,
-        problem: p.problem.substring(0, 50) + '...',
+        equation: p.equation.substring(0, 50) + '...',
         hasAnswer: !!p.answer,
         hasLHS: !!p.answerLHS,
         hasRHS: !!p.answerRHS
@@ -130,8 +124,21 @@ Constraints:
 
       logger.info(`✅ Problem ${index + 1} validation target:`, answerToValidate);
 
+      return {
+        equation: p.equation,
+        direction: p.direction,
+        answer: p.answer,
+        answerLHS: p.answerLHS,
+        answerRHS: p.answerRHS,
+        solutionSteps: p.solutionSteps,
+        variables: p.variables,
+        difficulty,
+        problemType,
+        isCompleted: false
+      };
     });
   } catch (error) {
+    logger.error('❌ OpenAI API Error:', error);
     throw error;
   }
 }

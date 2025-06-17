@@ -1,6 +1,11 @@
 import { logger } from '@/utils/logger';
 import { Problem, repositoryFactory } from '../../repositories';
+import { CreateProblemInput, UpdateProblemInput } from '../../repositories/models/Problem';
+import { CreateProblemBatchInput } from '../../repositories/models/ProblemBatch';
+import { UserProgress } from '../../repositories/models/UserProgress';
 import { isAnswerCorrect } from '../../utils/enhancedAnswerUtils';
+import { ProblemBatchApiResponse } from '../types/api';
+import { DashboardData } from '../types/dashboard';
 import { ProblemBatchService } from './ProblemBatchService';
 import { ProblemService } from './ProblemService';
 import { UserProgressService } from './UserProgressService';
@@ -47,9 +52,9 @@ export class DatabaseService {
       getByBatch: (batchId: string) => this.problemService.getProblemsByBatch(batchId),
       getUnsolved: (batchId: string, limit?: number) => this.problemService.getUnsolvedProblems(batchId, limit),
       getCompleted: (batchId: string) => this.problemService.getCompletedProblems(batchId),
-      create: (problem: any) => this.problemService.createProblem(problem),
-      createMany: (problems: any[]) => this.problemService.createProblems(problems),
-      update: (id: string, updates: any) => this.problemService.updateProblem(id, updates),
+      create: (problem: CreateProblemInput) => this.problemService.createProblem(problem),
+      createMany: (problems: CreateProblemInput[]) => this.problemService.createProblems(problems),
+      update: (id: string, updates: UpdateProblemInput) => this.problemService.updateProblem(id, updates),
       submitAnswer: (problemId: string, userAnswer: string | number, isCorrect: boolean) =>
         this.problemService.submitAnswer(problemId, userAnswer, isCorrect),
       markSolutionShown: (problemId: string) => this.problemService.markSolutionStepsShown(problemId),
@@ -66,8 +71,8 @@ export class DatabaseService {
       getById: (id: string) => this.batchService.getBatchById(id),
       getAll: () => this.batchService.getAllBatches(),
       getLatest: () => this.batchService.getLatestBatch(),
-      create: (batch: any) => this.batchService.createBatch(batch),
-      import: (batchData: any) => this.batchService.importBatch(batchData),
+      create: (batch: CreateProblemBatchInput) => this.batchService.createBatch(batch),
+      import: (batchData: ProblemBatchApiResponse) => this.batchService.importBatch(batchData),
       delete: (id: string) => this.batchService.deleteBatch(id),
       deleteMany: (ids: string[]) => this.batchService.deleteBatches(ids),
       deleteAll: () => this.batchService.deleteAllBatches(),
@@ -84,7 +89,7 @@ export class DatabaseService {
   get userProgress() {
     return {
       get: () => this.userProgressService.getUserProgress(),
-      update: (updates: any) => this.userProgressService.updateProgress(updates),
+      update: (updates: Partial<UserProgress>) => this.userProgressService.updateProgress(updates),
       recordAttempt: (isCorrect: boolean) => this.userProgressService.recordProblemAttempt(isCorrect),
       setCurrentBatch: (batchId: string) => this.userProgressService.setCurrentBatch(batchId),
       moveToNextBatch: () => this.userProgressService.moveToNextBatch(),
@@ -163,12 +168,7 @@ export class DatabaseService {
   /**
    * High-level operation: Get comprehensive dashboard data
    */
-  async getDashboardData(): Promise<{
-    userStats: any;
-    currentBatchProgress: any;
-    overallStats: any;
-    accuracyStats: any[];
-  }> {
+  async getDashboardData(): Promise<DashboardData> {
     const [userStats, currentBatchProgress, overallStats, accuracyStats] = await Promise.all([
       this.userProgressService.getUserStatistics(),
       this.userProgressService.getCurrentBatchProgress(),
@@ -210,7 +210,7 @@ export class DatabaseService {
       const batchId = await this.batchService.createBatch(batchInput);
 
       // Add problems to the batch
-      const problemsWithBatchId = batchData.problems.map((problem: any) => ({
+      const problemsWithBatchId = batchData.problems.map((problem: CreateProblemInput) => ({
         ...problem,
         batchId
       }));

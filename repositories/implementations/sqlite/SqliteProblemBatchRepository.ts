@@ -1,21 +1,26 @@
 import { logger } from '@/utils/logger';
 import { getDBConnection } from '../../../services/database/db';
 import { generateId } from '../../../services/database/utils';
+import { ProblemApiData } from '../../../services/types/api';
 import { IProblemBatchRepository, ImportResult } from '../../interfaces/IProblemBatchRepository';
 import { CreateProblemInput } from '../../models/Problem';
 import { BatchStatistics, CreateProblemBatchInput, ProblemBatch } from '../../models/ProblemBatch';
+import { ProblemBatchRow } from '../../types/database';
 import { SqliteProblemRepository } from './SqliteProblemRepository';
 
 export class SqliteProblemBatchRepository implements IProblemBatchRepository {
+  cleanupOrphanedBatches(validIds: string[]): Promise<number> {
+      throw new Error('Method not implemented.');
+  }
   private problemRepository = new SqliteProblemRepository();
 
-  private mapRowToBatch(row: any): ProblemBatch {
+  private mapRowToBatch(row: ProblemBatchRow): ProblemBatch {
     return {
       id: row.id,
       generationDate: new Date(row.generationDate),
-      sourceUrl: row.sourceUrl,
+      sourceUrl: row.sourceUrl || undefined,
       problemCount: row.problemCount,
-      importedAt: new Date(row.importedAt),
+      importedAt: new Date(row.importedAt)
     };
   }
 
@@ -111,7 +116,7 @@ export class SqliteProblemBatchRepository implements IProblemBatchRepository {
     id: string;
     generationDate: string;
     problemCount: number;
-    problems: any[];
+    problems: ProblemApiData[];
   }): Promise<ImportResult> {
     // Check if batch with exact same ID already exists
     const existingBatch = await this.findById(batchData.id);
@@ -225,5 +230,76 @@ export class SqliteProblemBatchRepository implements IProblemBatchRepository {
       logger.error('Failed to get batch statistics:', error);
       throw error;
     }
+  }
+
+  async getAll(): Promise<ProblemBatch[]> {
+    return this.findAll();
+  }
+
+  async getLatest(): Promise<ProblemBatch | null> {
+    return this.findLatest();
+  }
+
+  async update(id: string, updates: Partial<ProblemBatch>): Promise<void> {
+    const db = await getDBConnection();
+    const fields: string[] = [];
+    const values: (string | number | null)[] = [];
+
+    if (updates.sourceUrl !== undefined) {
+      fields.push('sourceUrl = ?');
+      values.push(updates.sourceUrl);
+    }
+    if (updates.problemCount !== undefined) {
+      fields.push('problemCount = ?');
+      values.push(updates.problemCount);
+    }
+
+    if (fields.length === 0) {
+      logger.info('No fields to update for batch', id);
+      return;
+    }
+
+    const sql = `UPDATE ProblemBatches SET ${fields.join(', ')} WHERE id = ?`;
+    values.push(id);
+
+    const result = await db.runAsync(sql, ...values);
+    if (result.changes > 0) {
+      logger.info(`Batch ${id} updated successfully`);
+    } else {
+      logger.warn(`Batch ${id} not found or no changes made`);
+    }
+  }
+
+  async getNextBatchWithProblems(currentBatchId?: string): Promise<ProblemBatch | null> {
+    const db = await getDBConnection();
+
+    // If no current batch, get the oldest batch with unsolved problems
+    if (!currentBatchId) {
+      const row = await db.getFirstAsync<any>(
+        `SELECT DISTINCT b.* FROM ProblemBatches b
+         INNER JOIN Problems p ON b.id = p.batchId
+         WHERE p.isCompleted = 0
+         ORDER BY b.generationDate ASC
+         LIMIT 1`
+      );
+      return row ? this.mapRowToBatch(row) : null;
+    }
+
+    // Get the next batch after the current one that has unsolved problems
+    const currentBatch = await this.findById(currentBatchId);
+    if (!currentBatch) {
+      return null;
+    }
+
+    const row = await db.getFirstAsync<any>(
+      `SELECT DISTINCT b.* FROM ProblemBatches b
+       INNER JOIN Problems p ON b.id = p.batchId
+       WHERE p.isCompleted = 0 AND b.generationDate > ?
+       ORDER BY b.generationDate ASC
+       LIMIT 1`,
+      currentBatch.generationDate.toISOString()
+    );
+
+    return row ? this.mapRowToBatch(row) : null;
   }
 }

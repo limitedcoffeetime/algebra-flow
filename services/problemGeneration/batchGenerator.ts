@@ -29,7 +29,7 @@ function calculateProblemCounts() {
 
 export interface ProblemBatch {
   id: string;
-  generationDate: string;
+  generationDate: Date;
   problemCount: number;
   problems: GeneratedProblem[];
   targetCount: number;
@@ -95,7 +95,7 @@ export async function generateProblemBatch(): Promise<ProblemBatch> {
 
   return {
     id: batchId,
-    generationDate: now.toISOString(),
+    generationDate: now,
     problemCount: shuffled.length,
     targetCount: PROBLEMS_PER_BATCH,
     problems: shuffled,

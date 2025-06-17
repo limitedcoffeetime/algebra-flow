@@ -1,6 +1,7 @@
+import { ProblemApiData } from '../../services/types/api';
 import { BatchStatistics, CreateProblemBatchInput, ProblemBatch } from '../models/ProblemBatch';
 
-export type ImportResult = 'SKIPPED_EXISTING' | 'REPLACED_EXISTING' | 'IMPORTED_NEW';
+export type ImportResult = 'IMPORTED_NEW' | 'REPLACED_EXISTING' | 'SKIPPED_EXISTING';
 
 export interface IProblemBatchRepository {
   // Basic CRUD
@@ -22,7 +23,7 @@ export interface IProblemBatchRepository {
     id: string;
     generationDate: string;
     problemCount: number;
-    problems: any[];
+    problems: ProblemApiData[];
   }): Promise<ImportResult>;
 
   // Cleanup operations
@@ -30,4 +31,8 @@ export interface IProblemBatchRepository {
 
   // Statistics
   getStatistics(): Promise<BatchStatistics>;
+
+  // Additional operations
+  getNextBatchWithProblems(currentBatchId?: string): Promise<ProblemBatch | null>;
+  cleanupOrphanedBatches(validIds: string[]): Promise<number>;
 }

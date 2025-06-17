@@ -49,7 +49,7 @@ export const getSampleBatchAndProblemsInput = async () => {
   const batchAndProblemsInput = data.batches.map(batch => {
     const batchInput: ProblemBatchInput = {
       id: batch.id,
-      generationDate: batch.generationDate,
+      generationDate: new Date(batch.generationDate),
       sourceUrl: batch.sourceUrl,
       problemCount: batch.problemCount
     };
@@ -68,7 +68,8 @@ export const getSampleBatchAndProblemsInput = async () => {
         variables: problem.variables,
         difficulty: problem.difficulty,
         problemType: problem.problemType,
-        isCompleted: problem.isCompleted
+        isCompleted: problem.isCompleted,
+        solutionStepsShown: false
       }));
 
     return {
@@ -85,7 +86,7 @@ export const getSampleProblemBatches = async (): Promise<ProblemBatchInput[]> =>
   const data = await loadSampleProblemsData();
   return data.batches.map(batch => ({
     id: batch.id,
-    generationDate: batch.generationDate,
+    generationDate: new Date(batch.generationDate),
     sourceUrl: batch.sourceUrl,
     problemCount: batch.problemCount
   }));
@@ -105,6 +106,7 @@ export const getSampleProblems = async (): Promise<ProblemInput[]> => {
     variables: problem.variables || ['x'], // Default variables if missing
     difficulty: problem.difficulty,
     problemType: problem.problemType,
-    isCompleted: problem.isCompleted
+    isCompleted: problem.isCompleted,
+    solutionStepsShown: false
   }));
 };

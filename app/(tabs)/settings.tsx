@@ -1,18 +1,21 @@
 import BatchManager from '@/components/BatchManager';
 import Button from '@/components/Button';
-import { useProblemStore } from '@/store/problemStore';
+import { BatchInfo } from '@/services/types/api';
+import { useSyncStore, useUserProgressStore } from '@/store';
 import { ErrorStrategy, handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 // Simple function to get database type - will remain SQLite for now
 const getDatabaseType = () => 'SQLite';
 
 export default function SettingsScreen() {
-  const { resetProgress, getBatchesInfo, forceSync } = useProblemStore();
+  const userProgressStore = useUserProgressStore();
+  const syncStore = useSyncStore();
+
   const [isResetting, setIsResetting] = useState(false);
-  const [batchesInfo, setBatchesInfo] = useState<any[]>([]);
+  const [batchesInfo, setBatchesInfo] = useState<BatchInfo[]>([]);
   const [isLoadingBatches, setIsLoadingBatches] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showBatchManager, setShowBatchManager] = useState(false);
@@ -21,21 +24,21 @@ export default function SettingsScreen() {
   const databaseType = getDatabaseType();
 
   // Load batch information on component mount
-  useEffect(() => {
-    loadBatchesInfo();
-  }, []);
-
-  const loadBatchesInfo = async () => {
+  const loadBatchesInfo = useCallback(async () => {
     setIsLoadingBatches(true);
     try {
-      const info = await getBatchesInfo();
+      const info = await syncStore.getBatchesInfo();
       setBatchesInfo(info);
     } catch (error) {
       logger.error('Failed to load batches info:', error);
     } finally {
       setIsLoadingBatches(false);
     }
-  };
+  }, [syncStore]);
+
+  useEffect(() => {
+    loadBatchesInfo();
+  }, [loadBatchesInfo]);
 
   const formatDate = (isoString: string) => {
     try {
@@ -62,7 +65,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             setIsResetting(true);
             try {
-              await resetProgress();
+              await userProgressStore.resetProgress();
               Alert.alert('Success', 'Your progress has been reset!');
               // Reload batch info after reset
               await loadBatchesInfo();
@@ -81,7 +84,7 @@ export default function SettingsScreen() {
   const handleRefreshAndSync = async () => {
     setIsSyncing(true);
     try {
-      const hasNewProblems = await forceSync();
+      const hasNewProblems = await syncStore.forceSync();
 
       if (hasNewProblems) {
         Alert.alert('Success', 'Downloaded new problem batches!');

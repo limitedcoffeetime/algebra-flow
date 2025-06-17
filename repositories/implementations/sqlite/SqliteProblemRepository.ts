@@ -4,9 +4,10 @@ import { generateId } from '../../../services/database/utils';
 import { isAnswerCorrect } from '../../../utils/enhancedAnswerUtils';
 import { IProblemRepository } from '../../interfaces/IProblemRepository';
 import { CreateProblemInput, Problem, UpdateProblemInput } from '../../models/Problem';
+import { ProblemRow, SerializedProblem } from '../../types/database';
 
 export class SqliteProblemRepository implements IProblemRepository {
-  private mapRowToProblem(row: any): Problem {
+  private mapRowToProblem(row: ProblemRow): Problem {
     // Parse answer from JSON if it's an array, otherwise keep as string/number
     let answer = row.answer;
     if (typeof answer === 'string' && answer.startsWith('[') && answer.endsWith(']')) {
@@ -79,7 +80,7 @@ export class SqliteProblemRepository implements IProblemRepository {
     };
   }
 
-  private serializeProblemForDB(problem: CreateProblemInput): any {
+  private serializeProblemForDB(problem: CreateProblemInput): SerializedProblem {
     const now = new Date().toISOString();
 
     return {
@@ -105,13 +106,13 @@ export class SqliteProblemRepository implements IProblemRepository {
 
   async findById(id: string): Promise<Problem | null> {
     const db = await getDBConnection();
-    const row = await db.getFirstAsync<any>('SELECT * FROM Problems WHERE id = ?', id);
+    const row = await db.getFirstAsync<ProblemRow>('SELECT * FROM Problems WHERE id = ?', id);
     return row ? this.mapRowToProblem(row) : null;
   }
 
   async findByBatchId(batchId: string): Promise<Problem[]> {
     const db = await getDBConnection();
-    const rows = await db.getAllAsync<any>(
+    const rows = await db.getAllAsync<ProblemRow>(
       'SELECT * FROM Problems WHERE batchId = ? ORDER BY createdAt ASC',
       batchId
     );
@@ -156,7 +157,7 @@ export class SqliteProblemRepository implements IProblemRepository {
   async update(id: string, updates: UpdateProblemInput): Promise<void> {
     const db = await getDBConnection();
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | null)[] = [];
 
     if (updates.isCompleted !== undefined) {
       fields.push('isCompleted = ?');
@@ -202,7 +203,7 @@ export class SqliteProblemRepository implements IProblemRepository {
 
   async findUnsolvedByBatchId(batchId: string, limit: number = 10): Promise<Problem[]> {
     const db = await getDBConnection();
-    const rows = await db.getAllAsync<any>(
+    const rows = await db.getAllAsync<ProblemRow>(
       'SELECT * FROM Problems WHERE batchId = ? AND isCompleted = 0 ORDER BY createdAt ASC LIMIT ?',
       batchId,
       limit
@@ -212,7 +213,7 @@ export class SqliteProblemRepository implements IProblemRepository {
 
   async findCompletedByBatchId(batchId: string): Promise<Problem[]> {
     const db = await getDBConnection();
-    const rows = await db.getAllAsync<any>(
+    const rows = await db.getAllAsync<ProblemRow>(
       'SELECT * FROM Problems WHERE batchId = ? AND isCompleted = 1 ORDER BY createdAt ASC',
       batchId
     );
@@ -303,9 +304,11 @@ export class SqliteProblemRepository implements IProblemRepository {
     incorrect: number;
   }>> {
     const db = await getDBConnection();
-    const rows = await db.getAllAsync<any>(
-      'SELECT problemType, answer, userAnswer FROM Problems WHERE isCompleted = 1'
-    );
+    const rows = await db.getAllAsync<{
+      problemType: string;
+      answer: string;
+      userAnswer: string | null;
+    }>('SELECT problemType, answer, userAnswer FROM Problems WHERE isCompleted = 1');
 
     const stats: Record<string, { attempted: number; correct: number }> = {};
 

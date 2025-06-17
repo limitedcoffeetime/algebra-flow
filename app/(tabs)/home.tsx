@@ -1,5 +1,5 @@
 import Button from '@/components/Button';
-import { useProblemStore } from '@/store/problemStore';
+import { useUserProgressStore } from '@/store';
 import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -12,7 +12,7 @@ const tips = [
 ];
 
 export default function HomeScreen() {
-  const { userProgress } = useProblemStore();
+  const userProgressStore = useUserProgressStore();
 
   // Get a random tip (deterministic based on day for consistency)
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
@@ -36,22 +36,22 @@ export default function HomeScreen() {
         </View>
 
         {/* Progress Summary (if available) */}
-        {userProgress && (
+        {userProgressStore.userProgress && (
           <View style={styles.progressSection}>
             <Text style={styles.progressTitle}>Your Progress</Text>
             <View style={styles.progressStats}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{userProgress.problemsCorrect}</Text>
+                <Text style={styles.statNumber}>{userProgressStore.userProgress.problemsCorrect}</Text>
                 <Text style={styles.statLabel}>Solved</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{userProgress.problemsAttempted}</Text>
+                <Text style={styles.statNumber}>{userProgressStore.userProgress.problemsAttempted}</Text>
                 <Text style={styles.statLabel}>Attempted</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>
-                  {userProgress.problemsAttempted > 0
-                    ? Math.round((userProgress.problemsCorrect / userProgress.problemsAttempted) * 100)
+                  {userProgressStore.userProgress.problemsAttempted > 0
+                    ? Math.round((userProgressStore.userProgress.problemsCorrect / userProgressStore.userProgress.problemsAttempted) * 100)
                     : 0}%
                 </Text>
                 <Text style={styles.statLabel}>Accuracy</Text>
