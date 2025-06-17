@@ -4,6 +4,21 @@ A mobile algebra learning app built with React Native and Expo.
 
 ## Latest Updates
 
+### **June 16, 2025** – Codebase Architecture Refactor
+
+#### Service layer restructuring and dependency injection
+- **Sync service refactor**: Replaced monolithic `ProblemSyncService` with modular architecture following SOLID principles
+- **Interface-based design**: Added service contracts for HTTP, caching, and sync operations with concrete implementations
+- **Dependency injection**: Services now use proper DI patterns instead of static methods for better testability
+- **TypeScript improvements**: Fixed bad practices across services, batching, and database layers
+- **Workflow fixes**: Resolved GitHub Actions build issues and CI/CD pipeline
+
+#### Technical debt reduction
+- **Separation of concerns**: Each service now has single responsibility (HTTP, caching, database operations)
+- **Abstraction layers**: Services depend on interfaces rather than concrete implementations
+- **Enhanced maintainability**: Easier to extend, test, and modify individual components
+- **Future-ready**: New architecture supports easier feature additions and testing
+
 ### **June 13, 2024** – Full Codebase Cleanup for MathLive Integration
 
 #### Removed all math rendering and validation systems
