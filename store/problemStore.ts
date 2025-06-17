@@ -1,188 +1,67 @@
-import { db, Problem, UserProgress } from '@/services/database';
-import { ProblemSyncService } from '@/services/problemSyncService';
-import { logger } from '@/utils/logger';
+import { Problem } from '@/repositories';
+import { databaseService } from '@/services/domain';
+import { ErrorStrategy, handleError } from '@/utils/errorHandler';
 import { create } from 'zustand';
-
-interface BatchInfo {
-  id: string;
-  generationDate: string;
-  importedAt: string;
-  problemCount: number;
-  completedCount: number;
-  isCurrentBatch: boolean;
-  sourceUrl?: string | null;
-}
 
 interface ProblemStore {
   // State
   currentProblem: Problem | null;
-  userProgress: UserProgress | null;
   isLoading: boolean;
   error: string | null;
-  lastSyncTime: string | null;
 
   // Actions
-  initialize: () => Promise<void>;
   loadNextProblem: () => Promise<void>;
-  submitAnswer: (userAnswer: string, isCorrect: boolean) => Promise<void>;
-  resetProgress: () => Promise<void>;
-  forceSync: () => Promise<boolean>;
-  getBatchesInfo: () => Promise<BatchInfo[]>;
+  submitAnswer: (userAnswer: string) => Promise<{
+    isCorrect: boolean;
+    problem: Problem | null;
+  }>;
+  clearError: () => void;
 }
 
 export const useProblemStore = create<ProblemStore>((set, get) => ({
   // Initial state
   currentProblem: null,
-  userProgress: null,
   isLoading: false,
   error: null,
-  lastSyncTime: null,
 
-  // Initialize the app
-  initialize: async () => {
+  // Actions
+  loadNextProblem: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Initialize database
-      const success = await db.init();
-      if (!success) {
-        throw new Error('Failed to initialize database');
-      }
-
-      // Seed dummy data for development
-      await db.seedDummy();
-
-      // Check for new problems if we should sync
-      const shouldSync = await ProblemSyncService.shouldSync();
-      if (shouldSync) {
-        logger.info('🔄 Checking for new problems...');
-        try {
-          const newProblems = await ProblemSyncService.syncProblems();
-          if (newProblems) {
-            logger.info('✅ Downloaded new problems');
-          }
-        } catch (syncError) {
-          logger.error('⚠️ Sync failed but continuing with local data:', syncError);
-          // Don't fail initialization if sync fails
-        }
-      }
-
-      // Load user progress
-      const progress = await db.getUserProgress();
-      const lastSync = await ProblemSyncService.getLastSyncTime();
-      set({ userProgress: progress, lastSyncTime: lastSync });
-
-      // Load first problem
-      await get().loadNextProblem();
-    } catch (error) {
-      logger.error('Initialization error:', error);
-      set({ error: 'Failed to initialize app' });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  // Load next problem
-  loadNextProblem: async () => {
-    try {
-      const problem = await db.getNextProblem();
+      const problem = await databaseService.getNextProblem();
 
       if (problem) {
-        set({ currentProblem: problem, error: null });
+        set({ currentProblem: problem, isLoading: false });
       } else {
-        set({ error: 'No more problems available!' });
+        set({ error: 'No more problems available!', isLoading: false });
       }
     } catch (error) {
-      logger.error('Failed to load problem:', error);
-      set({ error: 'Failed to load problem' });
+      const errorMessage = handleError(error, 'Failed to load problem', ErrorStrategy.RETURN_NULL);
+      set({ error: 'Failed to load problem', isLoading: false });
     }
   },
 
-  // Submit answer
-  submitAnswer: async (userAnswer: string, isCorrect: boolean) => {
+  submitAnswer: async (userAnswer: string) => {
     const { currentProblem } = get();
-    if (!currentProblem) return;
+    if (!currentProblem) {
+      throw new Error('No current problem to submit answer for');
+    }
 
     try {
-      await db.submitAnswer(currentProblem.id, userAnswer, isCorrect);
+      const result = await databaseService.submitAnswer(currentProblem.id, userAnswer);
 
-      // Refresh user progress
-      const progress = await db.getUserProgress();
-      set({ userProgress: progress, error: null });
+      // Update current problem with completed state
+      set({
+        currentProblem: result.problem,
+        error: null
+      });
+
+      return result;
     } catch (error) {
-      logger.error('Failed to submit answer:', error);
-      set({ error: 'Failed to save answer' });
+      handleError(error, 'Failed to submit answer', ErrorStrategy.THROW);
+      throw error; // Re-throw for caller to handle
     }
   },
 
-  // Reset progress
-  resetProgress: async () => {
-    try {
-      set({ error: null }); // Clear any existing errors
-      await db.resetUserProgress();
-      const progress = await db.getUserProgress();
-      set({ userProgress: progress });
-      await get().loadNextProblem();
-    } catch (error) {
-      logger.error('Failed to reset progress:', error);
-      set({ error: 'Failed to reset progress' });
-    }
-  },
-
-  // Force sync
-  forceSync: async () => {
-    try {
-      const hasNewProblems = await ProblemSyncService.forceSyncCheck();
-      const progress = await db.getUserProgress();
-      set({ userProgress: progress });
-      return hasNewProblems;
-    } catch (error) {
-      logger.error('Failed to force sync:', error);
-      set({ error: 'Failed to force sync' });
-      return false;
-    }
-  },
-
-  // Get batches info for debugging
-  getBatchesInfo: async () => {
-    try {
-      const allBatches = await db.getAllBatches();
-      const userProgress = await db.getUserProgress();
-
-      const batchesInfo = await Promise.all(
-        allBatches.map(async (batch, index) => {
-          try {
-            const problems = await db.getProblemsByBatch(batch.id);
-            const completedProblems = problems.filter(p => p.isCompleted);
-
-            return {
-              id: batch.id,
-              generationDate: batch.generationDate,
-              importedAt: batch.importedAt,
-              problemCount: batch.problemCount,
-              completedCount: completedProblems.length,
-              isCurrentBatch: batch.id === userProgress?.currentBatchId,
-              sourceUrl: batch.sourceUrl
-            };
-          } catch (batchError) {
-            logger.error(`Failed to process batch ${batch.id}:`, batchError);
-            // Return partial info even if there's an error
-            return {
-              id: batch.id,
-              generationDate: batch.generationDate || 'Unknown',
-              importedAt: batch.importedAt || 'Unknown',
-              problemCount: batch.problemCount || 0,
-              completedCount: 0,
-              isCurrentBatch: false,
-              sourceUrl: batch.sourceUrl
-            };
-          }
-        })
-      );
-
-      return batchesInfo;
-    } catch (error) {
-      logger.error('Failed to get batches info:', error);
-      return [];
-    }
-  }
+  clearError: () => set({ error: null })
 }));

@@ -86,6 +86,6 @@ export const commonStyles = StyleSheet.create({
 /**
  * Helper function to combine styles
  */
-export const combineStyles = (...styles: any[]) => {
+export const combineStyles = (...styles: (object | undefined | null)[]) => {
   return StyleSheet.flatten(styles);
 };

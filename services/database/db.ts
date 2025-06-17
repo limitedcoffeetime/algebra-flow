@@ -10,6 +10,14 @@ const DATABASE_NAME = 'algebro.db';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
+// Define types for SQLite PRAGMA results
+interface TableInfoRow {
+  name: string;
+  type: string;
+  notnull: number;
+  dflt_value: unknown;
+}
+
 export async function getDBConnection(): Promise<SQLite.SQLiteDatabase> {
   if (db) {
     return db;
@@ -45,13 +53,13 @@ export async function getDBConnection(): Promise<SQLite.SQLiteDatabase> {
 async function logDatabaseSchema(database: SQLite.SQLiteDatabase) {
   try {
     // Check if Problems table exists and get its schema
-    const problemsTableInfo = await database.getAllAsync(
+    const problemsTableInfo = await database.getAllAsync<TableInfoRow>(
       "PRAGMA table_info(Problems)"
     );
 
     logger.debug('Problems table schema:', {
       exists: problemsTableInfo.length > 0,
-      columns: problemsTableInfo.map((col: any) => ({
+      columns: problemsTableInfo.map((col) => ({
         name: col.name,
         type: col.type,
         notnull: col.notnull,
@@ -60,10 +68,10 @@ async function logDatabaseSchema(database: SQLite.SQLiteDatabase) {
     });
 
     // Check for missing columns
-    const hasVariablesColumn = problemsTableInfo.some((col: any) => col.name === 'variables');
-    const hasDirectionColumn = problemsTableInfo.some((col: any) => col.name === 'direction');
-    const hasAnswerLHSColumn = problemsTableInfo.some((col: any) => col.name === 'answerLHS');
-    const hasAnswerRHSColumn = problemsTableInfo.some((col: any) => col.name === 'answerRHS');
+    const hasVariablesColumn = problemsTableInfo.some((col) => col.name === 'variables');
+    const hasDirectionColumn = problemsTableInfo.some((col) => col.name === 'direction');
+    const hasAnswerLHSColumn = problemsTableInfo.some((col) => col.name === 'answerLHS');
+    const hasAnswerRHSColumn = problemsTableInfo.some((col) => col.name === 'answerRHS');
 
     logger.info('Database column status:', {
       variables: hasVariablesColumn,

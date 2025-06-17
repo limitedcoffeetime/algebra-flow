@@ -1,15 +1,25 @@
-import { db, TopicAccuracy } from '@/services/database';
-import { useProblemStore } from '@/store/problemStore';
+import { databaseService } from '@/services/domain';
+import { useUserProgressStore } from '@/store';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+// Keep the interface compatible for now, will be restructured in Phase 4
+interface TopicAccuracy {
+  problemType: string;
+  attempted: number;
+  correct: number;
+  incorrect: number;
+  accuracy?: number; // New enhanced interface includes accuracy percentage
+}
+
 export default function ProgressScreen() {
-  const { userProgress } = useProblemStore();
+  const { userProgress } = useUserProgressStore();
   const [topicStats, setTopicStats] = useState<TopicAccuracy[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
-      const stats = await db.getTopicAccuracyStats();
+      // Use the enhanced accuracy stats that include accuracy percentage
+      const stats = await databaseService.problems.getAccuracyStats();
       setTopicStats(stats);
     };
     fetchStats();
@@ -54,7 +64,12 @@ export default function ProgressScreen() {
             {topicStats.map((stat) => (
               <View key={stat.problemType} style={styles.statItem}>
                 <Text style={styles.statLabel}>{stat.problemType}</Text>
-                <Text style={styles.statValue}>{stat.correct}/{stat.attempted} correct</Text>
+                <Text style={styles.statValue}>
+                  {stat.correct}/{stat.attempted} correct
+                  {stat.accuracy !== undefined && (
+                    <Text style={styles.accuracyText}> ({stat.accuracy.toFixed(0)}%)</Text>
+                  )}
+                </Text>
               </View>
             ))}
           </View>
@@ -111,6 +126,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#ffd33d',
+  },
+  accuracyText: {
+    fontSize: 14,
+    color: '#ffd33d',
+    opacity: 0.8,
   },
   noDataText: {
     fontSize: 16,

@@ -3,6 +3,7 @@
  * the correct form of answer based on problem type.
  */
 
+import { handleMathError, handleValidationError } from './errorHandler';
 import { logger } from './logger';
 
 /**
@@ -103,15 +104,16 @@ async function isEquationVariation(userEquation: string, originalEquation: strin
         if (Math.abs(userDiff - originalDiff) > 1e-10) {
           return false; // Not equivalent equations
         }
-      } catch {
+      } catch (error) {
         // If evaluation fails, continue with next test value
+        handleMathError(error, `evaluating equation variation with test value ${testValue}`);
         continue;
       }
     }
 
     return true; // All test values show the equations are equivalent
-  } catch {
-    return false;
+  } catch (error) {
+    return handleValidationError(error, 'checking equation variation');
   }
 }
 
@@ -176,8 +178,8 @@ async function validateSimplifiedPolynomial(
     }
 
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    return handleValidationError(error, 'validating simplified polynomial');
   }
 }
 
@@ -239,13 +241,15 @@ async function validateAgainstAnswer(
               // Evaluate the solution if it's a string (like "-7/2")
               const solVal = typeof sol === 'string' ? evaluate(sol) : sol;
               return typeof solVal === 'number' && Math.abs(userVal - solVal) < 1e-10;
-            } catch {
+            } catch (error) {
+              handleMathError(error, `evaluating array solution ${sol}`);
               return false;
             }
           });
         }
-      } catch {
+      } catch (error) {
         // If evaluation fails, try string matching for expressions
+        handleMathError(error, 'evaluating user input for array answer');
         return correctAnswer.some(sol =>
           userInput.toLowerCase() === String(sol).toLowerCase()
         );
@@ -261,8 +265,9 @@ async function validateAgainstAnswer(
         if (typeof userVal === 'number') {
           return solutions.some(sol => Math.abs(userVal - sol) < 1e-10);
         }
-      } catch {
+      } catch (error) {
         // Fallback to string comparison
+        handleMathError(error, 'evaluating comma-separated answers');
         return correctStr.toLowerCase().includes(userInput.toLowerCase());
       }
     }
@@ -275,8 +280,9 @@ async function validateAgainstAnswer(
       if (typeof userVal === 'number' && typeof correctVal === 'number') {
         return Math.abs(userVal - correctVal) < 1e-10;
       }
-    } catch {
+    } catch (error) {
       // If numerical evaluation fails, continue to other methods
+      handleMathError(error, 'direct numerical comparison');
     }
 
     // For expression problems, use algebraic equivalence but with stricter form checking
@@ -287,8 +293,9 @@ async function validateAgainstAnswer(
     // Fallback: String comparison for exact matches
     return userInput.toLowerCase() === correctStr.toLowerCase();
 
-  } catch {
+  } catch (error) {
     // Final fallback: string comparison
+    handleValidationError(error, 'validating answer against correct answer');
     return userInput.toLowerCase() === String(correctAnswer).toLowerCase();
   }
 }
@@ -329,15 +336,16 @@ async function areExpressionsEquivalent(expr1: string, expr2: string): Promise<b
         } else {
           return false;
         }
-      } catch {
+      } catch (error) {
         // If evaluation fails with these values, skip this test
+        handleMathError(error, `evaluating expressions with test values (iteration ${i})`);
         continue;
       }
     }
 
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    return handleValidationError(error, 'checking expression equivalence');
   }
 }
 
@@ -361,8 +369,9 @@ async function extractVariables(expr: string): Promise<string[]> {
     });
 
     return Array.from(variables);
-  } catch {
+  } catch (error) {
     // Fallback: simple regex to find variable-like patterns
+    handleMathError(error, 'parsing expression to extract variables');
     const matches = expr.match(/[a-zA-Z][a-zA-Z0-9]*/g) || [];
     return [...new Set(matches.filter(m =>
       !/^(sin|cos|tan|log|ln|sqrt|abs|exp|pi|e)$/i.test(m)
