@@ -43,6 +43,15 @@ export default function TabLayout() {
             ),
         }}
     />
+      <Tabs.Screen
+        name="training"
+        options={{
+            title: 'Training',
+            tabBarIcon: ({color, focused}: TabBarIconProps) => (
+                <Ionicons name= {focused ? 'calculator' : 'calculator-outline'} color = {color} size = {24} />
+            ),
+        }}
+    />
               <Tabs.Screen
         name="progress"
         options={{

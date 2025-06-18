@@ -156,7 +156,7 @@ export class SqliteProblemBatchRepository implements IProblemBatchRepository {
 
     try {
       await this.create(batchInput);
-      await this.problemRepository.createMany(problemsInput);
+      await this.problemRepository.createMany(problemsInput, false); // Don't use transaction since we're already in one
       await db.execAsync('COMMIT TRANSACTION;');
     } catch (error) {
       await db.execAsync('ROLLBACK TRANSACTION;');

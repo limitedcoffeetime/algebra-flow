@@ -1,5 +1,5 @@
-import AnswerInput from '@/components/AnswerInput';
 import Button from '@/components/Button';
+import MathAnswerInput from '@/components/MathAnswerInput';
 import ProblemDisplay from '@/components/ProblemDisplay';
 import ProgressIndicator from '@/components/ProgressIndicator';
 import StepByStepSolution from '@/components/StepByStepSolution';
@@ -32,7 +32,7 @@ export default function Index() {
   // Initialize on mount
   useEffect(() => {
     initializeAll();
-  }, [initializeAll]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = () => {
     submitAnswer(userAnswer, () => setShowSolution(true));
@@ -101,7 +101,7 @@ export default function Index() {
         </ScrollView>
 
         {/* Answer Input - Fixed at bottom */}
-        <AnswerInput
+        <MathAnswerInput
           problem={problemStore.currentProblem}
           userAnswer={userAnswer}
           onAnswerChange={handleAnswerChange}

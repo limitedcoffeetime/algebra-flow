@@ -3,7 +3,7 @@ import { Problem, repositoryFactory } from '../../repositories';
 import { CreateProblemInput, UpdateProblemInput } from '../../repositories/models/Problem';
 import { CreateProblemBatchInput } from '../../repositories/models/ProblemBatch';
 import { UserProgress } from '../../repositories/models/UserProgress';
-import { isAnswerCorrect } from '../../utils/enhancedAnswerUtils';
+import { getDummyBatchAndProblemsInput } from '../database/dummyData';
 import { ProblemBatchApiResponse } from '../types/api';
 import { DashboardData } from '../types/dashboard';
 import { ProblemBatchService } from './ProblemBatchService';
@@ -139,8 +139,9 @@ export class DatabaseService {
       throw new Error(`Problem ${problemId} not found`);
     }
 
-    // Validate the answer
-    const isCorrect = await isAnswerCorrect(userAnswer, problem.answer);
+    // TODO: Replace with new validation package
+    // For now, just do basic string comparison as placeholder
+    const isCorrect = userAnswer.trim().toLowerCase() === String(problem.answer).toLowerCase();
 
     // Update problem with user's answer
     await this.problemService.submitAnswer(problemId, userAnswer, isCorrect);
@@ -195,11 +196,10 @@ export class DatabaseService {
       return;
     }
 
-        // Import dummy data from the original database module
-    const { getDummyBatchAndProblemsInput } = await import('../database/dummyData.js');
+    // Import dummy data from the original database module
     const dummyBatchAndProblemsInput = await getDummyBatchAndProblemsInput();
 
-        // Import dummy batches
+    // Import dummy batches
     for (const batchData of dummyBatchAndProblemsInput) {
       // Convert string date to Date object
       const batchInput = {
