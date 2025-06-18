@@ -52,6 +52,15 @@ export default function TabLayout() {
             ),
         }}
     />
+      <Tabs.Screen
+        name="mathlive-test"
+        options={{
+            title: 'ML Test',
+            tabBarIcon: ({color, focused}: TabBarIconProps) => (
+                <Ionicons name= {focused ? 'flask' : 'flask-outline'} color = {color} size = {24} />
+            ),
+        }}
+    />
               <Tabs.Screen
         name="progress"
         options={{

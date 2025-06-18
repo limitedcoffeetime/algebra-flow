@@ -69,12 +69,12 @@ export default function TrainingMathInput({
                   font-size: 14px;
                   color: #9ca3af;
                   margin-bottom: 4px;
-                ">💡 Tips:</div>
-                <div style="
-                  font-size: 13px;
-                  color: #d1d5db;
-                  line-height: 1.4;
-                ">
+                // ">💡 Tips:</div>
+                // <div style="
+                //   font-size: 13px;
+                //   color: #d1d5db;
+                //   line-height: 1.4;
+                // ">
                   • Use \\frac{a}{b} for fractions
                   • Use x^2 for exponents
                   • Use \\sqrt{x} for square roots
