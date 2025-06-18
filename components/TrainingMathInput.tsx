@@ -2,12 +2,27 @@
 
 import { useEffect, useRef } from 'react';
 
+interface Problem {
+  id: string;
+  equation: string;
+  direction: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  answer: string | number | number[];
+}
+
+interface UserProgress {
+  problemsCorrect: number;
+  problemsAttempted: number;
+}
+
 interface TrainingMathInputProps {
   value?: string;
   placeholder?: string;
   onInput?: (latex: string) => void;
   onSubmit?: () => void;
   readonly?: boolean;
+  problem?: Problem;
+  userProgress?: UserProgress;
 }
 
 export default function TrainingMathInput({
@@ -16,6 +31,8 @@ export default function TrainingMathInput({
   onInput,
   onSubmit,
   readonly = false,
+  problem,
+  userProgress,
 }: TrainingMathInputProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mathFieldRef = useRef<any>(null);
@@ -30,6 +47,71 @@ export default function TrainingMathInput({
         await customElements.whenDefined('math-field');
 
         if (containerRef.current && !mathFieldRef.current) {
+          // Generate problem section HTML
+          const problemSectionHTML = problem ? `
+            <div style="
+              margin-bottom: 20px;
+              padding: 16px;
+              background: rgba(34, 197, 94, 0.1);
+              border-radius: 8px;
+              border: 1px solid rgba(34, 197, 94, 0.2);
+            ">
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+              ">
+                <div style="
+                  font-size: 16px;
+                  color: #22c55e;
+                  font-weight: bold;
+                ">📚 Problem:</div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <div style="
+                    background: #10b981;
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 12px;
+                    font-size: 11px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                  ">${problem.difficulty}</div>
+                  ${userProgress ? `
+                    <div style="
+                      color: #9ca3af;
+                      font-size: 12px;
+                    ">${userProgress.problemsCorrect}/${userProgress.problemsAttempted}</div>
+                  ` : ''}
+                </div>
+              </div>
+              <div style="
+                font-size: 14px;
+                color: #d1d5db;
+                margin-bottom: 8px;
+              ">${problem.direction}</div>
+              <div style="
+                background: #374151;
+                border-radius: 6px;
+                padding: 12px;
+                border: 1px solid #4b5563;
+              ">
+                <math-field
+                  readonly
+                  style="
+                    width: 100%;
+                    background: transparent;
+                    border: none;
+                    color: #ffffff;
+                    font-size: 20px;
+                    min-height: auto;
+                    padding: 0;
+                  "
+                >${problem.equation}</math-field>
+              </div>
+            </div>
+          ` : '';
+
           containerRef.current.innerHTML = `
             <div style="
               height: 100%;
@@ -39,6 +121,15 @@ export default function TrainingMathInput({
               border: 2px solid #374151;
               box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
             ">
+              ${problemSectionHTML}
+
+              <div style="
+                font-size: 16px;
+                color: #3b82f6;
+                font-weight: bold;
+                margin-bottom: 8px;
+              ">✏️ Your Answer:</div>
+
               <math-field
                 id="training-math-field"
                 style="
@@ -58,6 +149,7 @@ export default function TrainingMathInput({
               >
                 ${value}
               </math-field>
+
               <div style="
                 margin-top: 12px;
                 padding: 8px 12px;
@@ -69,12 +161,12 @@ export default function TrainingMathInput({
                   font-size: 14px;
                   color: #9ca3af;
                   margin-bottom: 4px;
-                // ">💡 Tips:</div>
-                // <div style="
-                //   font-size: 13px;
-                //   color: #d1d5db;
-                //   line-height: 1.4;
-                // ">
+                ">💡 Tips:</div>
+                <div style="
+                  font-size: 13px;
+                  color: #d1d5db;
+                  line-height: 1.4;
+                ">
                   • Use \\frac{a}{b} for fractions
                   • Use x^2 for exponents
                   • Use \\sqrt{x} for square roots
@@ -158,7 +250,7 @@ export default function TrainingMathInput({
     };
 
     initializeMathLive();
-  }, [onInput, onSubmit]);
+  }, [onInput, onSubmit, problem, userProgress]);
 
   // Update value when prop changes
   useEffect(() => {

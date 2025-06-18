@@ -126,34 +126,18 @@ export default function MathLiveTest() {
 
   const problem = problemStore.currentProblem;
 
-  return (
+    return (
     <SafeAreaView style={styles.fullScreen}>
       <View style={styles.container}>
-        {/* Minimal Problem Header */}
-        <View style={styles.problemHeader}>
-          <View style={styles.problemInfo}>
-            <Text style={styles.equation}>{problem.equation}</Text>
-            <Text style={styles.direction}>{problem.direction}</Text>
-          </View>
-          <View style={styles.statusInfo}>
-            <View style={styles.difficultyBadge}>
-              <Text style={styles.difficultyText}>{problem.difficulty.toUpperCase()}</Text>
-            </View>
-            {userProgressStore.userProgress && (
-              <Text style={styles.progressText}>
-                {userProgressStore.userProgress.problemsCorrect}/{userProgressStore.userProgress.problemsAttempted}
-              </Text>
-            )}
-          </View>
-        </View>
-
-        {/* Full Screen MathLive Area */}
+        {/* Full Screen MathLive Area with Problem Display */}
         <View style={styles.mathLiveContainer}>
           <TrainingMathInput
             value={userAnswer}
             onInput={handleInput}
             onSubmit={handleSubmit}
             placeholder="Enter your answer using the full screen..."
+            problem={problem}
+            userProgress={userProgressStore.userProgress || undefined}
           />
         </View>
 
@@ -220,52 +204,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  problemHeader: {
-    backgroundColor: '#1e293b',
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-  },
-  problemInfo: {
-    flex: 1,
-  },
-  equation: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    fontFamily: 'monospace',
-    marginBottom: 4,
-  },
-  direction: {
-    fontSize: 14,
-    color: '#94a3b8',
-  },
-  statusInfo: {
-    alignItems: 'flex-end',
-  },
-  difficultyBadge: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 4,
-  },
-  difficultyText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  progressText: {
-    color: '#94a3b8',
-    fontSize: 12,
-  },
+
   mathLiveContainer: {
     flex: 1,
     backgroundColor: '#0f172a',
-    padding: 8,
   },
   actionBar: {
     backgroundColor: '#1e293b',
