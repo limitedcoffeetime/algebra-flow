@@ -8,6 +8,8 @@ interface Problem {
   direction: string;
   difficulty: 'easy' | 'medium' | 'hard';
   answer: string | number | number[];
+  answerLHS?: string;
+  answerRHS?: string | number | number[];
 }
 
 interface UserProgress {
@@ -15,11 +17,19 @@ interface UserProgress {
   problemsAttempted: number;
 }
 
+interface VerificationResult {
+  isCorrect: boolean;
+  userAnswerSimplified: string;
+  correctAnswerSimplified: string;
+  errorMessage?: string;
+}
+
 interface TrainingMathInputProps {
   value?: string;
   placeholder?: string;
   onInput?: (latex: string) => void;
   onSubmit?: () => void;
+  onVerifyAnswer?: (result: VerificationResult) => void;
   readonly?: boolean;
   problem?: Problem;
   userProgress?: UserProgress;
@@ -30,6 +40,7 @@ export default function TrainingMathInput({
   placeholder = 'Enter your mathematical answer...',
   onInput,
   onSubmit,
+  onVerifyAnswer,
   readonly = false,
   problem,
   userProgress,
@@ -37,14 +48,242 @@ export default function TrainingMathInput({
   const containerRef = useRef<HTMLDivElement>(null);
   const mathFieldRef = useRef<any>(null);
 
+  // Function to verify answer using MathLive's simplify
+  const verifyAnswer = (userAnswer: string): VerificationResult => {
+    if (!problem) {
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer,
+        correctAnswerSimplified: '',
+        errorMessage: 'No problem available for verification'
+      };
+    }
+
+    // Debug logging
+    console.log('=== Answer Verification Debug ===');
+    console.log('User answer:', userAnswer);
+    console.log('Problem data:', {
+      answer: problem.answer,
+      answerLHS: problem.answerLHS,
+      answerRHS: problem.answerRHS
+    });
+
+    // Check compute engine availability
+    const ce = (window as any)?.MathfieldElement?.computeEngine;
+    console.log('Compute engine available:', !!ce);
+    if (ce) {
+      console.log('Compute engine type:', typeof ce);
+    }
+
+    try {
+      // Use the already declared compute engine variable
+      if (!ce) {
+        console.warn('MathLive compute engine not available, falling back to string comparison');
+        // Fallback to simple string comparison
+        const userTrimmed = userAnswer.trim().toLowerCase();
+
+        // Determine correct answer for comparison
+        let correctAnswer: string;
+        let isCorrect = false;
+
+        if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+          correctAnswer = String(problem.answerRHS);
+          isCorrect = userTrimmed === correctAnswer.toLowerCase();
+        } else if (problem.answerLHS && problem.answer) {
+          const fullAnswer = `${problem.answerLHS}${problem.answer}`;
+          const answerOnly = String(problem.answer);
+
+          isCorrect = userTrimmed === fullAnswer.toLowerCase() || userTrimmed === answerOnly.toLowerCase();
+          correctAnswer = userTrimmed === fullAnswer.toLowerCase() ? fullAnswer : answerOnly;
+        } else {
+          correctAnswer = String(problem.answer);
+          isCorrect = userTrimmed === correctAnswer.toLowerCase();
+        }
+
+        return {
+          isCorrect,
+          userAnswerSimplified: userAnswer.trim(),
+          correctAnswerSimplified: correctAnswer,
+          errorMessage: isCorrect ? undefined : 'Using fallback comparison method'
+        };
+      }
+
+      // Determine the correct answer to compare against
+      let correctAnswerStr: string;
+
+      // If answerRHS exists, use it (user typically enters just the RHS part)
+      if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+        if (Array.isArray(problem.answerRHS)) {
+          // For arrays (like multiple solutions), check if user answer matches any
+          const userSimplified = ce.parse(userAnswer).simplify().latex;
+
+          for (const ans of problem.answerRHS) {
+            try {
+              const correctSimplified = ce.parse(String(ans)).simplify().latex;
+              if (userSimplified === correctSimplified) {
+                return {
+                  isCorrect: true,
+                  userAnswerSimplified: userSimplified,
+                  correctAnswerSimplified: correctSimplified
+                };
+              }
+            } catch (error) {
+              console.warn(`Error processing answerRHS option ${ans}:`, error);
+            }
+          }
+
+          // If no match found, return false with first answer as reference
+          correctAnswerStr = String(problem.answerRHS[0]);
+        } else {
+          correctAnswerStr = String(problem.answerRHS);
+        }
+      }
+      // If answerRHS doesn't exist, check if user entered the full answer (answerLHS + answer)
+      else if (problem.answerLHS && problem.answer) {
+        const fullAnswer = `${problem.answerLHS}${problem.answer}`;
+        const userSimplified = ce.parse(userAnswer).simplify().latex;
+        const correctSimplified = ce.parse(fullAnswer).simplify().latex;
+
+        if (userSimplified === correctSimplified) {
+          return {
+            isCorrect: true,
+            userAnswerSimplified: userSimplified,
+            correctAnswerSimplified: correctSimplified
+          };
+        }
+
+        // Also check if they just entered the answer part (without LHS)
+        if (Array.isArray(problem.answer)) {
+          for (const ans of problem.answer) {
+            try {
+              const correctSimplified = ce.parse(String(ans)).simplify().latex;
+              if (userSimplified === correctSimplified) {
+                return {
+                  isCorrect: true,
+                  userAnswerSimplified: userSimplified,
+                  correctAnswerSimplified: correctSimplified
+                };
+              }
+            } catch (error) {
+              console.warn(`Error processing answer option ${ans}:`, error);
+            }
+          }
+          correctAnswerStr = String(problem.answer[0]);
+        } else {
+          const answerOnlySimplified = ce.parse(String(problem.answer)).simplify().latex;
+          if (userSimplified === answerOnlySimplified) {
+            return {
+              isCorrect: true,
+              userAnswerSimplified: userSimplified,
+              correctAnswerSimplified: answerOnlySimplified
+            };
+          }
+          correctAnswerStr = String(problem.answer);
+        }
+      }
+      // Fallback to original answer field
+      else if (Array.isArray(problem.answer)) {
+        // For arrays (like multiple solutions), check if user answer matches any
+        const userSimplified = ce.parse(userAnswer).simplify().latex;
+
+        for (const ans of problem.answer) {
+          try {
+            const correctSimplified = ce.parse(String(ans)).simplify().latex;
+            if (userSimplified === correctSimplified) {
+              return {
+                isCorrect: true,
+                userAnswerSimplified: userSimplified,
+                correctAnswerSimplified: correctSimplified
+              };
+            }
+          } catch (error) {
+            console.warn(`Error processing answer option ${ans}:`, error);
+          }
+        }
+
+        // If no match found, return false with first answer as reference
+        correctAnswerStr = String(problem.answer[0]);
+      } else {
+        correctAnswerStr = String(problem.answer);
+      }
+
+      // Simplify both answers using MathLive's compute engine
+      const userSimplified = ce.parse(userAnswer).simplify().latex;
+      const correctSimplified = ce.parse(correctAnswerStr).simplify().latex;
+
+      const isCorrect = userSimplified === correctSimplified;
+
+      return {
+        isCorrect,
+        userAnswerSimplified: userSimplified,
+        correctAnswerSimplified: correctSimplified
+      };
+
+    } catch (error) {
+      console.error('Error during answer verification:', error);
+
+      // Fallback to string comparison if MathLive fails
+      const userTrimmed = userAnswer.trim().toLowerCase();
+
+      // Determine correct answer for fallback comparison
+      let correctStr: string;
+      if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+        correctStr = Array.isArray(problem.answerRHS)
+          ? String(problem.answerRHS[0]).toLowerCase()
+          : String(problem.answerRHS).toLowerCase();
+      } else if (problem.answerLHS && problem.answer) {
+        // Try both full answer and just the answer part
+        const fullAnswer = `${problem.answerLHS}${problem.answer}`.toLowerCase();
+        const answerOnly = Array.isArray(problem.answer)
+          ? String(problem.answer[0]).toLowerCase()
+          : String(problem.answer).toLowerCase();
+
+        const isCorrect = userTrimmed === fullAnswer || userTrimmed === answerOnly;
+        correctStr = userTrimmed === fullAnswer ? fullAnswer : answerOnly;
+
+        return {
+          isCorrect,
+          userAnswerSimplified: userAnswer.trim(),
+          correctAnswerSimplified: isCorrect ? correctStr : fullAnswer,
+          errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+      } else {
+        correctStr = Array.isArray(problem.answer)
+          ? String(problem.answer[0]).toLowerCase()
+          : String(problem.answer).toLowerCase();
+      }
+
+      const isCorrect = userTrimmed === correctStr;
+
+      return {
+        isCorrect,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: String(problem.answer),
+        errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  };
+
   useEffect(() => {
     const initializeMathLive = async () => {
       try {
-        // Import MathLive
+                // Import MathLive - the errors you see are just Metro bundler noise, not actual failures
         await import('mathlive');
 
-        // Wait for custom elements to be defined
+        // Import the Compute Engine for mathematical operations
+        await import('@cortex-js/compute-engine');
+
+        // Wait for custom elements to be defined first
         await customElements.whenDefined('math-field');
+
+        // Configure global MathLive settings after elements are defined
+        // Disable custom fonts - use system fonts (simpler, always works)
+        if (typeof window !== 'undefined' && (window as any).MathfieldElement) {
+          (window as any).MathfieldElement.fontsDirectory = null;
+        }
+
+        // Give the compute engine a moment to initialize
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         if (containerRef.current && !mathFieldRef.current) {
           // Generate problem section HTML
@@ -150,29 +389,48 @@ export default function TrainingMathInput({
                 ${value}
               </math-field>
 
-              <div style="
-                margin-top: 12px;
-                padding: 8px 12px;
-                background: rgba(59, 130, 246, 0.1);
-                border-radius: 6px;
-                border: 1px solid rgba(59, 130, 246, 0.2);
-              ">
+              ${onVerifyAnswer ? `
                 <div style="
-                  font-size: 14px;
-                  color: #9ca3af;
-                  margin-bottom: 4px;
-                ">💡 Tips:</div>
-                <div style="
-                  font-size: 13px;
-                  color: #d1d5db;
-                  line-height: 1.4;
+                  display: flex;
+                  gap: 12px;
+                  margin-bottom: 16px;
                 ">
-                  • Use \\frac{a}{b} for fractions
-                  • Use x^2 for exponents
-                  • Use \\sqrt{x} for square roots
-                  • Press Enter to submit
+                  <button
+                    id="verify-answer-btn"
+                    style="
+                      flex: 1;
+                      background: #059669;
+                      color: white;
+                      border: none;
+                      border-radius: 8px;
+                      padding: 12px 20px;
+                      font-size: 16px;
+                      font-weight: bold;
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                    "
+                  >
+                    ✓ Verify Answer
+                  </button>
+                  <button
+                    id="submit-answer-btn"
+                    style="
+                      flex: 1;
+                      background: #3b82f6;
+                      color: white;
+                      border: none;
+                      border-radius: 8px;
+                      padding: 12px 20px;
+                      font-size: 16px;
+                      font-weight: bold;
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                    "
+                  >
+                    📤 Submit & Next
+                  </button>
                 </div>
-              </div>
+              ` : ''}
             </div>
           `;
 
@@ -185,13 +443,11 @@ export default function TrainingMathInput({
             mathField.value = value;
             mathField.readOnly = readonly;
 
-            // Configure MathLive options
-            mathField.setOptions({
-              virtualKeyboardMode: 'auto',
-              smartFence: true,
-              smartSuperscript: true,
-              removeExtraneousParentheses: true,
-            });
+            // Configure MathLive options using new syntax (no more setOptions deprecation warnings)
+            mathField.mathVirtualKeyboardPolicy = 'auto';
+            mathField.smartFence = true;
+            mathField.smartSuperscript = true;
+            mathField.removeExtraneousParentheses = true;
 
             // Add event listeners
             const handleInput = (event: any) => {
@@ -220,6 +476,35 @@ export default function TrainingMathInput({
             mathField.addEventListener('keydown', handleKeyDown);
             mathField.addEventListener('focus', handleFocus);
             mathField.addEventListener('blur', handleBlur);
+
+            // Add verify answer button functionality
+            const verifyBtn = containerRef.current.querySelector('#verify-answer-btn');
+            const submitBtn = containerRef.current.querySelector('#submit-answer-btn');
+
+            if (verifyBtn && onVerifyAnswer) {
+              const handleVerify = () => {
+                const currentValue = mathField.value;
+                if (currentValue.trim()) {
+                  const result = verifyAnswer(currentValue);
+                  onVerifyAnswer(result);
+
+                  // Visual feedback
+                  if (result.isCorrect) {
+                    mathField.style.borderColor = '#10b981';
+                    mathField.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                  } else {
+                    mathField.style.borderColor = '#ef4444';
+                    mathField.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+                  }
+                }
+              };
+
+              verifyBtn.addEventListener('click', handleVerify);
+            }
+
+            if (submitBtn && onSubmit) {
+              submitBtn.addEventListener('click', () => onSubmit());
+            }
 
             // Focus the field for better UX
             setTimeout(() => {
@@ -250,7 +535,7 @@ export default function TrainingMathInput({
     };
 
     initializeMathLive();
-  }, [onInput, onSubmit, problem, userProgress]);
+  }, [onInput, onSubmit, onVerifyAnswer, problem, userProgress]);
 
   // Update value when prop changes
   useEffect(() => {

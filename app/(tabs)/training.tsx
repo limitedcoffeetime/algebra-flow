@@ -11,6 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Add the VerificationResult interface to match the component
+interface VerificationResult {
+  isCorrect: boolean;
+  userAnswerSimplified: string;
+  correctAnswerSimplified: string;
+  errorMessage?: string;
+}
+
 export default function Training() {
   const [userAnswer, setUserAnswer] = useState('');
   const [showSolution, setShowSolution] = useState(false);
@@ -19,6 +27,9 @@ export default function Training() {
     isCorrect: boolean;
     userAnswer: string;
     correctAnswer: string;
+    userAnswerSimplified?: string;
+    correctAnswerSimplified?: string;
+    errorMessage?: string;
   } | null>(null);
 
   const problemStore = useProblemStore();
@@ -31,20 +42,50 @@ export default function Training() {
     setLastResult(null);
   }, [problemStore.currentProblem?.id]);
 
+  // Handle answer verification using MathLive
+  const handleVerifyAnswer = (result: VerificationResult) => {
+    if (!problemStore.currentProblem) return;
+
+    setLastResult({
+      isCorrect: result.isCorrect,
+      userAnswer: userAnswer,
+      correctAnswer: problemStore.currentProblem.answer as string,
+      userAnswerSimplified: result.userAnswerSimplified,
+      correctAnswerSimplified: result.correctAnswerSimplified,
+      errorMessage: result.errorMessage
+    });
+  };
+
   const handleSubmitAnswer = async () => {
     if (!problemStore.currentProblem || !userAnswer.trim()) return;
 
     setIsSubmitting(true);
     try {
-      // Simple answer validation for now
-      const result = await problemStore.submitAnswer(userAnswer);
-      await userProgressStore.recordAttempt(result.isCorrect);
+      // Use the MathLive verification result if available, otherwise fallback to store's submit
+      if (lastResult) {
+        // Record the attempt based on verification result
+        await userProgressStore.recordAttempt(lastResult.isCorrect);
 
-      setLastResult({
-        isCorrect: result.isCorrect,
-        userAnswer: userAnswer,
-        correctAnswer: problemStore.currentProblem.answer as string
-      });
+        // Update the problem store with the result
+        await problemStore.submitAnswer(userAnswer);
+
+        // Move to next problem if correct
+        if (lastResult.isCorrect) {
+          setTimeout(() => {
+            handleNextProblem();
+          }, 2000); // Give user time to see the result
+        }
+      } else {
+        // Fallback to original validation
+        const result = await problemStore.submitAnswer(userAnswer);
+        await userProgressStore.recordAttempt(result.isCorrect);
+
+        setLastResult({
+          isCorrect: result.isCorrect,
+          userAnswer: userAnswer,
+          correctAnswer: problemStore.currentProblem.answer as string
+        });
+      }
 
     } catch (error) {
       console.error('Error submitting answer:', error);
@@ -127,8 +168,11 @@ export default function Training() {
             value={userAnswer}
             onInput={setUserAnswer}
             onSubmit={handleSubmitAnswer}
+            onVerifyAnswer={handleVerifyAnswer}
             readonly={isSubmitting}
             placeholder="Type your mathematical answer..."
+            problem={problem}
+            userProgress={userProgressStore.userProgress || undefined}
           />
 
           {/* LaTeX Preview */}
@@ -140,30 +184,32 @@ export default function Training() {
           )}
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              (!userAnswer.trim() || isSubmitting) && styles.submitButtonDisabled
-            ]}
-            onPress={handleSubmitAnswer}
-            disabled={!userAnswer.trim() || isSubmitting}
-          >
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Checking...' : 'Submit Answer'}
-            </Text>
-          </TouchableOpacity>
+        {/* Action Buttons - Only show if verification hasn't been used */}
+        {!lastResult && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                (!userAnswer.trim() || isSubmitting) && styles.submitButtonDisabled
+              ]}
+              onPress={handleSubmitAnswer}
+              disabled={!userAnswer.trim() || isSubmitting}
+            >
+              <Text style={styles.submitButtonText}>
+                {isSubmitting ? 'Checking...' : 'Submit Answer'}
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.solutionButton}
-            onPress={() => setShowSolution(!showSolution)}
-          >
-            <Text style={styles.solutionButtonText}>
-              {showSolution ? 'Hide Solution' : 'Show Solution'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={styles.solutionButton}
+              onPress={() => setShowSolution(!showSolution)}
+            >
+              <Text style={styles.solutionButtonText}>
+                {showSolution ? 'Hide Solution' : 'Show Solution'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Result Display */}
         {lastResult && (
@@ -177,10 +223,31 @@ export default function Training() {
             <View style={styles.resultDetails}>
               <Text style={styles.resultLabel}>Your answer:</Text>
               <Text style={styles.resultValue}>{lastResult.userAnswer}</Text>
+
+              {lastResult.userAnswerSimplified && lastResult.userAnswerSimplified !== lastResult.userAnswer && (
+                <>
+                  <Text style={styles.resultLabel}>Simplified:</Text>
+                  <Text style={styles.resultValue}>{lastResult.userAnswerSimplified}</Text>
+                </>
+              )}
+
               {!lastResult.isCorrect && (
                 <>
                   <Text style={styles.resultLabel}>Correct answer:</Text>
                   <Text style={styles.resultValue}>{lastResult.correctAnswer}</Text>
+                  {lastResult.correctAnswerSimplified && (
+                    <>
+                      <Text style={styles.resultLabel}>Simplified:</Text>
+                      <Text style={styles.resultValue}>{lastResult.correctAnswerSimplified}</Text>
+                    </>
+                  )}
+                </>
+              )}
+
+              {lastResult.errorMessage && (
+                <>
+                  <Text style={styles.resultLabel}>Note:</Text>
+                  <Text style={[styles.resultValue, styles.errorNote]}>{lastResult.errorMessage}</Text>
                 </>
               )}
             </View>
@@ -490,5 +557,9 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     textAlign: 'center',
     fontWeight: 'bold',
+  },
+  errorNote: {
+    color: '#ef4444',
+    fontStyle: 'italic',
   },
 });
