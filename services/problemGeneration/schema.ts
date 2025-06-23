@@ -35,7 +35,10 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
 
   // Build the properties object conditionally
   let problemProperties: any = {
-    equation: { type: 'string', description: 'The algebra problem equation' },
+    equation: {
+      type: 'string',
+      description: 'The algebra problem equation in LaTeX format (use \\frac{a}{b} for fractions, \\sqrt{x} for roots)'
+    },
     direction: {
       type: 'string',
       description: 'Clear instruction for what to do (e.g., "Solve for x", "Simplify", "Factor")'
@@ -51,7 +54,7 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
           },
           mathExpression: {
             type: 'string',
-            description: 'The mathematical expression/equation for this step in plain text format'
+            description: 'The mathematical expression/equation for this step in LaTeX format (use \\frac{a}{b} for fractions, \\sqrt{x} for roots)'
           },
           isEquation: {
             type: 'boolean',
@@ -62,7 +65,7 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
         additionalProperties: false
       },
       minItems: 1,
-      description: 'Step-by-step solution with separated explanations and math',
+      description: 'Step-by-step solution with separated explanations and math in LaTeX format',
     },
     variables: {
       type: 'array',

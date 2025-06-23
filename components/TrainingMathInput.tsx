@@ -289,51 +289,57 @@ export default function TrainingMathInput({
           // Generate problem section HTML
           const problemSectionHTML = problem ? `
             <div style="
-              margin-bottom: 20px;
-              padding: 16px;
-              background: rgba(34, 197, 94, 0.1);
-              border-radius: 8px;
-              border: 1px solid rgba(34, 197, 94, 0.2);
+              margin-bottom: 24px;
+              padding: 24px;
+              background: #1f2937;
+              border-radius: 16px;
+              border: 1px solid #374151;
             ">
               <div style="
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 12px;
+                margin-bottom: 16px;
               ">
                 <div style="
-                  font-size: 16px;
-                  color: #22c55e;
-                  font-weight: bold;
-                ">📚 Problem:</div>
+                  font-size: 18px;
+                  color: #ffffff;
+                  font-weight: 600;
+                  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                ">Problem</div>
                 <div style="display: flex; gap: 12px; align-items: center;">
                   <div style="
-                    background: #10b981;
+                    background: #3b82f6;
                     color: white;
-                    padding: 4px 8px;
-                    border-radius: 12px;
-                    font-size: 11px;
-                    font-weight: bold;
+                    padding: 6px 12px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    font-weight: 600;
                     text-transform: uppercase;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                   ">${problem.difficulty}</div>
                   ${userProgress ? `
                     <div style="
-                      color: #9ca3af;
-                      font-size: 12px;
+                      color: #10b981;
+                      font-size: 14px;
+                      font-weight: 600;
+                      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                     ">${userProgress.problemsCorrect}/${userProgress.problemsAttempted}</div>
                   ` : ''}
                 </div>
               </div>
               <div style="
-                font-size: 14px;
-                color: #d1d5db;
-                margin-bottom: 8px;
+                font-size: 16px;
+                color: #e5e7eb;
+                margin-bottom: 16px;
+                font-weight: 500;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
               ">${problem.direction}</div>
               <div style="
-                background: #374151;
-                border-radius: 6px;
-                padding: 12px;
-                border: 1px solid #4b5563;
+                background: #111827;
+                border-radius: 12px;
+                padding: 20px;
+                border: 2px solid #3b82f6;
               ">
                 <math-field
                   readonly
@@ -342,7 +348,7 @@ export default function TrainingMathInput({
                     background: transparent;
                     border: none;
                     color: #ffffff;
-                    font-size: 20px;
+                    font-size: 24px;
                     min-height: auto;
                     padding: 0;
                   "
@@ -355,19 +361,17 @@ export default function TrainingMathInput({
             <div style="
               height: 100%;
               padding: 20px;
-              border-radius: 12px;
-              background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-              border: 2px solid #374151;
-              box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+              background: #0f172a;
             ">
               ${problemSectionHTML}
 
               <div style="
-                font-size: 16px;
-                color: #3b82f6;
-                font-weight: bold;
-                margin-bottom: 8px;
-              ">✏️ Your Answer:</div>
+                font-size: 18px;
+                color: #ffffff;
+                font-weight: 600;
+                margin-bottom: 12px;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              ">Your Answer</div>
 
               <math-field
                 id="training-math-field"
@@ -376,14 +380,14 @@ export default function TrainingMathInput({
                   min-height: 120px;
                   padding: 20px;
                   font-size: 24px;
-                  border: 2px solid #4b5563;
-                  border-radius: 8px;
-                  background: #374151;
+                  border: 2px solid #374151;
+                  border-radius: 12px;
+                  background: #1f2937;
                   color: white;
                   box-sizing: border-box;
                   display: block;
                   transition: all 0.2s ease;
-                  margin-bottom: 16px;
+                  margin-bottom: 20px;
                 "
               >
                 ${value}
@@ -392,25 +396,26 @@ export default function TrainingMathInput({
               ${onVerifyAnswer ? `
                 <div style="
                   display: flex;
-                  gap: 12px;
-                  margin-bottom: 16px;
+                  gap: 16px;
+                  margin-top: 8px;
                 ">
                   <button
                     id="verify-answer-btn"
                     style="
                       flex: 1;
-                      background: #059669;
+                      background: #10b981;
                       color: white;
                       border: none;
-                      border-radius: 8px;
-                      padding: 12px 20px;
+                      border-radius: 12px;
+                      padding: 16px 20px;
                       font-size: 16px;
-                      font-weight: bold;
+                      font-weight: 600;
                       cursor: pointer;
                       transition: all 0.2s ease;
+                      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                     "
                   >
-                    ✓ Verify Answer
+                    Verify Answer
                   </button>
                   <button
                     id="submit-answer-btn"
@@ -419,15 +424,16 @@ export default function TrainingMathInput({
                       background: #3b82f6;
                       color: white;
                       border: none;
-                      border-radius: 8px;
-                      padding: 12px 20px;
+                      border-radius: 12px;
+                      padding: 16px 20px;
                       font-size: 16px;
-                      font-weight: bold;
+                      font-weight: 600;
                       cursor: pointer;
                       transition: all 0.2s ease;
+                      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                     "
                   >
-                    📤 Submit & Next
+                    Submit & Next
                   </button>
                 </div>
               ` : ''}
@@ -468,7 +474,7 @@ export default function TrainingMathInput({
             };
 
             const handleBlur = () => {
-              mathField.style.borderColor = '#4b5563';
+              mathField.style.borderColor = '#374151';
               mathField.style.boxShadow = 'none';
             };
 
@@ -499,11 +505,31 @@ export default function TrainingMathInput({
                 }
               };
 
-              verifyBtn.addEventListener('click', handleVerify);
+                            verifyBtn.addEventListener('click', handleVerify);
+
+              // Add hover effects
+              verifyBtn.addEventListener('mouseenter', () => {
+                (verifyBtn as HTMLElement).style.background = '#059669';
+                (verifyBtn as HTMLElement).style.transform = 'translateY(-1px)';
+              });
+              verifyBtn.addEventListener('mouseleave', () => {
+                (verifyBtn as HTMLElement).style.background = '#10b981';
+                (verifyBtn as HTMLElement).style.transform = 'translateY(0)';
+              });
             }
 
             if (submitBtn && onSubmit) {
               submitBtn.addEventListener('click', () => onSubmit());
+
+              // Add hover effects
+              submitBtn.addEventListener('mouseenter', () => {
+                (submitBtn as HTMLElement).style.background = '#2563eb';
+                (submitBtn as HTMLElement).style.transform = 'translateY(-1px)';
+              });
+              submitBtn.addEventListener('mouseleave', () => {
+                (submitBtn as HTMLElement).style.background = '#3b82f6';
+                (submitBtn as HTMLElement).style.transform = 'translateY(0)';
+              });
             }
 
             // Focus the field for better UX

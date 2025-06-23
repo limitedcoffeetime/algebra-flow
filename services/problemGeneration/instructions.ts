@@ -56,7 +56,7 @@ export function getSolutionStepsInstructions(): string {
 SOLUTION STEPS FORMAT:
 Each step should be an object with three parts:
 1. "explanation": Plain English description of what you're doing (e.g., "Add 5 to both sides")
-2. "mathExpression": The actual math for this step (e.g., "x + 5 = 10" or "2x^2 + 3x - 1")
+2. "mathExpression": The actual math for this step in LATEX FORMAT (e.g., "x + 5 = 10" or "2x^2 + 3x - 1")
 3. "isEquation": true if the expression contains "=", false if it's just an expression
 
 EXAMPLES:
@@ -76,12 +76,25 @@ EXAMPLES:
   "isEquation": true
 }
 
-MATH EXPRESSION GUIDELINES:
-- Use plain text formatting for simplicity and accessibility
-- For fractions: use simple notation like "3/4" or "(x + 1)/2"
-- For exponents: use caret notation like "x^2" or "x^(2n + 1)"
-- For roots: use "sqrt(expression)" like "sqrt(16)" or "sqrt(x + 1)"
-- Keep expressions clear and readable in plain text
-- Examples: "(x + 1)/2", "x^2 + 3x + 1", "sqrt(x)/(x - 1)"
+CRITICAL: LATEX FORMATTING REQUIREMENTS for MathLive Compatibility:
+- For fractions: use \\frac{numerator}{denominator} NOT "3/4" format
+  ✓ Correct: "\\frac{3}{4}", "x = \\frac{21}{3}", "\\frac{a}{3} = 7"
+  ✗ Wrong: "3/4", "x = 21/3", "a/3 = 7"
+- For square roots: use \\sqrt{expression} NOT "sqrt(expression)"
+  ✓ Correct: "\\sqrt{16}", "\\sqrt{x + 1}"
+  ✗ Wrong: "sqrt(16)", "sqrt(x + 1)"
+- For exponents: use x^{2} or x^2 for simple exponents
+  ✓ Correct: "x^2", "x^{2n + 1}", "(x + 1)^2"
+- For multiplication: use implicit multiplication or \\cdot
+  ✓ Correct: "2x", "3(x + 1)", "2 \\cdot 3"
+- Use proper LaTeX spacing and grouping with braces when needed
+
+LATEX EXAMPLES:
+- Division: "\\frac{x + 1}{2}" instead of "(x + 1)/2"
+- Mixed operations: "\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}" for quadratic formula
+- Complex fractions: "\\frac{\\frac{1}{x}}{x + 1}" for nested fractions
+- Equations with fractions: "\\frac{2x}{3} = \\frac{5}{6}"
+
+This LaTeX format is required for proper rendering in MathLive math fields.
 `;
 }

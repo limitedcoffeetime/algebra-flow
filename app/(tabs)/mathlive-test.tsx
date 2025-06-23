@@ -54,7 +54,7 @@ export default function MathLiveTest() {
     // Show immediate feedback via Alert
     if (result.isCorrect) {
       Alert.alert(
-        'Correct! 🎉',
+        'Correct!',
         `Great job! Your answer "${result.userAnswerSimplified}" is correct.`,
         [
           { text: 'Continue', style: 'default' },
@@ -103,7 +103,7 @@ export default function MathLiveTest() {
 
       if (isCorrect) {
         Alert.alert(
-          'Correct! 🎉',
+          'Correct!',
           'Great job! You solved the equation correctly.',
           [
             { text: 'Next Problem', onPress: () => handleNextProblem() },
@@ -220,7 +220,7 @@ export default function MathLiveTest() {
               verificationResult.isCorrect ? styles.correctStatus : styles.incorrectStatus
             ]}>
               <Text style={styles.verificationText}>
-                {verificationResult.isCorrect ? '✓ Verified Correct' : '✗ Needs Correction'}
+                {verificationResult.isCorrect ? 'Verified Correct' : 'Needs Correction'}
               </Text>
             </View>
           )}
@@ -259,13 +259,13 @@ const styles = StyleSheet.create({
   retryButton: {
     backgroundColor: '#3b82f6',
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
   },
   retryButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
 
   mathLiveContainer: {
@@ -273,18 +273,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f172a',
   },
   actionBar: {
-    backgroundColor: '#1e293b',
-    padding: 16,
+    backgroundColor: '#1f2937',
+    padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: '#334155',
-    gap: 12,
+    borderTopColor: '#374151',
+    gap: 16,
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   verificationStatus: {
     flex: 1,
@@ -320,6 +320,6 @@ const styles = StyleSheet.create({
   verificationText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
 });
