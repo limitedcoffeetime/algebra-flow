@@ -35,7 +35,7 @@
         },
         {
           "explanation": "Divide both sides by 2",
-          "mathExpression": "x = 10 / 2",
+          "mathExpression": "x = \\frac{10}{2}",
           "isEquation": true
         },
         {
@@ -70,7 +70,7 @@
         },
         {
           "explanation": "Divide both sides by 3",
-          "mathExpression": "y = 21 / 3",
+          "mathExpression": "y = \\frac{21}{3}",
           "isEquation": true
         },
         {
@@ -100,12 +100,12 @@
         },
         {
           "explanation": "Take square root of both sides",
-          "mathExpression": "x = ±√4",
+          "mathExpression": "x = \\pm\\sqrt{4}",
           "isEquation": true
         },
         {
           "explanation": "Simplify",
-          "mathExpression": "x = ±2",
+          "mathExpression": "x = \\pm 2",
           "isEquation": true
         }
       ],
@@ -117,7 +117,7 @@
     {
       "id": "prob_004",
       "batchId": "batch_sample_002",
-      "equation": "a / 3 = 7",
+      "equation": "\\frac{a}{3} = 7",
       "direction": "Solve for a",
       "answer": "a = 21",
       "answerLHS": "a = ",
@@ -125,7 +125,7 @@
       "solutionSteps": [
         {
           "explanation": "Multiply both sides by 3",
-          "mathExpression": "a / 3 × 3 = 7 × 3",
+          "mathExpression": "\\frac{a}{3} \\cdot 3 = 7 \\cdot 3",
           "isEquation": true
         },
         {

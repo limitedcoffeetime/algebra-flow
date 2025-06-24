@@ -82,7 +82,7 @@ export default function ProgressScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
+    backgroundColor: '#0f172a',
   },
   contentContainer: {
     padding: 20,
@@ -97,14 +97,16 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 30,
-    backgroundColor: '#333',
+    backgroundColor: '#1f2937',
     borderRadius: 12,
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#374151',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffd33d',
+    color: '#3b82f6',
     marginBottom: 15,
   },
   statsContainer: {
@@ -116,7 +118,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#444',
+    borderBottomColor: '#374151',
   },
   statLabel: {
     fontSize: 16,
@@ -125,16 +127,16 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffd33d',
+    color: '#10b981',
   },
   accuracyText: {
     fontSize: 14,
-    color: '#ffd33d',
+    color: '#10b981',
     opacity: 0.8,
   },
   noDataText: {
     fontSize: 16,
-    color: '#999',
+    color: '#94a3b8',
     textAlign: 'center',
     fontStyle: 'italic',
   },

@@ -51,6 +51,16 @@ CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
 ACCEPTABLE ANSWERS: 3, -2, 1/2, 2/3, 0, 7, -1/4, 5/3
 UNACCEPTABLE ANSWERS: 1.2839, 2.7182, 0.3333..., √2, 3.14159, 1.7320
 
+CRITICAL: LATEX FORMATTING for MathLive Compatibility:
+- ALL mathematical expressions must use LaTeX format
+- For equations: "2x + 3 = 11", "\\frac{x}{3} = 7", "x^2 - 4 = 0"
+- For fractions: ALWAYS use \\frac{numerator}{denominator} format
+  ✓ Correct: "\\frac{a}{3} = 7", "x = \\frac{21}{3}", "\\frac{2x + 1}{4} = \\frac{3}{2}"
+  ✗ Wrong: "a/3 = 7", "x = 21/3", "(2x + 1)/4 = 3/2"
+- For roots: use \\sqrt{expression}
+- For exponents: use x^2 or x^{complex_exponent}
+- This applies to the main equation AND all solution steps
+
 Generate problems following the exact JSON schema structure.
 
 Constraints:
@@ -61,7 +71,8 @@ Constraints:
 - CRITICAL: Ensure your answer matches the final step of your solution
 - CRITICAL: All answers must be calculator-free (integers or simple fractions only)
 - CRITICAL: Direction must clearly state what to do, answer must be just the value
-- CRITICAL: List all variables used in the problem in the variables array`;
+- CRITICAL: List all variables used in the problem in the variables array
+- CRITICAL: ALL math expressions must be in LaTeX format for MathLive compatibility`;
 
   const userInput = `Generate exactly ${count} ${difficulty} algebra problems of type "${problemType}".`;
 

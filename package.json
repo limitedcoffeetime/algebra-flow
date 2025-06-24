@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.824.0",
+    "@cortex-js/compute-engine": "^0.29.1",
+    "@expo/metro-runtime": "~5.0.4",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-navigation/bottom-tabs": "^7.3.10",
@@ -34,6 +36,7 @@
     "expo-system-ui": "~5.0.8",
     "expo-web-browser": "~14.1.6",
     "mathjs": "^14.5.2",
+    "mathlive": "^0.105.3",
     "openai": "^4.104.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -43,7 +46,8 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-web": "~0.20.0",
+    "react-native-web": "^0.20.0",
+    "react-native-webview": "13.13.5",
     "uuid": "^11.1.0",
     "zustand": "^5.0.5"
   },
