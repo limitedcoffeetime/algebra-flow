@@ -1,9 +1,9 @@
 name: Generate Daily Problems
 
 on:
-  # Run every day at 2 AM UTC
+  # Run every day at 1 AM UTC (9 PM EDT / 8 PM EST)
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 1 * * *'
   # Allow manual triggering for testing
   workflow_dispatch:
 
@@ -27,6 +27,7 @@ jobs:
     - name: Generate problems
       run: npx ts-node -r tsconfig-paths/register scripts/generateProblems.ts
       env:
+        PROBLEMS_PER_BATCH: '20'
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
