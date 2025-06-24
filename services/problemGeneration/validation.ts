@@ -54,13 +54,15 @@ export function validateAnswerFormat(answer: any, problemType: ProblemType): boo
 
   switch (problemType) {
     case 'linear-one-variable':
-      return typeof answer === 'number';
+      // Now accepts both strings (LaTeX fractions) and numbers (integers)
+      return typeof answer === 'string' || typeof answer === 'number';
     case 'linear-two-variables':
     case 'polynomial-simplification':
       return typeof answer === 'string';
     case 'quadratic-factoring':
     case 'quadratic-formula':
-      return Array.isArray(answer) && answer.every((a) => typeof a === 'number');
+      // Now accepts arrays of strings (LaTeX fractions) or numbers (integers)
+      return Array.isArray(answer) && answer.every((a) => typeof a === 'string' || typeof a === 'number');
     default:
       return true;
   }

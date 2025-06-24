@@ -8,32 +8,32 @@ export function getProblemTypeInstructions(problemType: ProblemType): {
     case 'linear-one-variable':
       return {
         instructions:
-          'Solve for x. Answer should be an integer or simple fraction (like 1/2, 2/3). NO complex decimals.',
-        answerFormat: 'number or simple fraction',
+          'Solve for x. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations like 0.6666. For integers, use plain numbers like 5.',
+        answerFormat: 'LaTeX fractions (\\frac{a}{b}) or integers',
       };
     case 'linear-two-variables':
       return {
         instructions:
-          'Solve for x in terms of y (express x = ... ). Answer should use integer coefficients only. Example: "x = 3 + 2y" or "x = (5 - 3y)/2".',
-        answerFormat: 'expression with integer coefficients',
+          'Solve for x in terms of y (express x = ... ). Use LaTeX fractions like \\frac{5-3y}{2} instead of decimal approximations. Use integer coefficients when possible.',
+        answerFormat: 'LaTeX expression with fractions and integer coefficients',
       };
     case 'quadratic-factoring':
     case 'quadratic-formula':
       return {
         instructions:
-          'Find all solutions. Solutions should be integers or simple fractions. Always provide answers as an array, even for single solutions (e.g., [3] or [-2, 5]). NO irrational numbers or complex decimals.',
-        answerFormat: 'array of integer(s) or simple fraction(s)',
+          'Find all solutions. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations. Always provide answers as an array, even for single solutions (e.g., ["3"] or ["\\frac{-2}{3}", "5"]). NO irrational numbers or decimal approximations.',
+        answerFormat: 'array of LaTeX fractions (\\frac{a}{b}) or integers',
       };
     case 'polynomial-simplification':
       return {
         instructions:
-          'Simplify the polynomial expression. Use integer coefficients only. Example: "3x^2 + 2x - 5".',
-        answerFormat: 'polynomial with integer coefficients',
+          'Simplify the polynomial expression. Use LaTeX fractions like \\frac{3}{4}x^2 for fractional coefficients. Use integer coefficients when possible.',
+        answerFormat: 'polynomial with LaTeX fractions and integer coefficients',
       };
     default:
       return {
-        instructions: 'Solve the equation with calculator-free answer.',
-        answerFormat: 'integer or simple fraction',
+        instructions: 'Solve the equation with calculator-free answer. Use LaTeX \\frac{a}{b} for fractions, never decimal approximations.',
+        answerFormat: 'LaTeX fractions (\\frac{a}{b}) or integers',
       };
   }
 }

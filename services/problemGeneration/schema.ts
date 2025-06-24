@@ -6,7 +6,10 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
 
   switch (problemType) {
     case 'linear-one-variable':
-      answerSchema = { type: 'number' };
+      answerSchema = {
+        type: 'string',
+        description: 'Use LaTeX format for fractions like \\frac{2}{3} instead of decimals like 0.6666. For integers, use plain numbers like "5".'
+      };
       includesAnswerLHS = true;
       break;
     case 'linear-two-variables':
@@ -17,10 +20,13 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
     case 'quadratic-formula':
       answerSchema = {
         type: 'array',
-        items: { type: 'number' },
+        items: {
+          type: 'string',
+          description: 'Use LaTeX format for fractions like \\frac{2}{3} instead of decimals. For integers, use plain numbers like "5".'
+        },
         minItems: 1,
         maxItems: 3,
-        description: 'Array of solution(s). Use single-element array for one solution.',
+        description: 'Array of solution(s) in LaTeX format. Use \\frac{a}{b} for fractions, plain numbers for integers.',
       };
       includesAnswerLHS = true;
       break;
@@ -29,7 +35,10 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
       includesAnswerLHS = false;
       break;
     default:
-      answerSchema = { type: 'number' };
+      answerSchema = {
+        type: 'string',
+        description: 'Use LaTeX format for fractions like \\frac{2}{3} instead of decimals like 0.6666. For integers, use plain numbers like "5".'
+      };
       includesAnswerLHS = true;
   }
 
@@ -84,14 +93,14 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
     };
     problemProperties.answerRHS = {
       ...answerSchema,
-      description: 'The right-hand side value only (e.g., "5" or "(3y-2)/4"). Used when answerLHS is present.'
+      description: (answerSchema.description || 'The right-hand side value') + ' Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
     };
     requiredFields.push('answerLHS', 'answerRHS');
   } else {
     // For problems like simplification, just use single answer
     problemProperties.answer = {
       ...answerSchema,
-      description: 'The solution value only (for simplification problems without a specific variable to solve for)',
+      description: 'The solution value only (for simplification problems without a specific variable to solve for). Use LaTeX \\frac{a}{b} for fractions.',
     };
     requiredFields.push('answer');
   }

@@ -10,7 +10,7 @@
       "id": "batch_sample_002",
       "generationDate": "2024-01-26T10:00:00.000Z",
       "sourceUrl": "bundled://assets/data/sampleProblems.json",
-      "problemCount": 2
+      "problemCount": 3
     }
   ],
   "problems": [
@@ -21,7 +21,7 @@
       "direction": "Solve for x",
       "answer": "x = 5",
       "answerLHS": "x = ",
-      "answerRHS": 5,
+      "answerRHS": "5",
       "solutionSteps": [
         {
           "explanation": "Subtract 5 from both sides",
@@ -56,7 +56,7 @@
       "direction": "Solve for y",
       "answer": "y = 7",
       "answerLHS": "y = ",
-      "answerRHS": 7,
+      "answerRHS": "7",
       "solutionSteps": [
         {
           "explanation": "Add 7 to both sides",
@@ -91,7 +91,7 @@
       "direction": "Solve for x",
       "answer": [2, -2],
       "answerLHS": "x = ",
-      "answerRHS": [2, -2],
+      "answerRHS": ["2", "-2"],
       "solutionSteps": [
         {
           "explanation": "Add 4 to both sides",
@@ -121,7 +121,7 @@
       "direction": "Solve for a",
       "answer": "a = 21",
       "answerLHS": "a = ",
-      "answerRHS": 21,
+      "answerRHS": "21",
       "solutionSteps": [
         {
           "explanation": "Multiply both sides by 3",
@@ -165,6 +165,36 @@
       "variables": ["x"],
       "difficulty": "easy",
       "problemType": "polynomial-simplification",
+      "isCompleted": false
+    },
+    {
+      "id": "prob_006",
+      "batchId": "batch_sample_002",
+      "equation": "3x - 2 = 4",
+      "direction": "Solve for x",
+      "answer": "x = \\frac{2}{3}",
+      "answerLHS": "x = ",
+      "answerRHS": "\\frac{2}{3}",
+      "solutionSteps": [
+        {
+          "explanation": "Add 2 to both sides",
+          "mathExpression": "3x = 6",
+          "isEquation": true
+        },
+        {
+          "explanation": "Divide both sides by 3",
+          "mathExpression": "x = \\frac{6}{3}",
+          "isEquation": true
+        },
+        {
+          "explanation": "Simplify the fraction",
+          "mathExpression": "x = \\frac{2}{3}",
+          "isEquation": true
+        }
+      ],
+      "variables": ["x"],
+      "difficulty": "easy",
+      "problemType": "linear-one-variable",
       "isCompleted": false
     }
   ]
