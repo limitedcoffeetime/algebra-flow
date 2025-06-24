@@ -59,6 +59,12 @@ export default {
     experiments: {
       typedRoutes: true
     },
+    updates: {
+      url: "https://u.expo.dev/11d26774-eebd-4426-aa12-064a3460fc6a"
+    },
+    runtimeVersion: {
+      policy: "appVersion"
+    },
     extra: {
       problemsLatestUrl: process.env.EXPO_PUBLIC_PROBLEMS_LATEST_URL || '',
       eas: {
