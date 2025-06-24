@@ -1,7 +1,6 @@
 import { logger } from '@/utils/logger';
 import { getDBConnection } from '../../../services/database/db';
 import { generateId } from '../../../services/database/utils';
-import { isAnswerCorrect } from '../../../utils/enhancedAnswerUtils';
 import { IProblemRepository } from '../../interfaces/IProblemRepository';
 import { CreateProblemInput, Problem, UpdateProblemInput } from '../../models/Problem';
 import { ProblemRow, SerializedProblem } from '../../types/database';
@@ -220,11 +219,13 @@ export class SqliteProblemRepository implements IProblemRepository {
     return (rows || []).map(row => this.mapRowToProblem(row));
   }
 
-  async createMany(problems: CreateProblemInput[]): Promise<void> {
+  async createMany(problems: CreateProblemInput[], useTransaction: boolean = true): Promise<void> {
     const db = await getDBConnection();
 
-    // Use transaction for better performance
-    await db.execAsync('BEGIN TRANSACTION;');
+    if (useTransaction) {
+      // Use transaction for better performance when not called from within another transaction
+      await db.execAsync('BEGIN TRANSACTION;');
+    }
 
     try {
       const sql = `
@@ -258,10 +259,14 @@ export class SqliteProblemRepository implements IProblemRepository {
         );
       }
 
-      await db.execAsync('COMMIT TRANSACTION;');
+      if (useTransaction) {
+        await db.execAsync('COMMIT TRANSACTION;');
+      }
       logger.info(`Created ${problems.length} problems successfully`);
     } catch (error) {
-      await db.execAsync('ROLLBACK TRANSACTION;');
+      if (useTransaction) {
+        await db.execAsync('ROLLBACK TRANSACTION;');
+      }
       logger.error('Failed to create problems:', error);
       throw error;
     }
@@ -319,11 +324,11 @@ export class SqliteProblemRepository implements IProblemRepository {
       }
       stats[type].attempted += 1;
 
-      // Use the proper validation logic from answerUtils
-      const userAns = String(row.userAnswer ?? '').trim();
-      const correctAns = row.answer;
-
-      const isCorrect = await isAnswerCorrect(userAns, correctAns);
+      // TODO: Replace with new validation package
+      // For now, simple string comparison
+      const userAns = String(row.userAnswer ?? '').trim().toLowerCase();
+      const correctAns = String(row.answer).toLowerCase();
+      const isCorrect = userAns === correctAns;
 
       if (isCorrect) {
         stats[type].correct += 1;

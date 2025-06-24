@@ -3,7 +3,7 @@ import { Problem, repositoryFactory } from '../../repositories';
 import { CreateProblemInput, UpdateProblemInput } from '../../repositories/models/Problem';
 import { CreateProblemBatchInput } from '../../repositories/models/ProblemBatch';
 import { UserProgress } from '../../repositories/models/UserProgress';
-import { isAnswerCorrect } from '../../utils/enhancedAnswerUtils';
+import { getDummyBatchAndProblemsInput } from '../database/dummyData';
 import { ProblemBatchApiResponse } from '../types/api';
 import { DashboardData } from '../types/dashboard';
 import { ProblemBatchService } from './ProblemBatchService';
@@ -112,19 +112,30 @@ export class DatabaseService {
     if (!progress.currentBatchId || await this.userProgressService.needsBatchAssignment()) {
       const updatedProgress = await this.userProgressService.autoAssignBatch();
       if (!updatedProgress?.currentBatchId) {
-        logger.info('No batches available with unsolved problems');
+        logger.info('No batches available with problems');
         return null;
       }
     }
 
-    // Get next unsolved problem from current batch
+    // Get current progress
     const currentProgress = await this.userProgressService.getUserProgress();
     if (!currentProgress.currentBatchId) {
       return null;
     }
 
-    const unsolvedProblems = await this.problemService.getUnsolvedProblems(currentProgress.currentBatchId, 1);
-    return unsolvedProblems.length > 0 ? unsolvedProblems[0] : null;
+        // For practice mode: cycle through all problems in the batch
+    const allProblems = await this.problemService.getProblemsByBatch(currentProgress.currentBatchId);
+    if (allProblems.length === 0) {
+      logger.info('No problems found in current batch');
+      return null;
+    }
+
+    // Use problemsAttempted as a counter to cycle through problems
+    const problemIndex = currentProgress.problemsAttempted % allProblems.length;
+    const nextProblem = allProblems[problemIndex];
+
+    logger.info(`Loading problem ${problemIndex + 1}/${allProblems.length}: ${nextProblem.id}`);
+    return nextProblem;
   }
 
   /**
@@ -139,8 +150,9 @@ export class DatabaseService {
       throw new Error(`Problem ${problemId} not found`);
     }
 
-    // Validate the answer
-    const isCorrect = await isAnswerCorrect(userAnswer, problem.answer);
+    // TODO: Replace with new validation package
+    // For now, just do basic string comparison as placeholder
+    const isCorrect = userAnswer.trim().toLowerCase() === String(problem.answer).toLowerCase();
 
     // Update problem with user's answer
     await this.problemService.submitAnswer(problemId, userAnswer, isCorrect);
@@ -195,11 +207,10 @@ export class DatabaseService {
       return;
     }
 
-        // Import dummy data from the original database module
-    const { getDummyBatchAndProblemsInput } = await import('../database/dummyData.js');
+    // Import dummy data from the original database module
     const dummyBatchAndProblemsInput = await getDummyBatchAndProblemsInput();
 
-        // Import dummy batches
+    // Import dummy batches
     for (const batchData of dummyBatchAndProblemsInput) {
       // Convert string date to Date object
       const batchInput = {

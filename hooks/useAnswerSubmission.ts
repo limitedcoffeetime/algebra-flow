@@ -1,7 +1,6 @@
 import { useProblemStore, useUserProgressStore } from '@/store';
-import { isAnswerCorrect } from '@/utils/enhancedAnswerUtils';
 import { ErrorStrategy, handleError } from '@/utils/errorHandler';
-import { hasObviousSyntaxErrors } from '@/utils/syntaxValidation';
+import { isValidLaTeX } from '@/utils/mathUtils';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -19,25 +18,15 @@ export const useAnswerSubmission = () => {
     setIsSubmitting(true);
 
     try {
-      // Check for syntax errors first
-      const hasError = hasObviousSyntaxErrors(userAnswer);
-      if (hasError) {
+      // Check for LaTeX syntax errors first
+      if (!isValidLaTeX(userAnswer)) {
         Alert.alert('Invalid Input', 'Please check your mathematical expression and try again.');
         setIsSubmitting(false);
         return;
       }
 
-      // Use enhanced validation with LHS/RHS support
-      const isCorrect = await isAnswerCorrect(
-        userAnswer,
-        problemStore.currentProblem.answer,
-        problemStore.currentProblem.answerLHS,
-        problemStore.currentProblem.answerRHS,
-        problemStore.currentProblem.problemType,
-        problemStore.currentProblem.equation
-      );
-
-      // Submit to store and record attempt
+      // TODO: Replace with new validation package
+      // For now, using the database service's validation
       const result = await problemStore.submitAnswer(userAnswer);
       await userProgressStore.recordAttempt(result.isCorrect);
 

@@ -13,7 +13,7 @@ export interface IProblemRepository {
   findCompletedByBatchId(batchId: string): Promise<Problem[]>;
 
   // Bulk operations
-  createMany(problems: CreateProblemInput[]): Promise<void>;
+  createMany(problems: CreateProblemInput[], useTransaction?: boolean): Promise<void>;
   resetAllToUnsolved(): Promise<void>;
 
   // Statistics

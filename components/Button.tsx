@@ -1,26 +1,33 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
   label: string;
-  theme?: 'primary';
+  theme?: 'primary' | 'secondary';
   onPress?: () => void;
 };
 
 export default function Button({ label, theme, onPress }: Props) {
   if (theme === 'primary') {
     return (
-      <View
-        style={[
-          styles.buttonContainer,
-          { borderWidth: 4, borderColor: '#ffd33d', borderRadius: 18 },
-        ]}>
+      <View style={styles.buttonContainer}>
         <Pressable
-          style={[styles.button, { backgroundColor: '#fff' }]}
+          style={[styles.button, styles.primaryButton]}
           onPress={onPress || (() => alert('You pressed a primary button.'))}
           >
-          <FontAwesome name="picture-o" size={18} color="#25292e" style={styles.buttonIcon} />
-          <Text style={[styles.buttonLabel, { color: '#25292e' }]}>{label}</Text>
+          <Text style={[styles.buttonLabel, styles.primaryButtonLabel]}>{label}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (theme === 'secondary') {
+    return (
+      <View style={styles.buttonContainer}>
+        <Pressable
+          style={[styles.button, styles.secondaryButton]}
+          onPress={onPress || (() => alert('You pressed a secondary button.'))}
+          >
+          <Text style={[styles.buttonLabel, styles.secondaryButtonLabel]}>{label}</Text>
         </Pressable>
       </View>
     );
@@ -28,9 +35,9 @@ export default function Button({ label, theme, onPress }: Props) {
 
   return (
     <View style={styles.buttonContainer}>
-      <Pressable style={styles.button} onPress={onPress || (() => alert('You pressed a button.'))}
+      <Pressable style={[styles.button, styles.defaultButton]} onPress={onPress || (() => alert('You pressed a button.'))}
       >
-        <Text style={styles.buttonLabel}>{label}</Text>
+        <Text style={[styles.buttonLabel, styles.defaultButtonLabel]}>{label}</Text>
       </Pressable>
     </View>
   );
@@ -45,7 +52,7 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   button: {
-    borderRadius: 10,
+    borderRadius: 12,
     width: '100%',
     minWidth: 100,
     height: '100%',
@@ -53,14 +60,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     paddingHorizontal: 15,
-    backgroundColor: '#555',
+    borderWidth: 1,
   },
   buttonIcon: {
     paddingRight: 8,
   },
   buttonLabel: {
-    color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+
+  // Primary button - bright blue background
+  primaryButton: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#2563eb',
+  },
+  primaryButtonLabel: {
+    color: '#ffffff',
+  },
+
+  // Secondary button - green background
+  secondaryButton: {
+    backgroundColor: '#10b981',
+    borderColor: '#059669',
+  },
+  secondaryButtonLabel: {
+    color: '#ffffff',
+  },
+
+  // Default button - dark background
+  defaultButton: {
+    backgroundColor: '#374151',
+    borderColor: '#4b5563',
+  },
+  defaultButtonLabel: {
+    color: '#ffffff',
   },
 });

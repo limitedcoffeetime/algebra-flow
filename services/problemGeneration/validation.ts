@@ -32,8 +32,13 @@ export function isCalculatorFreeAnswer(answer: any): boolean {
   }
 
   if (typeof answer === 'string') {
+    // Allow LaTeX fraction format like \frac{3}{4}
+    if (/\\frac\{[\d\s+-]+\}\{[\d\s+-]+\}/.test(answer)) return true;
+    // Still check for complex decimals in plain text
     if (/\d+\.\d{4,}/.test(answer)) return false;
-    if(/[√π]/.test(answer)) return false;
+    // Allow LaTeX symbols but reject complex expressions with π, √ unless in LaTeX format
+    if(/[π]/.test(answer) && !/\\pi/.test(answer)) return false;
+    if(/√/.test(answer) && !/\\sqrt/.test(answer)) return false;
     return true;
   }
 

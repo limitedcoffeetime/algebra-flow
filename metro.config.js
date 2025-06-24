@@ -11,6 +11,9 @@ const config = getDefaultConfig(__dirname);
 // Add wasm asset support
 config.resolver.assetExts.push('wasm');
 
+// Add font asset support for MathLive
+config.resolver.assetExts.push('woff2', 'woff', 'ttf', 'otf');
+
 // Add COEP and COOP headers to support SharedArrayBuffer
 config.server.enhanceMiddleware = (middleware) => {
   return (req, res, next) => {
