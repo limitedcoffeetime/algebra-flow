@@ -1,6 +1,5 @@
 import TrainingMathInput from '@/components/TrainingMathInput';
 import { useInitializeApp, useProblemStore, useUserProgressStore } from '@/store';
-import { isValidLaTeX } from '@/utils/mathUtils';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -22,8 +21,10 @@ interface VerificationResult {
 
 export default function MathLiveTest() {
   const [userAnswer, setUserAnswer] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
+  const [showSolution, setShowSolution] = useState(false);
+  const [buttonState, setButtonState] = useState<'verify' | 'next'>('verify');
+  const [hasRecordedAttempt, setHasRecordedAttempt] = useState(false);
 
   // Store hooks
   const problemStore = useProblemStore();
@@ -39,92 +40,82 @@ export default function MathLiveTest() {
   useEffect(() => {
     setUserAnswer('');
     setVerificationResult(null);
+    setShowSolution(false);
+    setButtonState('verify');
+    setHasRecordedAttempt(false);
   }, [problemStore.currentProblem?.id]);
 
   const handleInput = (latex: string) => {
     setUserAnswer(latex);
-    // Clear previous verification when user changes input
-    setVerificationResult(null);
+    // Clear previous verification when user changes input (but keep them in verify mode if they were there)
+    if (buttonState === 'verify') {
+      setVerificationResult(null);
+      setShowSolution(false);
+    }
   };
 
   // Handle answer verification using MathLive
-  const handleVerifyAnswer = (result: VerificationResult) => {
+  const handleVerifyAnswer = async (result: VerificationResult) => {
     setVerificationResult(result);
 
-    // Show immediate feedback via Alert
+    // Record attempt only once per problem
+    if (!hasRecordedAttempt) {
+      await userProgressStore.recordAttempt(result.isCorrect);
+      setHasRecordedAttempt(true);
+    }
+
     if (result.isCorrect) {
+      // Correct answer flow
       Alert.alert(
-        'Correct!',
-        `Great job! Your answer "${result.userAnswerSimplified}" is correct.`,
+        '🎉 Correct!',
+        `Great job! Your answer "${result.userAnswerSimplified}" is correct.\n\nWould you like to see the step-by-step solution?`,
         [
-          { text: 'Continue', style: 'default' },
+          {
+            text: 'No, Next Problem',
+            onPress: () => {
+              setButtonState('next');
+            }
+          },
+          {
+            text: 'Show Solution',
+            onPress: () => {
+              setShowSolution(true);
+              setButtonState('next');
+            }
+          },
         ]
       );
     } else {
+      // Incorrect answer flow
       Alert.alert(
-        'Not quite right',
+        '❌ Not Quite Right',
         `Your answer: ${result.userAnswerSimplified}\nCorrect answer: ${result.correctAnswerSimplified}${result.errorMessage ? `\n\nNote: ${result.errorMessage}` : ''}`,
         [
-          { text: 'Try Again', style: 'cancel' },
+          {
+            text: 'Try Again',
+            style: 'cancel',
+            onPress: () => {
+              // Reset for another attempt (but don't reset hasRecordedAttempt)
+              setVerificationResult(null);
+              setShowSolution(false);
+              setButtonState('verify');
+            }
+          },
+          {
+            text: 'Show Solution',
+            onPress: () => {
+              setShowSolution(true);
+              setButtonState('next');
+            }
+          },
         ]
       );
     }
   };
 
-  const handleSubmit = async () => {
-    if (!problemStore.currentProblem || userAnswer.trim() === '') {
-      Alert.alert('Please enter an answer');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Check for LaTeX syntax errors first
-      if (!isValidLaTeX(userAnswer)) {
-        Alert.alert('Invalid Input', 'Please check your mathematical expression and try again.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Use verification result if available, otherwise fallback to store's submit
-      let isCorrect = false;
-      if (verificationResult) {
-        isCorrect = verificationResult.isCorrect;
-        // Update the problem store
-        await problemStore.submitAnswer(userAnswer);
-      } else {
-        // Fallback to original validation
-        const result = await problemStore.submitAnswer(userAnswer);
-        isCorrect = result.isCorrect;
-      }
-
-      await userProgressStore.recordAttempt(isCorrect);
-
-      if (isCorrect) {
-        Alert.alert(
-          'Correct!',
-          'Great job! You solved the equation correctly.',
-          [
-            { text: 'Next Problem', onPress: () => handleNextProblem() },
-          ]
-        );
-      } else {
-        Alert.alert(
-          'Not quite right',
-          `The correct answer is: ${problemStore.currentProblem.answer}`,
-          [
-            { text: 'Try Again', style: 'cancel' },
-            { text: 'Next Problem', onPress: () => handleNextProblem() },
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
-    }
-
-    setIsSubmitting(false);
+  // This is only called when button is in "next" state
+  const handleButtonPress = () => {
+    handleNextProblem();
   };
 
   const handleNextProblem = async () => {
@@ -181,50 +172,17 @@ export default function MathLiveTest() {
           <TrainingMathInput
             value={userAnswer}
             onInput={handleInput}
-            onSubmit={handleSubmit}
             onVerifyAnswer={handleVerifyAnswer}
+            onButtonPress={handleButtonPress}
+            buttonState={buttonState}
             placeholder="Enter your answer using the full screen..."
             problem={problem}
             userProgress={userProgressStore.userProgress || undefined}
+            showSolution={showSolution}
           />
         </View>
 
-        {/* Minimal Action Bar */}
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.nextButton]}
-            onPress={handleNextProblem}
-          >
-            <Text style={styles.actionButtonText}>Next Problem</Text>
-          </TouchableOpacity>
 
-          {/* Only show submit button if no verification result or if verification failed */}
-          {(!verificationResult || !verificationResult.isCorrect) && (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.submitButton, isSubmitting && styles.disabledButton]}
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Text style={styles.actionButtonText}>Submit Answer</Text>
-              )}
-            </TouchableOpacity>
-          )}
-
-          {/* Show verification status */}
-          {verificationResult && (
-            <View style={[
-              styles.verificationStatus,
-              verificationResult.isCorrect ? styles.correctStatus : styles.incorrectStatus
-            ]}>
-              <Text style={styles.verificationText}>
-                {verificationResult.isCorrect ? 'Verified Correct' : 'Needs Correction'}
-              </Text>
-            </View>
-          )}
-        </View>
       </View>
     </SafeAreaView>
   );
@@ -261,6 +219,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2563eb',
   },
   retryButtonText: {
     color: '#ffffff',
@@ -271,55 +231,5 @@ const styles = StyleSheet.create({
   mathLiveContainer: {
     flex: 1,
     backgroundColor: '#0f172a',
-  },
-  actionBar: {
-    backgroundColor: '#1f2937',
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#374151',
-    gap: 16,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  nextButton: {
-    backgroundColor: '#6b7280',
-  },
-  submitButton: {
-    backgroundColor: '#3b82f6',
-  },
-  disabledButton: {
-    backgroundColor: '#4b5563',
-    opacity: 0.6,
-  },
-  actionButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  verificationStatus: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  correctStatus: {
-    backgroundColor: '#15803d',
-  },
-  incorrectStatus: {
-    backgroundColor: '#b91c1c',
-  },
-  verificationText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

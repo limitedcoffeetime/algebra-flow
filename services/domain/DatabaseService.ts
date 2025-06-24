@@ -112,19 +112,30 @@ export class DatabaseService {
     if (!progress.currentBatchId || await this.userProgressService.needsBatchAssignment()) {
       const updatedProgress = await this.userProgressService.autoAssignBatch();
       if (!updatedProgress?.currentBatchId) {
-        logger.info('No batches available with unsolved problems');
+        logger.info('No batches available with problems');
         return null;
       }
     }
 
-    // Get next unsolved problem from current batch
+    // Get current progress
     const currentProgress = await this.userProgressService.getUserProgress();
     if (!currentProgress.currentBatchId) {
       return null;
     }
 
-    const unsolvedProblems = await this.problemService.getUnsolvedProblems(currentProgress.currentBatchId, 1);
-    return unsolvedProblems.length > 0 ? unsolvedProblems[0] : null;
+        // For practice mode: cycle through all problems in the batch
+    const allProblems = await this.problemService.getProblemsByBatch(currentProgress.currentBatchId);
+    if (allProblems.length === 0) {
+      logger.info('No problems found in current batch');
+      return null;
+    }
+
+    // Use problemsAttempted as a counter to cycle through problems
+    const problemIndex = currentProgress.problemsAttempted % allProblems.length;
+    const nextProblem = allProblems[problemIndex];
+
+    logger.info(`Loading problem ${problemIndex + 1}/${allProblems.length}: ${nextProblem.id}`);
+    return nextProblem;
   }
 
   /**

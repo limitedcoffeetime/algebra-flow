@@ -13,20 +13,20 @@ export default function TabLayout() {
     <Tabs
     screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#ffd33d',
+        tabBarActiveTintColor: '#3b82f6',
         headerStyle: {
-            backgroundColor: '#25292e' ,
+            backgroundColor: '#0f172a' ,
         },
         headerShadowVisible: false,
         headerTintColor: '#fff',
         tabBarStyle: {
-            backgroundColor: '#25292e',
+            backgroundColor: '#0f172a',
             //borderTopWidth: 1,
         },
     }}
     >
       <Tabs.Screen
-        name="home"
+        name="index"
         options={{
             title: 'Home',
             tabBarIcon: ({color, focused}: TabBarIconProps) => (
@@ -35,29 +35,11 @@ export default function TabLayout() {
         }}
     />
       <Tabs.Screen
-        name="index"
+        name="mathlive-test"
         options={{
             title: 'Practice',
             tabBarIcon: ({color, focused}: TabBarIconProps) => (
                 <Ionicons name= {focused ? 'barbell' : 'barbell-outline'} color = {color} size = {24} />
-            ),
-        }}
-    />
-      <Tabs.Screen
-        name="training"
-        options={{
-            title: 'Training',
-            tabBarIcon: ({color, focused}: TabBarIconProps) => (
-                <Ionicons name= {focused ? 'calculator' : 'calculator-outline'} color = {color} size = {24} />
-            ),
-        }}
-    />
-      <Tabs.Screen
-        name="mathlive-test"
-        options={{
-            title: 'ML Test',
-            tabBarIcon: ({color, focused}: TabBarIconProps) => (
-                <Ionicons name= {focused ? 'flask' : 'flask-outline'} color = {color} size = {24} />
             ),
         }}
     />

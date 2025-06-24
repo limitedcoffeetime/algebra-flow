@@ -1,6 +1,13 @@
 'use dom';
 
+import { addIntelligentLineBreaks, calculateResponsiveFontSize } from '@/utils/responsiveText';
 import { useEffect, useRef } from 'react';
+
+interface SolutionStep {
+  explanation: string;
+  mathExpression: string;
+  isEquation: boolean;
+}
 
 interface Problem {
   id: string;
@@ -10,11 +17,13 @@ interface Problem {
   answer: string | number | number[];
   answerLHS?: string;
   answerRHS?: string | number | number[];
+  solutionSteps: SolutionStep[];
 }
 
 interface UserProgress {
   problemsCorrect: number;
   problemsAttempted: number;
+  currentDifficulty: 'easy' | 'medium' | 'hard';
 }
 
 interface VerificationResult {
@@ -28,22 +37,27 @@ interface TrainingMathInputProps {
   value?: string;
   placeholder?: string;
   onInput?: (latex: string) => void;
-  onSubmit?: () => void;
   onVerifyAnswer?: (result: VerificationResult) => void;
+  onButtonPress?: () => void;
+  buttonState?: 'verify' | 'next' | 'try-again';
   readonly?: boolean;
   problem?: Problem;
   userProgress?: UserProgress;
+  showSolution?: boolean;
 }
+
 
 export default function TrainingMathInput({
   value = '',
   placeholder = 'Enter your mathematical answer...',
   onInput,
-  onSubmit,
   onVerifyAnswer,
+  onButtonPress,
+  buttonState = 'verify',
   readonly = false,
   problem,
   userProgress,
+  showSolution = false,
 }: TrainingMathInputProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mathFieldRef = useRef<any>(null);
@@ -59,21 +73,8 @@ export default function TrainingMathInput({
       };
     }
 
-    // Debug logging
-    console.log('=== Answer Verification Debug ===');
-    console.log('User answer:', userAnswer);
-    console.log('Problem data:', {
-      answer: problem.answer,
-      answerLHS: problem.answerLHS,
-      answerRHS: problem.answerRHS
-    });
-
     // Check compute engine availability
     const ce = (window as any)?.MathfieldElement?.computeEngine;
-    console.log('Compute engine available:', !!ce);
-    if (ce) {
-      console.log('Compute engine type:', typeof ce);
-    }
 
     try {
       // Use the already declared compute engine variable
@@ -286,8 +287,15 @@ export default function TrainingMathInput({
         await new Promise(resolve => setTimeout(resolve, 100));
 
         if (containerRef.current && !mathFieldRef.current) {
-          // Generate problem section HTML
-          const problemSectionHTML = problem ? `
+          // Only build HTML when MathLive hasn't been initialized yet
+
+          // Generate problem section HTML with responsive sizing
+          const problemSectionHTML = problem ? (() => {
+            // Calculate responsive font sizes for web platform
+            const responsiveSettings = calculateResponsiveFontSize(problem.equation, problem.direction, 350, 'web');
+            const equationWithBreaks = addIntelligentLineBreaks(problem.equation);
+
+            return `
             <div style="
               margin-bottom: 24px;
               padding: 24px;
@@ -329,39 +337,54 @@ export default function TrainingMathInput({
                 </div>
               </div>
               <div style="
-                font-size: 16px;
+                font-size: ${responsiveSettings.directionFontSize}px;
                 color: #e5e7eb;
                 margin-bottom: 16px;
                 font-weight: 500;
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                line-height: 1.4;
               ">${problem.direction}</div>
               <div style="
                 background: #111827;
                 border-radius: 12px;
-                padding: 20px;
+                padding: 10px;
                 border: 2px solid #3b82f6;
+                overflow-x: auto;
+                overflow-y: hidden;
               ">
                 <math-field
                   readonly
                   style="
                     width: 100%;
+                    max-width: 100%;
                     background: transparent;
                     border: none;
                     color: #ffffff;
-                    font-size: 24px;
+                    font-size: ${responsiveSettings.equationFontSize}px;
                     min-height: auto;
                     padding: 0;
+                    line-height: 1.3;
+                    word-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
+                    overflow-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
+                    white-space: ${responsiveSettings.shouldWrap ? 'normal' : 'nowrap'};
+                    box-sizing: border-box;
                   "
-                >${problem.equation}</math-field>
+                >${equationWithBreaks}</math-field>
               </div>
             </div>
-          ` : '';
+            `;
+          })() : '';
 
           containerRef.current.innerHTML = `
             <div style="
               height: 100%;
               padding: 20px;
               background: #0f172a;
+              overflow-x: hidden;
+              max-width: 100%;
+              box-sizing: border-box;
             ">
               ${problemSectionHTML}
 
@@ -393,50 +416,32 @@ export default function TrainingMathInput({
                 ${value}
               </math-field>
 
-              ${onVerifyAnswer ? `
-                <div style="
-                  display: flex;
-                  gap: 16px;
-                  margin-top: 8px;
-                ">
-                  <button
-                    id="verify-answer-btn"
-                    style="
-                      flex: 1;
-                      background: #10b981;
-                      color: white;
-                      border: none;
-                      border-radius: 12px;
-                      padding: 16px 20px;
-                      font-size: 16px;
-                      font-weight: 600;
-                      cursor: pointer;
-                      transition: all 0.2s ease;
-                      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                    "
-                  >
-                    Verify Answer
-                  </button>
-                  <button
-                    id="submit-answer-btn"
-                    style="
-                      flex: 1;
-                      background: #3b82f6;
-                      color: white;
-                      border: none;
-                      border-radius: 12px;
-                      padding: 16px 20px;
-                      font-size: 16px;
-                      font-weight: 600;
-                      cursor: pointer;
-                      transition: all 0.2s ease;
-                      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                    "
-                  >
-                    Submit & Next
-                  </button>
-                </div>
-              ` : ''}
+
+
+                            <div style="
+                display: flex;
+                gap: 16px;
+                margin-top: 8px;
+              ">
+                <button
+                  id="main-action-btn"
+                  style="
+                    flex: 1;
+                    background: ${buttonState === 'verify' ? '#10b981' : '#6b7280'};
+                    color: white;
+                    border: none;
+                    border-radius: 12px;
+                    padding: 16px 20px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  "
+                >
+                  ${buttonState === 'verify' ? 'Verify Answer' : 'Next Problem'}
+                </button>
+              </div>
             </div>
           `;
 
@@ -464,7 +469,16 @@ export default function TrainingMathInput({
             const handleKeyDown = (event: KeyboardEvent) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                onSubmit?.();
+                // Trigger the main button action
+                if (buttonState === 'verify' && onVerifyAnswer) {
+                  const currentValue = mathField.value;
+                  if (currentValue.trim()) {
+                    const result = verifyAnswer(currentValue);
+                    onVerifyAnswer(result);
+                  }
+                } else if (buttonState === 'next' && onButtonPress) {
+                  onButtonPress();
+                }
               }
             };
 
@@ -483,52 +497,53 @@ export default function TrainingMathInput({
             mathField.addEventListener('focus', handleFocus);
             mathField.addEventListener('blur', handleBlur);
 
-            // Add verify answer button functionality
-            const verifyBtn = containerRef.current.querySelector('#verify-answer-btn');
-            const submitBtn = containerRef.current.querySelector('#submit-answer-btn');
+            // Add button functionality
+            const mainBtn = containerRef.current.querySelector('#main-action-btn');
 
-            if (verifyBtn && onVerifyAnswer) {
-              const handleVerify = () => {
-                const currentValue = mathField.value;
-                if (currentValue.trim()) {
-                  const result = verifyAnswer(currentValue);
-                  onVerifyAnswer(result);
+            if (mainBtn) {
+              const handleMainButton = () => {
+                if (buttonState === 'verify') {
+                  // Verify answer
+                  const currentValue = mathField.value;
+                  if (currentValue.trim() && onVerifyAnswer) {
+                    const result = verifyAnswer(currentValue);
+                    onVerifyAnswer(result);
 
-                  // Visual feedback
-                  if (result.isCorrect) {
-                    mathField.style.borderColor = '#10b981';
-                    mathField.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-                  } else {
-                    mathField.style.borderColor = '#ef4444';
-                    mathField.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+                    // Visual feedback
+                    if (result.isCorrect) {
+                      mathField.style.borderColor = '#10b981';
+                      mathField.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                    } else {
+                      mathField.style.borderColor = '#ef4444';
+                      mathField.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+                    }
+                  }
+                } else {
+                  // Next problem
+                  if (onButtonPress) {
+                    onButtonPress();
                   }
                 }
               };
 
-                            verifyBtn.addEventListener('click', handleVerify);
+              mainBtn.addEventListener('click', handleMainButton);
 
               // Add hover effects
-              verifyBtn.addEventListener('mouseenter', () => {
-                (verifyBtn as HTMLElement).style.background = '#059669';
-                (verifyBtn as HTMLElement).style.transform = 'translateY(-1px)';
+              mainBtn.addEventListener('mouseenter', () => {
+                if (buttonState === 'verify') {
+                  (mainBtn as HTMLElement).style.background = '#059669';
+                } else {
+                  (mainBtn as HTMLElement).style.background = '#4b5563';
+                }
+                (mainBtn as HTMLElement).style.transform = 'translateY(-1px)';
               });
-              verifyBtn.addEventListener('mouseleave', () => {
-                (verifyBtn as HTMLElement).style.background = '#10b981';
-                (verifyBtn as HTMLElement).style.transform = 'translateY(0)';
-              });
-            }
-
-            if (submitBtn && onSubmit) {
-              submitBtn.addEventListener('click', () => onSubmit());
-
-              // Add hover effects
-              submitBtn.addEventListener('mouseenter', () => {
-                (submitBtn as HTMLElement).style.background = '#2563eb';
-                (submitBtn as HTMLElement).style.transform = 'translateY(-1px)';
-              });
-              submitBtn.addEventListener('mouseleave', () => {
-                (submitBtn as HTMLElement).style.background = '#3b82f6';
-                (submitBtn as HTMLElement).style.transform = 'translateY(0)';
+              mainBtn.addEventListener('mouseleave', () => {
+                if (buttonState === 'verify') {
+                  (mainBtn as HTMLElement).style.background = '#10b981';
+                } else {
+                  (mainBtn as HTMLElement).style.background = '#6b7280';
+                }
+                (mainBtn as HTMLElement).style.transform = 'translateY(0)';
               });
             }
 
@@ -561,7 +576,190 @@ export default function TrainingMathInput({
     };
 
     initializeMathLive();
-  }, [onInput, onSubmit, onVerifyAnswer, problem, userProgress]);
+  }, [onInput, onVerifyAnswer, onButtonPress, problem, userProgress]); // Removed showSolution and buttonState from deps
+
+  // Separate effect to update solution and button content without rebuilding HTML
+  useEffect(() => {
+    if (!containerRef.current || !mathFieldRef.current) return;
+
+    // Update solution section
+    const existingSolution = containerRef.current.querySelector('#solution-section');
+    if (showSolution && problem?.solutionSteps) {
+      if (!existingSolution) {
+        // Add solution section
+        const solutionHTML = `
+          <div id="solution-section" style="
+            margin-top: 24px;
+            padding: 24px;
+            background: #1f2937;
+            border-radius: 16px;
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #f59e0b;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
+          ">
+            <div style="
+              display: flex;
+              align-items: center;
+              margin-bottom: 20px;
+            ">
+              <div style="
+                font-size: 20px;
+                color: #f59e0b;
+                margin-right: 8px;
+              ">📝</div>
+              <div style="
+                font-size: 18px;
+                color: #ffffff;
+                font-weight: 600;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              ">Step-by-Step Solution</div>
+            </div>
+
+            ${problem.solutionSteps.map((step, index) => `
+              <div style="
+                margin-bottom: ${index === problem.solutionSteps.length - 1 ? '0' : '20px'};
+                padding: 16px;
+                background: #111827;
+                border-radius: 12px;
+                border-left: 3px solid #6b7280;
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+                overflow-x: hidden;
+              ">
+                <div style="
+                  display: flex;
+                  align-items: center;
+                  margin-bottom: 12px;
+                ">
+                  <div style="
+                    background: #374151;
+                    color: #ffffff;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    font-weight: 600;
+                    margin-right: 12px;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  ">${index + 1}</div>
+                  <div style="
+                    font-size: 14px;
+                    color: #e5e7eb;
+                    font-weight: 500;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    max-width: 100%;
+                  ">${step.explanation}</div>
+                </div>
+                <div style="
+                  background: #0f172a;
+                  border-radius: 8px;
+                  padding: 16px;
+                  border: 1px solid #374151;
+                  width: 100%;
+                  max-width: 100%;
+                  box-sizing: border-box;
+                  overflow-x: auto;
+                  overflow-y: hidden;
+                ">
+                  <math-field
+                    readonly
+                    class="solution-step-${index}"
+                    style="
+                      width: 100%;
+                      max-width: 100%;
+                      background: transparent;
+                      border: none;
+                      color: #ffffff;
+                      font-size: 18px;
+                      min-height: auto;
+                      padding: 0;
+                      box-sizing: border-box;
+                    "
+                  >${step.mathExpression}</math-field>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        const inputField = containerRef.current.querySelector('#training-math-field');
+        if (inputField) {
+          inputField.insertAdjacentHTML('afterend', solutionHTML);
+        }
+      }
+    } else if (existingSolution) {
+      // Remove solution section
+      existingSolution.remove();
+    }
+
+    // Update button text, color, and event handler
+    const mainBtn = containerRef.current.querySelector('#main-action-btn') as HTMLElement;
+    if (mainBtn) {
+      mainBtn.textContent = buttonState === 'verify' ? 'Verify Answer' : 'Next Problem';
+      mainBtn.style.background = buttonState === 'verify' ? '#10b981' : '#6b7280';
+
+      // Remove existing event listeners
+      const newBtn = mainBtn.cloneNode(true) as HTMLElement;
+      mainBtn.parentNode?.replaceChild(newBtn, mainBtn);
+
+      // Add new event handler with current buttonState
+      const handleMainButton = () => {
+        if (buttonState === 'verify') {
+          // Verify answer
+          const currentValue = mathFieldRef.current?.value;
+          if (currentValue?.trim() && onVerifyAnswer) {
+            const result = verifyAnswer(currentValue);
+            onVerifyAnswer(result);
+
+            // Visual feedback
+            if (mathFieldRef.current) {
+              if (result.isCorrect) {
+                mathFieldRef.current.style.borderColor = '#10b981';
+                mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+              } else {
+                mathFieldRef.current.style.borderColor = '#ef4444';
+                mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+              }
+            }
+          }
+        } else {
+          // Next problem
+          if (onButtonPress) {
+            onButtonPress();
+          }
+        }
+      };
+
+      newBtn.addEventListener('click', handleMainButton);
+
+      // Add hover effects
+      newBtn.addEventListener('mouseenter', () => {
+        if (buttonState === 'verify') {
+          newBtn.style.background = '#059669';
+        } else {
+          newBtn.style.background = '#4b5563';
+        }
+        newBtn.style.transform = 'translateY(-1px)';
+      });
+      newBtn.addEventListener('mouseleave', () => {
+        if (buttonState === 'verify') {
+          newBtn.style.background = '#10b981';
+        } else {
+          newBtn.style.background = '#6b7280';
+        }
+        newBtn.style.transform = 'translateY(0)';
+      });
+    }
+  }, [showSolution, buttonState, problem?.solutionSteps, onVerifyAnswer, onButtonPress]);
 
   // Update value when prop changes
   useEffect(() => {

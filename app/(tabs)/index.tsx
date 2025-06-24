@@ -1,115 +1,91 @@
 import Button from '@/components/Button';
-import MathAnswerInput from '@/components/MathAnswerInput';
-import ProblemDisplay from '@/components/ProblemDisplay';
-import ProgressIndicator from '@/components/ProgressIndicator';
-import StepByStepSolution from '@/components/StepByStepSolution';
-import { useAnswerSubmission } from '@/hooks/useAnswerSubmission';
-import { useInitializeApp, useProblemStore, useUserProgressStore } from '@/store';
-import React, { useEffect, useState } from 'react';
-import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUserProgressStore } from '@/store';
+import { router } from 'expo-router';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
-export default function Index() {
-  const [userAnswer, setUserAnswer] = useState('');
-  const [showSolution, setShowSolution] = useState(false);
+const tips = [
+  "Focus on one problem at a time",
+  "Don't rush - understand each step",
+  "Practice makes perfect",
+  "Check your work before submitting",
+];
 
-  // Store hooks
-  const problemStore = useProblemStore();
+export default function HomeScreen() {
   const userProgressStore = useUserProgressStore();
-  const { initializeAll } = useInitializeApp();
 
-  // Custom hook for answer submission
-  const { submitAnswer, isSubmitting } = useAnswerSubmission();
+  // Get a random tip (deterministic based on day for consistency)
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+  const currentTip = tips[dayOfYear % tips.length];
 
-  // Initialize on mount
-  useEffect(() => {
-    initializeAll();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSubmit = () => {
-    submitAnswer(userAnswer, () => setShowSolution(true));
+  const handleStartPractice = () => {
+    router.push('/(tabs)/mathlive-test');
   };
 
-  const handleAnswerChange = (answer: string) => {
-    setUserAnswer(answer);
+  const handleOpenSettings = () => {
+    router.push('/(tabs)/settings');
   };
-
-  // Loading state
-  if (problemStore.isLoading) {
-    return (
-      <View style={styles.centerContent}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Loading problems...</Text>
-      </View>
-    );
-  }
-
-  // Error state
-  if (problemStore.error && !problemStore.currentProblem) {
-    return (
-      <View style={styles.centerContent}>
-        <Text style={styles.errorText}>{problemStore.error}</Text>
-        <Button label="Retry" onPress={initializeAll} />
-      </View>
-    );
-  }
-
-  // No problem state
-  if (!problemStore.currentProblem) {
-    return (
-      <View style={styles.centerContent}>
-        <Text style={styles.errorText}>No problems available</Text>
-        <Button label="Retry" onPress={initializeAll} />
-      </View>
-    );
-  }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-      >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Progress indicator */}
-          {userProgressStore.userProgress && (
-            <ProgressIndicator
-              problemsCorrect={userProgressStore.userProgress.problemsCorrect}
-              problemsAttempted={userProgressStore.userProgress.problemsAttempted}
+    <View style={styles.container}>
+      <View style={styles.contentWrapper}>
+        {/* App Title */}
+        <View style={styles.headerSection}>
+          <Text style={styles.appTitle}>🧮 Algebro</Text>
+          <Text style={styles.subtitle}>Master algebra with step-by-step practice</Text>
+        </View>
+
+        {/* Progress Summary (if available) */}
+        {userProgressStore.userProgress && (
+          <View style={styles.progressSection}>
+            <Text style={styles.progressTitle}>Your Progress</Text>
+            <View style={styles.progressStats}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{userProgressStore.userProgress.problemsCorrect}</Text>
+                <Text style={styles.statLabel}>Solved</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{userProgressStore.userProgress.problemsAttempted}</Text>
+                <Text style={styles.statLabel}>Attempted</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>
+                  {userProgressStore.userProgress.problemsAttempted > 0
+                    ? Math.round((userProgressStore.userProgress.problemsCorrect / userProgressStore.userProgress.problemsAttempted) * 100)
+                    : 0}%
+                </Text>
+                <Text style={styles.statLabel}>Accuracy</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Main Action Buttons */}
+        <View style={styles.actionsSection}>
+          <View style={styles.primaryButtonContainer}>
+            <Button
+              label="📚 Start Practice"
+              onPress={handleStartPractice}
+              theme="primary"
             />
-          )}
+          </View>
 
-          {/* Problem display */}
-          <ProblemDisplay problem={problemStore.currentProblem} />
+          <View style={styles.secondaryButtonContainer}>
+            <Button
+              label="⚙️ Settings"
+              onPress={handleOpenSettings}
+              theme="secondary"
+            />
+          </View>
+        </View>
 
-          {/* Step-by-step Solution */}
-          <StepByStepSolution
-            solutionSteps={problemStore.currentProblem.solutionSteps}
-            isVisible={showSolution}
-            onToggle={() => setShowSolution(!showSolution)}
-          />
-
-          <View style={styles.spacer} />
-        </ScrollView>
-
-        {/* Answer Input - Fixed at bottom */}
-        <MathAnswerInput
-          problem={problemStore.currentProblem}
-          userAnswer={userAnswer}
-          onAnswerChange={handleAnswerChange}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-        />
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        {/* Tip of the Day */}
+        <View style={styles.tipSection}>
+          <Text style={styles.tipLabel}>💡 Tip:</Text>
+          <Text style={styles.tipText}>{currentTip}</Text>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -117,31 +93,94 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0f172a',
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  centerContent: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 20,
   },
-  spacer: {
-    height: 80,
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
   },
-  loadingText: {
-    color: '#ffffff',
-    marginTop: 10,
-    fontSize: 16,
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 16,
-    marginBottom: 20,
+  appTitle: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#3b82f6',
+    marginBottom: 8,
     textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  progressSection: {
+    width: '100%',
+    backgroundColor: '#1f2937',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  progressTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#3b82f6',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  progressStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#10b981',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#94a3b8',
+    marginTop: 4,
+  },
+  actionsSection: {
+    width: '100%',
+    marginBottom: 30,
+  },
+  primaryButtonContainer: {
+    marginBottom: 15,
+  },
+  secondaryButtonContainer: {
+    // Secondary button styling
+  },
+  tipSection: {
+    backgroundColor: '#1f2937',
+    borderRadius: 10,
+    padding: 15,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  tipLabel: {
+    fontSize: 16,
+    color: '#3b82f6',
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  tipText: {
+    fontSize: 14,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

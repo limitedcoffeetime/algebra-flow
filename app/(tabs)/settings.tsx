@@ -123,7 +123,7 @@ export default function SettingsScreen() {
           <Button
             label="Manage Batches"
             onPress={() => setShowBatchManager(true)}
-            theme="primary"
+            theme="secondary"
           />
           </View>
 
@@ -241,7 +241,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
+    backgroundColor: '#0f172a',
   },
   contentContainer: {
     padding: 20,
@@ -256,9 +256,11 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 30,
-    backgroundColor: '#333',
+    backgroundColor: '#1f2937',
     borderRadius: 12,
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#374151',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -268,20 +270,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffd33d',
+    color: '#3b82f6',
     marginBottom: 15,
   },
 
   // Batch Status Styles
   loadingText: {
     fontSize: 16,
-    color: '#999',
+    color: '#94a3b8',
     textAlign: 'center',
     fontStyle: 'italic',
   },
   noDataText: {
     fontSize: 16,
-    color: '#999',
+    color: '#94a3b8',
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -292,16 +294,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   batchCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#111827',
     borderRadius: 8,
     padding: 15,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: '#374151',
   },
   currentBatchCard: {
-    borderColor: '#ffd33d',
-    backgroundColor: '#3a3520',
+    borderColor: '#3b82f6',
+    backgroundColor: '#1e293b',
   },
   batchHeader: {
     marginBottom: 10,
@@ -312,12 +314,12 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   currentBatchTitle: {
-    color: '#ffd33d',
+    color: '#3b82f6',
   },
   currentBadge: {
     fontSize: 14,
     fontWeight: 'normal',
-    color: '#ffd33d',
+    color: '#10b981',
   },
   batchDetails: {
     gap: 6,
@@ -329,7 +331,7 @@ const styles = StyleSheet.create({
   },
   batchLabel: {
     fontSize: 14,
-    color: '#ccc',
+    color: '#94a3b8',
     flex: 1,
   },
   batchValue: {
@@ -341,7 +343,7 @@ const styles = StyleSheet.create({
   },
   batchValueSmall: {
     fontSize: 12,
-    color: '#aaa',
+    color: '#94a3b8',
     flex: 2,
     textAlign: 'right',
   },
@@ -361,11 +363,11 @@ const styles = StyleSheet.create({
   databaseTypeValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffd33d',
+    color: '#10b981',
   },
   databaseHelpText: {
     fontSize: 14,
-    color: '#999',
+    color: '#94a3b8',
     lineHeight: 20,
     fontStyle: 'italic',
   },
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
   },
   helpText: {
     fontSize: 14,
-    color: '#999',
+    color: '#94a3b8',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -386,12 +388,12 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 14,
-    color: '#999',
+    color: '#94a3b8',
     textAlign: 'center',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#25292e',
+    backgroundColor: '#0f172a',
   },
   modalHeader: {
     flexDirection: 'row',
