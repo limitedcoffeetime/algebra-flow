@@ -1,10 +1,7 @@
-name: Generate Daily Problems
+name: Generate Problems (Manual)
 
 on:
-  # Run every day at 1 AM UTC (9 PM EDT / 8 PM EST)
-  schedule:
-    - cron: '0 1 * * *'
-  # Allow manual triggering for testing
+  # Manual triggering only - automatic schedule disabled
   workflow_dispatch:
 
 jobs:

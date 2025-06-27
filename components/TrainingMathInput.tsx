@@ -297,8 +297,8 @@ export default function TrainingMathInput({
 
             return `
             <div style="
-              margin-bottom: 24px;
-              padding: 24px;
+              margin-bottom: 12px;
+              padding: 16px;
               background: #1f2937;
               border-radius: 16px;
               border: 1px solid #374151;
@@ -307,7 +307,7 @@ export default function TrainingMathInput({
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 16px;
+                margin-bottom: 8px;
               ">
                 <div style="
                   font-size: 18px;
@@ -349,7 +349,7 @@ export default function TrainingMathInput({
               <div style="
                 background: #111827;
                 border-radius: 12px;
-                padding: 10px;
+                padding: 9px;
                 border: 2px solid #3b82f6;
                 overflow-x: auto;
                 overflow-y: hidden;
@@ -380,7 +380,7 @@ export default function TrainingMathInput({
           containerRef.current.innerHTML = `
             <div style="
               height: 100%;
-              padding: 20px;
+              padding: 12px;
               background: #0f172a;
               overflow-x: hidden;
               max-width: 100%;
@@ -594,7 +594,7 @@ export default function TrainingMathInput({
             background: #1f2937;
             border-radius: 16px;
             border: 1px solid #f59e0b;
-            border-left: 4px solid #f59e0b;
+            border-left: 1px solid #f59e0b;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;

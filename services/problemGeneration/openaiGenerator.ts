@@ -42,13 +42,15 @@ ${typeInstructions.instructions}
 ${getSolutionStepsInstructions()}
 
 CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
-- Answers must be integers or simple fractions (like 1/2, 2/3, 3/4, 5/6)
+- For NUMERIC answers: must be integers or simple fractions (like 1/2, 2/3, 3/4, 5/6)
+- For VARIABLE answers: variables are allowed when the problem asks to solve in terms of another variable
 - NO complex decimals like 1.2839, 2.7182, 0.3333... etc.
 - NO irrational numbers like √2, √3 unless they simplify to integers
 - Design problems so the algebra works out to clean, simple answers
 - Students should never need a calculator to verify the answer
 
-ACCEPTABLE ANSWERS: 3, -2, 1/2, 2/3, 0, 7, -1/4, 5/3
+ACCEPTABLE NUMERIC ANSWERS: 3, -2, 1/2, 2/3, 0, 7, -1/4, 5/3
+ACCEPTABLE VARIABLE ANSWERS: \\frac{5-3y}{2}, \\frac{2x+7}{3}, 3x^2 + 2x - 1
 UNACCEPTABLE ANSWERS: 1.2839, 2.7182, 0.3333..., √2, 3.14159, 1.7320
 
 CRITICAL: LATEX FORMATTING for MathLive Compatibility:
@@ -69,7 +71,7 @@ Constraints:
 - Solution steps should use the structured format with separated explanations and math
 - Each problem should be unique
 - CRITICAL: Ensure your answer matches the final step of your solution
-- CRITICAL: All answers must be calculator-free (integers or simple fractions only)
+- CRITICAL: All answers must be calculator-free (integers/simple fractions for numeric answers, variables allowed for variable answers)
 - CRITICAL: Direction must clearly state what to do, answer must be just the value
 - CRITICAL: List all variables used in the problem in the variables array
 - CRITICAL: ALL math expressions must be in LaTeX format for MathLive compatibility`;
