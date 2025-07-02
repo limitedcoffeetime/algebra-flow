@@ -18,12 +18,17 @@ interface Problem {
   answerLHS?: string;
   answerRHS?: string | number | number[];
   solutionSteps: SolutionStep[];
+  problemType: string;
 }
 
 interface UserProgress {
-  problemsCorrect: number;
+  id: string;
+  currentBatchId?: string | null;
   problemsAttempted: number;
-  currentDifficulty: 'easy' | 'medium' | 'hard';
+  problemsCorrect: number;
+  lastSyncTimestamp?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface VerificationResult {
@@ -44,6 +49,9 @@ interface TrainingMathInputProps {
   problem?: Problem;
   userProgress?: UserProgress;
   showSolution?: boolean;
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 
@@ -58,9 +66,111 @@ export default function TrainingMathInput({
   problem,
   userProgress,
   showSolution = false,
+  isLoading = false,
+  error = null,
+  onRetry,
 }: TrainingMathInputProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mathFieldRef = useRef<any>(null);
+  const isInitializedRef = useRef<boolean>(false);
+  const retryButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Constants for better maintainability
+  const ELEMENT_IDS = {
+    PROBLEM_SECTION: 'problem-section',
+    MATH_FIELD: 'training-math-field',
+    MAIN_BUTTON: 'main-action-btn',
+    RETRY_BUTTON: 'retry-btn',
+  } as const;
+
+  const STYLES = {
+    CONTAINER_BASE: `
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    `,
+    FONT_FAMILY: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    RETRY_BUTTON: `
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    `,
+    LOADING_SPINNER: `
+      width: 40px;
+      height: 40px;
+      border: 3px solid #374151;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    `,
+  } as const;
+
+  // Clean up retry button event listener
+  const cleanupRetryButton = () => {
+    if (retryButtonRef.current) {
+      retryButtonRef.current.removeEventListener('click', handleRetry);
+      retryButtonRef.current = null;
+    }
+  };
+
+  // Retry button handler
+  const handleRetry = () => {
+    if (onRetry) {
+      onRetry();
+    }
+  };
+
+  // Helper function to create centered message with optional retry button
+  const createCenteredMessage = (message: string, messageColor: string, showRetryButton: boolean = false) => {
+    const retryButtonHtml = showRetryButton ? `
+      <button
+        id="${ELEMENT_IDS.RETRY_BUTTON}"
+        style="${STYLES.RETRY_BUTTON} font-family: ${STYLES.FONT_FAMILY};"
+        aria-label="Retry loading problems"
+      >Retry</button>
+    ` : '';
+
+    return `
+      <div style="${STYLES.CONTAINER_BASE}">
+        <div style="
+          font-size: 18px;
+          color: ${messageColor};
+          margin-bottom: ${showRetryButton ? '16px' : '0'};
+          font-family: ${STYLES.FONT_FAMILY};
+        " role="alert" aria-live="polite">${message}</div>
+        ${retryButtonHtml}
+      </div>
+    `;
+  };
+
+  // Helper function to setup retry button event listener
+  const setupRetryButton = (problemSection: Element) => {
+    cleanupRetryButton(); // Clean up any existing listener
+
+    const retryBtn = problemSection.querySelector(`#${ELEMENT_IDS.RETRY_BUTTON}`) as HTMLButtonElement;
+    if (retryBtn && onRetry) {
+      retryBtn.addEventListener('click', handleRetry);
+      retryButtonRef.current = retryBtn;
+
+      // Add hover effect
+      retryBtn.addEventListener('mouseenter', () => {
+        retryBtn.style.background = '#2563eb';
+      });
+      retryBtn.addEventListener('mouseleave', () => {
+        retryBtn.style.background = '#3b82f6';
+      });
+    }
+  };
 
   // Function to verify answer using MathLive's simplify
   const verifyAnswer = (userAnswer: string): VerificationResult => {
@@ -80,33 +190,68 @@ export default function TrainingMathInput({
       // Use the already declared compute engine variable
       if (!ce) {
         console.warn('MathLive compute engine not available, falling back to string comparison');
-        // Fallback to simple string comparison
-        const userTrimmed = userAnswer.trim().toLowerCase();
 
-        // Determine correct answer for comparison
-        let correctAnswer: string;
-        let isCorrect = false;
+        if (problem.problemType === 'polynomial-simplification') {
+          // For polynomial simplification, use exact string matching (excluding whitespace)
+          const userNormalized = userAnswer.replace(/\s+/g, '');
 
-        if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-          correctAnswer = String(problem.answerRHS);
-          isCorrect = userTrimmed === correctAnswer.toLowerCase();
-        } else if (problem.answerLHS && problem.answer) {
-          const fullAnswer = `${problem.answerLHS}${problem.answer}`;
-          const answerOnly = String(problem.answer);
+          // Determine correct answer for comparison
+          let correctAnswer: string;
+          let isCorrect = false;
 
-          isCorrect = userTrimmed === fullAnswer.toLowerCase() || userTrimmed === answerOnly.toLowerCase();
-          correctAnswer = userTrimmed === fullAnswer.toLowerCase() ? fullAnswer : answerOnly;
+          if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+            correctAnswer = String(problem.answerRHS);
+            const correctNormalized = correctAnswer.replace(/\s+/g, '');
+            isCorrect = userNormalized === correctNormalized;
+          } else if (problem.answerLHS && problem.answer) {
+            const fullAnswer = `${problem.answerLHS}${problem.answer}`;
+            const answerOnly = String(problem.answer);
+            const fullAnswerNormalized = fullAnswer.replace(/\s+/g, '');
+            const answerOnlyNormalized = answerOnly.replace(/\s+/g, '');
+
+            isCorrect = userNormalized === fullAnswerNormalized || userNormalized === answerOnlyNormalized;
+            correctAnswer = userNormalized === fullAnswerNormalized ? fullAnswer : answerOnly;
+          } else {
+            correctAnswer = String(problem.answer);
+            const correctNormalized = correctAnswer.replace(/\s+/g, '');
+            isCorrect = userNormalized === correctNormalized;
+          }
+
+          return {
+            isCorrect,
+            userAnswerSimplified: userAnswer.trim(),
+            correctAnswerSimplified: correctAnswer.trim(),
+            errorMessage: isCorrect ? undefined : 'Using fallback comparison method'
+          };
         } else {
-          correctAnswer = String(problem.answer);
-          isCorrect = userTrimmed === correctAnswer.toLowerCase();
-        }
+          // For other problem types, use case-insensitive string comparison
+          const userTrimmed = userAnswer.trim().toLowerCase();
 
-        return {
-          isCorrect,
-          userAnswerSimplified: userAnswer.trim(),
-          correctAnswerSimplified: correctAnswer,
-          errorMessage: isCorrect ? undefined : 'Using fallback comparison method'
-        };
+          // Determine correct answer for comparison
+          let correctAnswer: string;
+          let isCorrect = false;
+
+          if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+            correctAnswer = String(problem.answerRHS);
+            isCorrect = userTrimmed === correctAnswer.toLowerCase();
+          } else if (problem.answerLHS && problem.answer) {
+            const fullAnswer = `${problem.answerLHS}${problem.answer}`;
+            const answerOnly = String(problem.answer);
+
+            isCorrect = userTrimmed === fullAnswer.toLowerCase() || userTrimmed === answerOnly.toLowerCase();
+            correctAnswer = userTrimmed === fullAnswer.toLowerCase() ? fullAnswer : answerOnly;
+          } else {
+            correctAnswer = String(problem.answer);
+            isCorrect = userTrimmed === correctAnswer.toLowerCase();
+          }
+
+          return {
+            isCorrect,
+            userAnswerSimplified: userAnswer.trim(),
+            correctAnswerSimplified: correctAnswer,
+            errorMessage: isCorrect ? undefined : 'Using fallback comparison method'
+          };
+        }
       }
 
       // Determine the correct answer to compare against
@@ -116,20 +261,37 @@ export default function TrainingMathInput({
       if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
         if (Array.isArray(problem.answerRHS)) {
           // For arrays (like multiple solutions), check if user answer matches any
-          const userSimplified = ce.parse(userAnswer).simplify().latex;
+          if (problem.problemType === 'polynomial-simplification') {
+            // For polynomial simplification, use exact string matching
+            const userNormalized = userAnswer.replace(/\s+/g, '');
 
-          for (const ans of problem.answerRHS) {
-            try {
-              const correctSimplified = ce.parse(String(ans)).simplify().latex;
-              if (userSimplified === correctSimplified) {
+            for (const ans of problem.answerRHS) {
+              const correctNormalized = String(ans).replace(/\s+/g, '');
+              if (userNormalized === correctNormalized) {
                 return {
                   isCorrect: true,
-                  userAnswerSimplified: userSimplified,
-                  correctAnswerSimplified: correctSimplified
+                  userAnswerSimplified: userAnswer.trim(),
+                  correctAnswerSimplified: String(ans).trim()
                 };
               }
-            } catch (error) {
-              console.warn(`Error processing answerRHS option ${ans}:`, error);
+            }
+          } else {
+            // For other problem types, use MathLive's simplification
+            const userSimplified = ce.parse(userAnswer).simplify().latex;
+
+            for (const ans of problem.answerRHS) {
+              try {
+                const correctSimplified = ce.parse(String(ans)).simplify().latex;
+                if (userSimplified === correctSimplified) {
+                  return {
+                    isCorrect: true,
+                    userAnswerSimplified: userSimplified,
+                    correctAnswerSimplified: correctSimplified
+                  };
+                }
+              } catch (error) {
+                console.warn(`Error processing answerRHS option ${ans}:`, error);
+              }
             }
           }
 
@@ -142,19 +304,108 @@ export default function TrainingMathInput({
       // If answerRHS doesn't exist, check if user entered the full answer (answerLHS + answer)
       else if (problem.answerLHS && problem.answer) {
         const fullAnswer = `${problem.answerLHS}${problem.answer}`;
-        const userSimplified = ce.parse(userAnswer).simplify().latex;
-        const correctSimplified = ce.parse(fullAnswer).simplify().latex;
 
-        if (userSimplified === correctSimplified) {
-          return {
-            isCorrect: true,
-            userAnswerSimplified: userSimplified,
-            correctAnswerSimplified: correctSimplified
-          };
+        if (problem.problemType === 'polynomial-simplification') {
+          // For polynomial simplification, use exact string matching
+          const userNormalized = userAnswer.replace(/\s+/g, '');
+          const fullAnswerNormalized = fullAnswer.replace(/\s+/g, '');
+
+          if (userNormalized === fullAnswerNormalized) {
+            return {
+              isCorrect: true,
+              userAnswerSimplified: userAnswer.trim(),
+              correctAnswerSimplified: fullAnswer.trim()
+            };
+          }
+
+          // Also check if they just entered the answer part (without LHS)
+          if (Array.isArray(problem.answer)) {
+            for (const ans of problem.answer) {
+              const correctNormalized = String(ans).replace(/\s+/g, '');
+              if (userNormalized === correctNormalized) {
+                return {
+                  isCorrect: true,
+                  userAnswerSimplified: userAnswer.trim(),
+                  correctAnswerSimplified: String(ans).trim()
+                };
+              }
+            }
+            correctAnswerStr = String(problem.answer[0]);
+          } else {
+            const answerOnlyNormalized = String(problem.answer).replace(/\s+/g, '');
+            if (userNormalized === answerOnlyNormalized) {
+              return {
+                isCorrect: true,
+                userAnswerSimplified: userAnswer.trim(),
+                correctAnswerSimplified: String(problem.answer).trim()
+              };
+            }
+            correctAnswerStr = String(problem.answer);
+          }
+        } else {
+          // For other problem types, use MathLive's simplification
+          const userSimplified = ce.parse(userAnswer).simplify().latex;
+          const correctSimplified = ce.parse(fullAnswer).simplify().latex;
+
+          if (userSimplified === correctSimplified) {
+            return {
+              isCorrect: true,
+              userAnswerSimplified: userSimplified,
+              correctAnswerSimplified: correctSimplified
+            };
+          }
+
+          // Also check if they just entered the answer part (without LHS)
+          if (Array.isArray(problem.answer)) {
+            for (const ans of problem.answer) {
+              try {
+                const correctSimplified = ce.parse(String(ans)).simplify().latex;
+                if (userSimplified === correctSimplified) {
+                  return {
+                    isCorrect: true,
+                    userAnswerSimplified: userSimplified,
+                    correctAnswerSimplified: correctSimplified
+                  };
+                }
+              } catch (error) {
+                console.warn(`Error processing answer option ${ans}:`, error);
+              }
+            }
+            correctAnswerStr = String(problem.answer[0]);
+          } else {
+            const answerOnlySimplified = ce.parse(String(problem.answer)).simplify().latex;
+            if (userSimplified === answerOnlySimplified) {
+              return {
+                isCorrect: true,
+                userAnswerSimplified: userSimplified,
+                correctAnswerSimplified: answerOnlySimplified
+              };
+            }
+            correctAnswerStr = String(problem.answer);
+          }
         }
+      }
+      // Fallback to original answer field
+      else if (Array.isArray(problem.answer)) {
+        // For arrays (like multiple solutions), check if user answer matches any
+        if (problem.problemType === 'polynomial-simplification') {
+          // For polynomial simplification, use exact string matching
+          const userNormalized = userAnswer.replace(/\s+/g, '');
 
-        // Also check if they just entered the answer part (without LHS)
-        if (Array.isArray(problem.answer)) {
+          for (const ans of problem.answer) {
+            const correctNormalized = String(ans).replace(/\s+/g, '');
+            if (userNormalized === correctNormalized) {
+              return {
+                isCorrect: true,
+                userAnswerSimplified: userAnswer.trim(),
+                correctAnswerSimplified: String(ans).trim()
+              };
+            }
+          }
+        } else {
+          // For other problem types, use MathLive's simplification
+          const userSimplified = ce.parse(userAnswer).simplify().latex;
+
           for (const ans of problem.answer) {
             try {
               const correctSimplified = ce.parse(String(ans)).simplify().latex;
@@ -169,37 +420,6 @@ export default function TrainingMathInput({
               console.warn(`Error processing answer option ${ans}:`, error);
             }
           }
-          correctAnswerStr = String(problem.answer[0]);
-        } else {
-          const answerOnlySimplified = ce.parse(String(problem.answer)).simplify().latex;
-          if (userSimplified === answerOnlySimplified) {
-            return {
-              isCorrect: true,
-              userAnswerSimplified: userSimplified,
-              correctAnswerSimplified: answerOnlySimplified
-            };
-          }
-          correctAnswerStr = String(problem.answer);
-        }
-      }
-      // Fallback to original answer field
-      else if (Array.isArray(problem.answer)) {
-        // For arrays (like multiple solutions), check if user answer matches any
-        const userSimplified = ce.parse(userAnswer).simplify().latex;
-
-        for (const ans of problem.answer) {
-          try {
-            const correctSimplified = ce.parse(String(ans)).simplify().latex;
-            if (userSimplified === correctSimplified) {
-              return {
-                isCorrect: true,
-                userAnswerSimplified: userSimplified,
-                correctAnswerSimplified: correctSimplified
-              };
-            }
-          } catch (error) {
-            console.warn(`Error processing answer option ${ans}:`, error);
-          }
         }
 
         // If no match found, return false with first answer as reference
@@ -208,67 +428,244 @@ export default function TrainingMathInput({
         correctAnswerStr = String(problem.answer);
       }
 
-      // Simplify both answers using MathLive's compute engine
-      const userSimplified = ce.parse(userAnswer).simplify().latex;
-      const correctSimplified = ce.parse(correctAnswerStr).simplify().latex;
+      // For polynomial simplification, use exact string matching (excluding whitespace)
+      // For other problems, use MathLive's simplification for semantic comparison
+      if (problem.problemType === 'polynomial-simplification') {
+        // Normalize both answers by removing whitespace and comparing exactly
+        const userNormalized = userAnswer.replace(/\s+/g, '');
+        const correctNormalized = correctAnswerStr.replace(/\s+/g, '');
 
-      const isCorrect = userSimplified === correctSimplified;
-
-      return {
-        isCorrect,
-        userAnswerSimplified: userSimplified,
-        correctAnswerSimplified: correctSimplified
-      };
-
-    } catch (error) {
-      console.error('Error during answer verification:', error);
-
-      // Fallback to string comparison if MathLive fails
-      const userTrimmed = userAnswer.trim().toLowerCase();
-
-      // Determine correct answer for fallback comparison
-      let correctStr: string;
-      if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-        correctStr = Array.isArray(problem.answerRHS)
-          ? String(problem.answerRHS[0]).toLowerCase()
-          : String(problem.answerRHS).toLowerCase();
-      } else if (problem.answerLHS && problem.answer) {
-        // Try both full answer and just the answer part
-        const fullAnswer = `${problem.answerLHS}${problem.answer}`.toLowerCase();
-        const answerOnly = Array.isArray(problem.answer)
-          ? String(problem.answer[0]).toLowerCase()
-          : String(problem.answer).toLowerCase();
-
-        const isCorrect = userTrimmed === fullAnswer || userTrimmed === answerOnly;
-        correctStr = userTrimmed === fullAnswer ? fullAnswer : answerOnly;
+        const isCorrect = userNormalized === correctNormalized;
 
         return {
           isCorrect,
           userAnswerSimplified: userAnswer.trim(),
-          correctAnswerSimplified: isCorrect ? correctStr : fullAnswer,
+          correctAnswerSimplified: correctAnswerStr.trim()
+        };
+      } else {
+        // For non-polynomial problems, use MathLive's compute engine for semantic comparison
+        const userSimplified = ce.parse(userAnswer).simplify().latex;
+        const correctSimplified = ce.parse(correctAnswerStr).simplify().latex;
+
+        const isCorrect = userSimplified === correctSimplified;
+
+        return {
+          isCorrect,
+          userAnswerSimplified: userSimplified,
+          correctAnswerSimplified: correctSimplified
+        };
+      }
+
+    } catch (error) {
+      console.error('Error during answer verification:', error);
+
+      // Fallback validation logic
+      if (problem.problemType === 'polynomial-simplification') {
+        // For polynomial simplification, use exact string matching even in fallback
+        const userNormalized = userAnswer.replace(/\s+/g, '');
+
+        // Determine correct answer for fallback comparison
+        let correctAnswer: string;
+        let isCorrect = false;
+
+        if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+          const correctNormalized = Array.isArray(problem.answerRHS)
+            ? String(problem.answerRHS[0]).replace(/\s+/g, '')
+            : String(problem.answerRHS).replace(/\s+/g, '');
+          correctAnswer = Array.isArray(problem.answerRHS) ? String(problem.answerRHS[0]) : String(problem.answerRHS);
+          isCorrect = userNormalized === correctNormalized;
+        } else if (problem.answerLHS && problem.answer) {
+          const fullAnswer = `${problem.answerLHS}${problem.answer}`;
+          const fullAnswerNormalized = fullAnswer.replace(/\s+/g, '');
+          const answerOnly = Array.isArray(problem.answer) ? String(problem.answer[0]) : String(problem.answer);
+          const answerOnlyNormalized = answerOnly.replace(/\s+/g, '');
+
+          isCorrect = userNormalized === fullAnswerNormalized || userNormalized === answerOnlyNormalized;
+          correctAnswer = userNormalized === fullAnswerNormalized ? fullAnswer : answerOnly;
+        } else {
+          correctAnswer = Array.isArray(problem.answer) ? String(problem.answer[0]) : String(problem.answer);
+          const correctNormalized = correctAnswer.replace(/\s+/g, '');
+          isCorrect = userNormalized === correctNormalized;
+        }
+
+        return {
+          isCorrect,
+          userAnswerSimplified: userAnswer.trim(),
+          correctAnswerSimplified: correctAnswer.trim(),
           errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
         };
       } else {
-        correctStr = Array.isArray(problem.answer)
-          ? String(problem.answer[0]).toLowerCase()
-          : String(problem.answer).toLowerCase();
+        // For other problem types, use case-insensitive string comparison as fallback
+        const userTrimmed = userAnswer.trim().toLowerCase();
+
+        // Determine correct answer for fallback comparison
+        let correctStr: string;
+        if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+          correctStr = Array.isArray(problem.answerRHS)
+            ? String(problem.answerRHS[0]).toLowerCase()
+            : String(problem.answerRHS).toLowerCase();
+        } else if (problem.answerLHS && problem.answer) {
+          // Try both full answer and just the answer part
+          const fullAnswer = `${problem.answerLHS}${problem.answer}`.toLowerCase();
+          const answerOnly = Array.isArray(problem.answer)
+            ? String(problem.answer[0]).toLowerCase()
+            : String(problem.answer).toLowerCase();
+
+          const isCorrect = userTrimmed === fullAnswer || userTrimmed === answerOnly;
+          correctStr = userTrimmed === fullAnswer ? fullAnswer : answerOnly;
+
+          return {
+            isCorrect,
+            userAnswerSimplified: userAnswer.trim(),
+            correctAnswerSimplified: isCorrect ? correctStr : fullAnswer,
+            errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          };
+        } else {
+          correctStr = Array.isArray(problem.answer)
+            ? String(problem.answer[0]).toLowerCase()
+            : String(problem.answer).toLowerCase();
+        }
+
+        const isCorrect = userTrimmed === correctStr;
+
+        return {
+          isCorrect,
+          userAnswerSimplified: userAnswer.trim(),
+          correctAnswerSimplified: String(problem.answer),
+          errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
       }
-
-      const isCorrect = userTrimmed === correctStr;
-
-      return {
-        isCorrect,
-        userAnswerSimplified: userAnswer.trim(),
-        correctAnswerSimplified: String(problem.answer),
-        errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
     }
   };
 
+  // Function to update only the problem content without rebuilding everything
+  const updateProblemContent = () => {
+    if (!containerRef.current || !isInitializedRef.current) return;
+
+    const problemSection = containerRef.current.querySelector(`#${ELEMENT_IDS.PROBLEM_SECTION}`);
+    if (!problemSection) return;
+
+    // Clean up any existing retry button listeners
+    cleanupRetryButton();
+
+    // Handle loading state
+    if (isLoading) {
+      problemSection.innerHTML = `
+        <div style="${STYLES.CONTAINER_BASE}">
+          <div style="${STYLES.LOADING_SPINNER}"></div>
+          <div style="
+            font-size: 16px;
+            color: #94a3b8;
+            font-family: ${STYLES.FONT_FAMILY};
+          " role="status" aria-live="polite">Loading problems...</div>
+        </div>
+        <style>
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      `;
+      return;
+    }
+
+    // Handle error state
+    if (error && !problem) {
+      problemSection.innerHTML = createCenteredMessage(error, '#ef4444', true);
+      setupRetryButton(problemSection);
+      return;
+    }
+
+    // Handle no problem state
+    if (!problem) {
+      problemSection.innerHTML = createCenteredMessage('No problems available', '#ef4444', true);
+      setupRetryButton(problemSection);
+      return;
+    }
+
+    // Normal problem state
+    const responsiveSettings = calculateResponsiveFontSize(problem.equation, problem.direction, 350, 'web');
+    const equationWithBreaks = addIntelligentLineBreaks(problem.equation);
+
+    problemSection.innerHTML = `
+      <div style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      ">
+        <div style="
+          font-size: 18px;
+          color: #ffffff;
+          font-weight: 600;
+          font-family: ${STYLES.FONT_FAMILY};
+        ">Problem</div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <div style="
+            background: #3b82f6;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-family: ${STYLES.FONT_FAMILY};
+          ">${problem.difficulty}</div>
+          ${userProgress ? `
+            <div style="
+              color: #10b981;
+              font-size: 14px;
+              font-weight: 600;
+              font-family: ${STYLES.FONT_FAMILY};
+            " aria-label="Progress: ${userProgress.problemsCorrect} correct out of ${userProgress.problemsAttempted} attempted">${userProgress.problemsCorrect}/${userProgress.problemsAttempted}</div>
+          ` : ''}
+        </div>
+      </div>
+      <div style="
+        font-size: ${responsiveSettings.directionFontSize}px;
+        color: #e5e7eb;
+        margin-bottom: 16px;
+        font-weight: 500;
+        font-family: ${STYLES.FONT_FAMILY};
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        line-height: 1.4;
+      ">${problem.direction}</div>
+      <div style="
+        background: #111827;
+        border-radius: 12px;
+        padding: 9px;
+        border: 2px solid #3b82f6;
+        overflow-x: auto;
+        overflow-y: hidden;
+      " role="math" aria-label="Problem equation">
+        <math-field
+          readonly
+          style="
+            width: 100%;
+            max-width: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: ${responsiveSettings.equationFontSize}px;
+            min-height: auto;
+            padding: 0;
+            line-height: 1.3;
+            word-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
+            overflow-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
+            white-space: ${responsiveSettings.shouldWrap ? 'normal' : 'nowrap'};
+            box-sizing: border-box;
+          "
+        >${equationWithBreaks}</math-field>
+      </div>
+    `;
+  };
+
+  // Initialize MathLive once (no problem dependencies)
   useEffect(() => {
     const initializeMathLive = async () => {
       try {
-                // Import MathLive - the errors you see are just Metro bundler noise, not actual failures
+        // Import MathLive - the errors you see are just Metro bundler noise, not actual failures
         await import('mathlive');
 
         // Import the Compute Engine for mathematical operations
@@ -287,96 +684,7 @@ export default function TrainingMathInput({
         await new Promise(resolve => setTimeout(resolve, 100));
 
         if (containerRef.current && !mathFieldRef.current) {
-          // Only build HTML when MathLive hasn't been initialized yet
-
-          // Generate problem section HTML with responsive sizing
-          const problemSectionHTML = problem ? (() => {
-            // Calculate responsive font sizes for web platform
-            const responsiveSettings = calculateResponsiveFontSize(problem.equation, problem.direction, 350, 'web');
-            const equationWithBreaks = addIntelligentLineBreaks(problem.equation);
-
-            return `
-            <div style="
-              margin-bottom: 12px;
-              padding: 16px;
-              background: #1f2937;
-              border-radius: 16px;
-              border: 1px solid #374151;
-            ">
-              <div style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-              ">
-                <div style="
-                  font-size: 18px;
-                  color: #ffffff;
-                  font-weight: 600;
-                  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                ">Problem</div>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                  <div style="
-                    background: #3b82f6;
-                    color: white;
-                    padding: 6px 12px;
-                    border-radius: 8px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                  ">${problem.difficulty}</div>
-                  ${userProgress ? `
-                    <div style="
-                      color: #10b981;
-                      font-size: 14px;
-                      font-weight: 600;
-                      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                    ">${userProgress.problemsCorrect}/${userProgress.problemsAttempted}</div>
-                  ` : ''}
-                </div>
-              </div>
-              <div style="
-                font-size: ${responsiveSettings.directionFontSize}px;
-                color: #e5e7eb;
-                margin-bottom: 16px;
-                font-weight: 500;
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                word-wrap: break-word;
-                overflow-wrap: break-word;
-                line-height: 1.4;
-              ">${problem.direction}</div>
-              <div style="
-                background: #111827;
-                border-radius: 12px;
-                padding: 9px;
-                border: 2px solid #3b82f6;
-                overflow-x: auto;
-                overflow-y: hidden;
-              ">
-                <math-field
-                  readonly
-                  style="
-                    width: 100%;
-                    max-width: 100%;
-                    background: transparent;
-                    border: none;
-                    color: #ffffff;
-                    font-size: ${responsiveSettings.equationFontSize}px;
-                    min-height: auto;
-                    padding: 0;
-                    line-height: 1.3;
-                    word-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
-                    overflow-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
-                    white-space: ${responsiveSettings.shouldWrap ? 'normal' : 'nowrap'};
-                    box-sizing: border-box;
-                  "
-                >${equationWithBreaks}</math-field>
-              </div>
-            </div>
-            `;
-          })() : '';
-
+          // Build HTML structure once
           containerRef.current.innerHTML = `
             <div style="
               height: 100%;
@@ -386,18 +694,26 @@ export default function TrainingMathInput({
               max-width: 100%;
               box-sizing: border-box;
             ">
-              ${problemSectionHTML}
+              <div id="${ELEMENT_IDS.PROBLEM_SECTION}" style="
+                margin-bottom: 12px;
+                padding: 16px;
+                background: #1f2937;
+                border-radius: 16px;
+                border: 1px solid #374151;
+              ">
+                <!-- Problem content will be dynamically updated here -->
+              </div>
 
               <div style="
                 font-size: 18px;
                 color: #ffffff;
                 font-weight: 600;
                 margin-bottom: 12px;
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                font-family: ${STYLES.FONT_FAMILY};
               ">Your Answer</div>
 
               <math-field
-                id="training-math-field"
+                id="${ELEMENT_IDS.MATH_FIELD}"
                 style="
                   width: 100%;
                   min-height: 120px;
@@ -412,19 +728,18 @@ export default function TrainingMathInput({
                   transition: all 0.2s ease;
                   margin-bottom: 20px;
                 "
+                aria-label="Math input field"
               >
                 ${value}
               </math-field>
 
-
-
-                            <div style="
+              <div style="
                 display: flex;
                 gap: 16px;
                 margin-top: 8px;
               ">
                 <button
-                  id="main-action-btn"
+                  id="${ELEMENT_IDS.MAIN_BUTTON}"
                   style="
                     flex: 1;
                     background: ${buttonState === 'verify' ? '#10b981' : '#6b7280'};
@@ -436,7 +751,7 @@ export default function TrainingMathInput({
                     font-weight: 600;
                     cursor: pointer;
                     transition: all 0.2s ease;
-                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    font-family: ${STYLES.FONT_FAMILY};
                   "
                 >
                   ${buttonState === 'verify' ? 'Verify Answer' : 'Next Problem'}
@@ -446,7 +761,7 @@ export default function TrainingMathInput({
           `;
 
           // Get the math field element
-          const mathField = containerRef.current.querySelector('#training-math-field') as any;
+          const mathField = containerRef.current.querySelector(`#${ELEMENT_IDS.MATH_FIELD}`) as any;
           if (mathField) {
             mathFieldRef.current = mathField;
 
@@ -497,55 +812,7 @@ export default function TrainingMathInput({
             mathField.addEventListener('focus', handleFocus);
             mathField.addEventListener('blur', handleBlur);
 
-            // Add button functionality
-            const mainBtn = containerRef.current.querySelector('#main-action-btn');
-
-            if (mainBtn) {
-              const handleMainButton = () => {
-                if (buttonState === 'verify') {
-                  // Verify answer
-                  const currentValue = mathField.value;
-                  if (currentValue.trim() && onVerifyAnswer) {
-                    const result = verifyAnswer(currentValue);
-                    onVerifyAnswer(result);
-
-                    // Visual feedback
-                    if (result.isCorrect) {
-                      mathField.style.borderColor = '#10b981';
-                      mathField.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-                    } else {
-                      mathField.style.borderColor = '#ef4444';
-                      mathField.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
-                    }
-                  }
-                } else {
-                  // Next problem
-                  if (onButtonPress) {
-                    onButtonPress();
-                  }
-                }
-              };
-
-              mainBtn.addEventListener('click', handleMainButton);
-
-              // Add hover effects
-              mainBtn.addEventListener('mouseenter', () => {
-                if (buttonState === 'verify') {
-                  (mainBtn as HTMLElement).style.background = '#059669';
-                } else {
-                  (mainBtn as HTMLElement).style.background = '#4b5563';
-                }
-                (mainBtn as HTMLElement).style.transform = 'translateY(-1px)';
-              });
-              mainBtn.addEventListener('mouseleave', () => {
-                if (buttonState === 'verify') {
-                  (mainBtn as HTMLElement).style.background = '#10b981';
-                } else {
-                  (mainBtn as HTMLElement).style.background = '#6b7280';
-                }
-                (mainBtn as HTMLElement).style.transform = 'translateY(0)';
-              });
-            }
+            // Initial button setup will be handled by the button state effect
 
             // Focus the field for better UX
             setTimeout(() => {
@@ -553,6 +820,12 @@ export default function TrainingMathInput({
                 mathField.focus();
               }
             }, 100);
+
+            // Mark as initialized
+            isInitializedRef.current = true;
+
+            // Update problem content after initialization
+            updateProblemContent();
           }
         }
       } catch (error) {
@@ -576,11 +849,116 @@ export default function TrainingMathInput({
     };
 
     initializeMathLive();
-  }, [onInput, onVerifyAnswer, onButtonPress, problem, userProgress]); // Removed showSolution and buttonState from deps
 
-  // Separate effect to update solution and button content without rebuilding HTML
+    // Cleanup function
+    return () => {
+      cleanupRetryButton();
+    };
+  }, [onInput, onVerifyAnswer, onButtonPress]); // Removed problem and userProgress from deps
+
+    // Update problem content when problem, userProgress, loading, or error states change
   useEffect(() => {
-    if (!containerRef.current || !mathFieldRef.current) return;
+    updateProblemContent();
+
+    // Clear the input field when problem changes (but not on first initialization or loading states)
+    if (mathFieldRef.current && isInitializedRef.current && problem && !isLoading) {
+      mathFieldRef.current.value = '';
+      // Reset border color to default
+      mathFieldRef.current.style.borderColor = '#374151';
+      mathFieldRef.current.style.boxShadow = 'none';
+    }
+  }, [problem, userProgress, isLoading, error]);
+
+  // Button event handlers stored in refs to avoid stale closures
+  const buttonClickHandlerRef = useRef<(() => void) | null>(null);
+  const buttonMouseEnterHandlerRef = useRef<(() => void) | null>(null);
+  const buttonMouseLeaveHandlerRef = useRef<(() => void) | null>(null);
+
+  // Update button functionality when buttonState changes
+  useEffect(() => {
+    if (!containerRef.current || !mathFieldRef.current || !isInitializedRef.current) return;
+
+    const mainBtn = containerRef.current.querySelector(`#${ELEMENT_IDS.MAIN_BUTTON}`) as HTMLElement;
+    if (!mainBtn) return;
+
+    // Clean up previous event listeners
+    if (buttonClickHandlerRef.current) {
+      mainBtn.removeEventListener('click', buttonClickHandlerRef.current);
+    }
+    if (buttonMouseEnterHandlerRef.current) {
+      mainBtn.removeEventListener('mouseenter', buttonMouseEnterHandlerRef.current);
+    }
+    if (buttonMouseLeaveHandlerRef.current) {
+      mainBtn.removeEventListener('mouseleave', buttonMouseLeaveHandlerRef.current);
+    }
+
+    // Update button appearance
+    mainBtn.textContent = buttonState === 'verify' ? 'Verify Answer' : 'Next Problem';
+    mainBtn.style.background = buttonState === 'verify' ? '#10b981' : '#6b7280';
+    mainBtn.setAttribute('aria-label', buttonState === 'verify' ? 'Verify your answer' : 'Go to next problem');
+
+    // Create new event handlers
+    const handleMainButton = () => {
+      if (buttonState === 'verify') {
+        const currentValue = mathFieldRef.current?.value;
+        if (currentValue?.trim() && onVerifyAnswer) {
+          const result = verifyAnswer(currentValue);
+          onVerifyAnswer(result);
+
+          // Visual feedback
+          if (mathFieldRef.current) {
+            if (result.isCorrect) {
+              mathFieldRef.current.style.borderColor = '#10b981';
+              mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+            } else {
+              mathFieldRef.current.style.borderColor = '#ef4444';
+              mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+            }
+          }
+        }
+      } else if (onButtonPress) {
+        onButtonPress();
+      }
+    };
+
+    const handleMouseEnter = () => {
+      if (buttonState === 'verify') {
+        mainBtn.style.background = '#059669';
+      } else {
+        mainBtn.style.background = '#4b5563';
+      }
+      mainBtn.style.transform = 'translateY(-1px)';
+    };
+
+    const handleMouseLeave = () => {
+      if (buttonState === 'verify') {
+        mainBtn.style.background = '#10b981';
+      } else {
+        mainBtn.style.background = '#6b7280';
+      }
+      mainBtn.style.transform = 'translateY(0)';
+    };
+
+    // Store handlers in refs and add event listeners
+    buttonClickHandlerRef.current = handleMainButton;
+    buttonMouseEnterHandlerRef.current = handleMouseEnter;
+    buttonMouseLeaveHandlerRef.current = handleMouseLeave;
+
+    mainBtn.addEventListener('click', handleMainButton);
+    mainBtn.addEventListener('mouseenter', handleMouseEnter);
+    mainBtn.addEventListener('mouseleave', handleMouseLeave);
+
+    // Cleanup function
+    return () => {
+      mainBtn.removeEventListener('click', handleMainButton);
+      mainBtn.removeEventListener('mouseenter', handleMouseEnter);
+      mainBtn.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [buttonState, onVerifyAnswer, onButtonPress]);
+
+  // Separate effect to handle solution display
+  useEffect(() => {
+    if (!containerRef.current || !mathFieldRef.current || !isInitializedRef.current) return;
 
     // Update solution section
     const existingSolution = containerRef.current.querySelector('#solution-section');
@@ -691,7 +1069,7 @@ export default function TrainingMathInput({
           </div>
         `;
 
-        const inputField = containerRef.current.querySelector('#training-math-field');
+        const inputField = containerRef.current.querySelector(`#${ELEMENT_IDS.MATH_FIELD}`);
         if (inputField) {
           inputField.insertAdjacentHTML('afterend', solutionHTML);
         }
@@ -700,66 +1078,7 @@ export default function TrainingMathInput({
       // Remove solution section
       existingSolution.remove();
     }
-
-    // Update button text, color, and event handler
-    const mainBtn = containerRef.current.querySelector('#main-action-btn') as HTMLElement;
-    if (mainBtn) {
-      mainBtn.textContent = buttonState === 'verify' ? 'Verify Answer' : 'Next Problem';
-      mainBtn.style.background = buttonState === 'verify' ? '#10b981' : '#6b7280';
-
-      // Remove existing event listeners
-      const newBtn = mainBtn.cloneNode(true) as HTMLElement;
-      mainBtn.parentNode?.replaceChild(newBtn, mainBtn);
-
-      // Add new event handler with current buttonState
-      const handleMainButton = () => {
-        if (buttonState === 'verify') {
-          // Verify answer
-          const currentValue = mathFieldRef.current?.value;
-          if (currentValue?.trim() && onVerifyAnswer) {
-            const result = verifyAnswer(currentValue);
-            onVerifyAnswer(result);
-
-            // Visual feedback
-            if (mathFieldRef.current) {
-              if (result.isCorrect) {
-                mathFieldRef.current.style.borderColor = '#10b981';
-                mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-              } else {
-                mathFieldRef.current.style.borderColor = '#ef4444';
-                mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
-              }
-            }
-          }
-        } else {
-          // Next problem
-          if (onButtonPress) {
-            onButtonPress();
-          }
-        }
-      };
-
-      newBtn.addEventListener('click', handleMainButton);
-
-      // Add hover effects
-      newBtn.addEventListener('mouseenter', () => {
-        if (buttonState === 'verify') {
-          newBtn.style.background = '#059669';
-        } else {
-          newBtn.style.background = '#4b5563';
-        }
-        newBtn.style.transform = 'translateY(-1px)';
-      });
-      newBtn.addEventListener('mouseleave', () => {
-        if (buttonState === 'verify') {
-          newBtn.style.background = '#10b981';
-        } else {
-          newBtn.style.background = '#6b7280';
-        }
-        newBtn.style.transform = 'translateY(0)';
-      });
-    }
-  }, [showSolution, buttonState, problem?.solutionSteps, onVerifyAnswer, onButtonPress]);
+  }, [showSolution, problem?.solutionSteps]);
 
   // Update value when prop changes
   useEffect(() => {

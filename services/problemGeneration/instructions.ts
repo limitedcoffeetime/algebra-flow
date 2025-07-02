@@ -8,31 +8,31 @@ export function getProblemTypeInstructions(problemType: ProblemType): {
     case 'linear-one-variable':
       return {
         instructions:
-          'Solve for x. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations like 0.6666. For integers, use plain numbers like 5.',
+          'Solve for x. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations like 0.6666. For integers, use plain numbers like 5. ANSWER SUBMISSION: Submit your answer in fully simplified form.',
         answerFormat: 'LaTeX fractions (\\frac{a}{b}) or integers',
       };
     case 'linear-two-variables':
       return {
         instructions:
-          'Solve for x in terms of y (express x = ... ). Use LaTeX fractions like \\frac{5-3y}{2} instead of decimal approximations. Use integer coefficients when possible.',
+          'Solve for x in terms of y (express x = ... ). Use LaTeX fractions like \\frac{5-3y}{2} instead of decimal approximations. Use integer coefficients when possible. ANSWER SUBMISSION: Submit your answer in fully simplified form.',
         answerFormat: 'LaTeX expression with fractions and integer coefficients',
       };
     case 'quadratic-factoring':
     case 'quadratic-formula':
       return {
         instructions:
-          'Find all solutions. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations. Always provide answers as an array, even for single solutions (e.g., ["3"] or ["\\frac{-2}{3}", "5"]). NO irrational numbers or decimal approximations.',
+          'Find all solutions using COMPLETING THE SQUARE method. This method transforms any quadratic equation into the form (x + h)² = k, which is easy to solve. Always show the complete the square process with detailed explanations in your solution steps: 1) Start with the standard form and isolate x² and x terms on one side, 2) Identify the coefficient of x (call it "b") and calculate what to add: (b/2)², 3) Add this value to both sides to create a perfect square trinomial, 4) Factor the left side as (x + number)², 5) Take the square root of both sides (remember ± for the square root), 6) Solve for x. Explain WHY we add (b/2)² - because it creates a perfect square that factors nicely. Use clear language like "We add 9 to both sides because (6/2)² = 9, which will complete the square" rather than just stating the operation. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations. Always provide answers as an array, even for single solutions (e.g., ["3"] or ["\\frac{-2}{3}", "5"]). NO irrational numbers or decimal approximations. ANSWER SUBMISSION: You may submit any one of the solutions when there are multiple answers.',
         answerFormat: 'array of LaTeX fractions (\\frac{a}{b}) or integers',
       };
     case 'polynomial-simplification':
       return {
         instructions:
-          'Simplify the polynomial expression. Use LaTeX fractions like \\frac{3}{4}x^2 for fractional coefficients. Use integer coefficients when possible.',
+          'Simplify the polynomial expression. Use LaTeX fractions like \\frac{3}{4}x^2 for fractional coefficients. Use integer coefficients when possible. ANSWER SUBMISSION: Submit your answer in standard form (terms in ascending order of degree) and fully simplified (distribute all parentheses and combine like terms).',
         answerFormat: 'polynomial with LaTeX fractions and integer coefficients',
       };
     default:
       return {
-        instructions: 'Solve the equation with calculator-free answer. Use LaTeX \\frac{a}{b} for fractions, never decimal approximations.',
+        instructions: 'Solve the equation with calculator-free answer. Use LaTeX \\frac{a}{b} for fractions, never decimal approximations. ANSWER SUBMISSION: Submit your answer in fully simplified form.',
         answerFormat: 'LaTeX fractions (\\frac{a}{b}) or integers',
       };
   }

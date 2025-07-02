@@ -2,12 +2,9 @@ import TrainingMathInput from '@/components/TrainingMathInput';
 import { useInitializeApp, useProblemStore, useUserProgressStore } from '@/store';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
     Alert,
     StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -122,52 +119,10 @@ export default function MathLiveTest() {
     await problemStore.loadNextProblem();
   };
 
-  // Loading state
-  if (problemStore.isLoading) {
-    return (
-      <SafeAreaView style={styles.fullScreen}>
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading problems...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Error state
-  if (problemStore.error && !problemStore.currentProblem) {
-    return (
-      <SafeAreaView style={styles.fullScreen}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>{problemStore.error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={initializeAll}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // No problem state
-  if (!problemStore.currentProblem) {
-    return (
-      <SafeAreaView style={styles.fullScreen}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>No problems available</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={initializeAll}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const problem = problemStore.currentProblem;
-
-    return (
+  // Always render TrainingMathInput, let it handle loading states internally
+  return (
     <SafeAreaView style={styles.fullScreen}>
       <View style={styles.container}>
-        {/* Full Screen MathLive Area with Problem Display */}
         <View style={styles.mathLiveContainer}>
           <TrainingMathInput
             value={userAnswer}
@@ -176,13 +131,14 @@ export default function MathLiveTest() {
             onButtonPress={handleButtonPress}
             buttonState={buttonState}
             placeholder="Enter your answer using the full screen..."
-            problem={problem}
+            problem={problemStore.currentProblem || undefined}
             userProgress={userProgressStore.userProgress || undefined}
             showSolution={showSolution}
+            isLoading={problemStore.isLoading}
+            error={problemStore.error}
+            onRetry={initializeAll}
           />
         </View>
-
-
       </View>
     </SafeAreaView>
   );
