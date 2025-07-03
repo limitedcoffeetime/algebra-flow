@@ -1,7 +1,7 @@
 import 'expo-dev-client';
 import { Stack } from 'expo-router';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PostHogProvider } from 'posthog-react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function RootLayout() {
   return (
@@ -11,7 +11,10 @@ export default function RootLayout() {
         host: 'https://us.i.posthog.com',
         enableSessionReplay: true,
       }}
-      autocapture
+      autocapture={{
+        captureTouches: true,
+        captureScreens: false,
+      }}
     >
       <SafeAreaProvider>
         <Stack>
