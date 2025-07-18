@@ -3,6 +3,45 @@
 import { addIntelligentLineBreaks, calculateResponsiveFontSize } from '@/utils/responsiveText';
 import { useEffect, useRef } from 'react';
 
+// Global MathLive initialization cache
+let mathLiveInitPromise: Promise<void> | null = null;
+
+const initMathLive = async () => {
+  if (mathLiveInitPromise) return mathLiveInitPromise;
+  
+  mathLiveInitPromise = (async () => {
+    try {
+      console.log('Initializing MathLive...');
+      
+      // Import MathLive and compute engine in parallel
+      await Promise.all([
+        import('mathlive'),
+        import('@cortex-js/compute-engine')
+      ]);
+
+      // Wait for custom elements to be defined
+      await customElements.whenDefined('math-field');
+
+      // Configure global MathLive settings
+      if ((window as any).MathfieldElement) {
+        (window as any).MathfieldElement.fontsDirectory = null;
+      }
+
+      // Give compute engine time to initialize
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      console.log('MathLive initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize MathLive:', error);
+      mathLiveInitPromise = null; // Reset on error so it can be retried
+      throw error;
+    }
+  })();
+  
+  return mathLiveInitPromise;
+};
+
+
 interface SolutionStep {
   explanation: string;
   mathExpression: string;
@@ -598,7 +637,9 @@ export default function TrainingMathInput({
           font-size: 18px;
           color: #ffffff;
           font-weight: 600;
-          font-family: ${STYLES.FONT_FAMILY};
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         ">Problem</div>
         <div style="display: flex; gap: 12px; align-items: center;">
           <div style="
@@ -609,14 +650,18 @@ export default function TrainingMathInput({
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-            font-family: ${STYLES.FONT_FAMILY};
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
           ">${problem.difficulty}</div>
           ${userProgress ? `
             <div style="
               color: #10b981;
               font-size: 14px;
               font-weight: 600;
-              font-family: ${STYLES.FONT_FAMILY};
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              -webkit-font-smoothing: antialiased;
+              -moz-osx-font-smoothing: grayscale;
             " aria-label="Progress: ${userProgress.problemsCorrect} correct out of ${userProgress.problemsAttempted} attempted">${userProgress.problemsCorrect}/${userProgress.problemsAttempted}</div>
           ` : ''}
         </div>
@@ -625,8 +670,10 @@ export default function TrainingMathInput({
         font-size: ${responsiveSettings.directionFontSize}px;
         color: #e5e7eb;
         margin-bottom: 16px;
-        font-weight: 500;
-        font-family: ${STYLES.FONT_FAMILY};
+        font-weight: 600;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
         word-wrap: break-word;
         overflow-wrap: break-word;
         line-height: 1.4;
@@ -663,29 +710,21 @@ export default function TrainingMathInput({
 
   // Initialize MathLive once (no problem dependencies)
   useEffect(() => {
-    const initializeMathLive = async () => {
+    const setupMathLive = async () => {
       try {
-        // Import MathLive - the errors you see are just Metro bundler noise, not actual failures
-        await import('mathlive');
-
-        // Import the Compute Engine for mathematical operations
-        await import('@cortex-js/compute-engine');
-
-        // Wait for custom elements to be defined first
-        await customElements.whenDefined('math-field');
-
-        // Configure global MathLive settings after elements are defined
-        // Disable custom fonts - use system fonts (simpler, always works)
-        if (typeof window !== 'undefined' && (window as any).MathfieldElement) {
-          (window as any).MathfieldElement.fontsDirectory = null;
-        }
-
-        // Give the compute engine a moment to initialize
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Use the global initialization function
+        await initMathLive();
 
         if (containerRef.current && !mathFieldRef.current) {
           // Build HTML structure once
           containerRef.current.innerHTML = `
+            <style>
+              * {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+                -webkit-font-smoothing: antialiased !important;
+                -moz-osx-font-smoothing: grayscale !important;
+              }
+            </style>
             <div style="
               height: 100%;
               padding: 12px;
@@ -709,7 +748,9 @@ export default function TrainingMathInput({
                 color: #ffffff;
                 font-weight: 600;
                 margin-bottom: 12px;
-                font-family: ${STYLES.FONT_FAMILY};
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
               ">Your Answer</div>
 
               <math-field
@@ -829,7 +870,7 @@ export default function TrainingMathInput({
           }
         }
       } catch (error) {
-        console.error('Failed to load MathLive:', error);
+        console.error('Failed to setup MathLive:', error);
         if (containerRef.current) {
           containerRef.current.innerHTML = `
             <div style="
@@ -848,7 +889,7 @@ export default function TrainingMathInput({
       }
     };
 
-    initializeMathLive();
+    setupMathLive();
 
     // Cleanup function
     return () => {

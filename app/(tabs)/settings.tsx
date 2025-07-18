@@ -4,6 +4,7 @@ import { BatchInfo } from '@/services/types/api';
 import { useSyncStore, useUserProgressStore } from '@/store';
 import { ErrorStrategy, handleError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
+import * as Sentry from '@sentry/react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -210,6 +211,45 @@ export default function SettingsScreen() {
           Algebro - Your personal algebra learning companion
         </Text>
         <Text style={styles.versionText}>Version 1.0.0</Text>
+
+        {/* Developer Test Section */}
+        <View style={styles.devSection}>
+          <Text style={styles.devSectionTitle}>Developer</Text>
+          <View style={styles.buttonContainer}>
+            <Button
+              label="Test Error Reporting"
+              onPress={() => {
+                Alert.alert(
+                  'Test Error',
+                  'This will send a test error to Sentry for monitoring purposes.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Send Test Error',
+                      onPress: () => {
+                        Sentry.captureException(new Error(`Test error from production app - ${new Date().toISOString()}`), {
+                          tags: {
+                            source: 'settings_test_button',
+                            environment: __DEV__ ? 'development' : 'production',
+                          },
+                          extra: {
+                            timestamp: Date.now(),
+                            deviceType: 'mobile',
+                          },
+                        });
+                        Alert.alert('Test Sent', 'Error test sent to monitoring system.');
+                      },
+                    },
+                  ]
+                );
+              }}
+              theme="secondary"
+            />
+          </View>
+          <Text style={styles.devHelpText}>
+            This helps verify error monitoring is working correctly.
+          </Text>
+        </View>
       </View>
 
       {/* Batch Manager Modal */}
@@ -405,5 +445,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  devSection: {
+    marginTop: 20,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#374151',
+  },
+  devSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#94a3b8',
+    marginBottom: 10,
+  },
+  devHelpText: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
 });

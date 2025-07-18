@@ -24,7 +24,8 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "environment": "production"
     },
     "development-simulator": {
       "developmentClient": true,

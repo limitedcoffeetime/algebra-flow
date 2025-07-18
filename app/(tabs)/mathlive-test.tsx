@@ -2,11 +2,11 @@ import TrainingMathInput from '@/components/TrainingMathInput';
 import { useInitializeApp, useProblemStore, useUserProgressStore } from '@/store';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    StyleSheet,
-    View
+  Alert,
+  StyleSheet,
+  View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Add the VerificationResult interface to match the component
 interface VerificationResult {
@@ -27,6 +27,9 @@ export default function MathLiveTest() {
   const problemStore = useProblemStore();
   const userProgressStore = useUserProgressStore();
   const { initializeAll } = useInitializeApp();
+  
+  // Get safe area insets
+  const insets = useSafeAreaInsets();
 
   // Initialize on mount
   useEffect(() => {
@@ -121,7 +124,7 @@ export default function MathLiveTest() {
 
   // Always render TrainingMathInput, let it handle loading states internally
   return (
-    <SafeAreaView style={styles.fullScreen}>
+    <View style={[styles.fullScreen, { paddingTop: insets.top }]}>
       <View style={styles.container}>
         <View style={styles.mathLiveContainer}>
           <TrainingMathInput
@@ -140,7 +143,7 @@ export default function MathLiveTest() {
           />
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -39,7 +39,10 @@ export default {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: getUniqueIdentifier()
+      bundleIdentifier: getUniqueIdentifier(),
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false
+      }
     },
     android: {
       adaptiveIcon: {
