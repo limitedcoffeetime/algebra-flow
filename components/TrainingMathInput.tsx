@@ -813,45 +813,9 @@ export default function TrainingMathInput({
             // Configure MathLive options using new syntax (no more setOptions deprecation warnings)
             mathField.mathVirtualKeyboardPolicy = 'auto';
             mathField.smartFence = true;
-            mathField.smartSuperscript = true;
+            mathField.smartSuperscript = false;
             mathField.removeExtraneousParentheses = true;
 
-            // Add event listeners
-            const handleInput = (event: any) => {
-              const latex = event.target.value;
-              onInput?.(latex);
-            };
-
-            const handleKeyDown = (event: KeyboardEvent) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                // Trigger the main button action
-                if (buttonState === 'verify' && onVerifyAnswer) {
-                  const currentValue = mathField.value;
-                  if (currentValue.trim()) {
-                    const result = verifyAnswer(currentValue);
-                    onVerifyAnswer(result);
-                  }
-                } else if (buttonState === 'next' && onButtonPress) {
-                  onButtonPress();
-                }
-              }
-            };
-
-            const handleFocus = () => {
-              mathField.style.borderColor = '#3b82f6';
-              mathField.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-            };
-
-            const handleBlur = () => {
-              mathField.style.borderColor = '#374151';
-              mathField.style.boxShadow = 'none';
-            };
-
-            mathField.addEventListener('input', handleInput);
-            mathField.addEventListener('keydown', handleKeyDown);
-            mathField.addEventListener('focus', handleFocus);
-            mathField.addEventListener('blur', handleBlur);
 
             // Initial button setup will be handled by the button state effect
 
