@@ -8,11 +8,11 @@ let mathLiveInitPromise: Promise<void> | null = null;
 
 const initMathLive = async () => {
   if (mathLiveInitPromise) return mathLiveInitPromise;
-  
+
   mathLiveInitPromise = (async () => {
     try {
       console.log('Initializing MathLive...');
-      
+
       // Import MathLive and compute engine in parallel
       await Promise.all([
         import('mathlive'),
@@ -37,7 +37,7 @@ const initMathLive = async () => {
       throw error;
     }
   })();
-  
+
   return mathLiveInitPromise;
 };
 
@@ -51,6 +51,7 @@ interface SolutionStep {
 interface Problem {
   id: string;
   equation: string;
+  equations?: string[]; // Optional array of equations for systems
   direction: string;
   difficulty: 'easy' | 'medium' | 'hard';
   answer: string | number | number[];
@@ -211,9 +212,204 @@ export default function TrainingMathInput({
     }
   };
 
+  // Helper function to get answer format instructions
+  const getAnswerFormatInstructions = (problemType: string): string => {
+    switch (problemType) {
+      case 'quadratic-factoring':
+      case 'quadratic-formula':
+        return 'Submit both answers separated by a comma (e.g., "3, -2"). Order does not matter.';
+      case 'systems-of-equations':
+        return 'Submit your answer as an ordered pair (x, y), for example: (3, -2) or 3, -2';
+      case 'polynomial-simplification':
+        return 'Submit your answer in standard form and fully simplified.';
+      case 'linear-one-variable':
+      case 'linear-two-variables':
+        return 'Submit your answer in fully simplified form.';
+      default:
+        return 'Submit your answer in fully simplified form.';
+    }
+  };
+
+  // Helper function to validate quadratic answers (requires both solutions)
+  const validateQuadraticAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
+    console.log('🔍 validateQuadraticAnswer called with:', userAnswer);
+    console.log('🔍 problem.answerRHS:', problem.answerRHS);
+    console.log('🔍 problem.answer:', problem.answer);
+
+    // Parse user input - expect comma-separated values
+    const userAnswers = userAnswer.split(',').map(ans => ans.trim());
+    console.log('🔍 userAnswers:', userAnswers);
+
+    if (userAnswers.length !== 2) {
+      console.log('❌ Not exactly 2 answers provided');
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: 'Both solutions required (e.g., "3, -2")',
+        errorMessage: 'Please provide both solutions separated by a comma'
+      };
+    }
+
+    // Get correct answers
+    let correctAnswers: string[] = [];
+    if (problem.answerRHS && Array.isArray(problem.answerRHS)) {
+      correctAnswers = problem.answerRHS.map(ans => String(ans));
+    } else if (Array.isArray(problem.answer)) {
+      correctAnswers = problem.answer.map(ans => String(ans));
+    } else {
+      console.log('❌ Problem does not have array answers');
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: 'Invalid answer format',
+        errorMessage: 'Problem does not have multiple solutions'
+      };
+    }
+
+    console.log('🔍 correctAnswers:', correctAnswers);
+
+    if (correctAnswers.length !== 2) {
+      console.log('❌ Problem should have exactly 2 solutions');
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: correctAnswers.join(', '),
+        errorMessage: 'Problem should have exactly 2 solutions'
+      };
+    }
+
+    // Check if user answers match correct answers (order doesn't matter)
+    const userSet = new Set(userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, '')));
+    const correctSet = new Set(correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, '')));
+
+    console.log('🔍 userSet:', userSet);
+    console.log('🔍 correctSet:', correctSet);
+
+    // For more sophisticated comparison with MathLive if available
+    if (ce) {
+      try {
+        const userSimplified = userAnswers.map(ans => ce.parse(ans).simplify().latex);
+        const correctSimplified = correctAnswers.map(ans => ce.parse(String(ans)).simplify().latex);
+
+        const userSimplifiedSet = new Set(userSimplified);
+        const correctSimplifiedSet = new Set(correctSimplified);
+
+        console.log('🔍 userSimplified:', userSimplified);
+        console.log('🔍 correctSimplified:', correctSimplified);
+
+        const isCorrect = userSimplifiedSet.size === correctSimplifiedSet.size &&
+                         [...userSimplifiedSet].every(ans => correctSimplifiedSet.has(ans));
+
+        console.log('🔍 isCorrect (MathLive):', isCorrect);
+
+        return {
+          isCorrect,
+          userAnswerSimplified: userSimplified.join(', '),
+          correctAnswerSimplified: correctSimplified.join(', '),
+          errorMessage: isCorrect ? undefined : 'Both solutions must be correct'
+        };
+      } catch (error) {
+        console.warn('Error using MathLive for quadratic validation, falling back to string comparison', error);
+      }
+    }
+
+    // Fallback to string comparison
+    const isCorrect = userSet.size === correctSet.size &&
+                     [...userSet].every(ans => correctSet.has(ans));
+
+    console.log('🔍 isCorrect (fallback):', isCorrect);
+
+    return {
+      isCorrect,
+      userAnswerSimplified: userAnswers.join(', '),
+      correctAnswerSimplified: correctAnswers.join(', '),
+      errorMessage: isCorrect ? undefined : 'Both solutions must be correct (order doesn\'t matter)'
+    };
+  };
+
+  // Helper function to validate systems of equations answers (requires ordered pair)
+  const validateSystemsAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
+    // Parse user input - expect (x, y) format or x, y format
+    let userAnswers: string[] = [];
+
+    // Handle (x, y) format
+    const parenMatch = userAnswer.match(/\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/);
+    if (parenMatch) {
+      userAnswers = [parenMatch[1].trim(), parenMatch[2].trim()];
+    } else {
+      // Handle x, y format
+      const parts = userAnswer.split(',').map(ans => ans.trim());
+      if (parts.length === 2) {
+        userAnswers = parts;
+      }
+    }
+
+    if (userAnswers.length !== 2) {
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: 'Ordered pair required (e.g., "(3, -2)" or "3, -2")',
+        errorMessage: 'Please provide your answer as an ordered pair (x, y)'
+      };
+    }
+
+    // Get correct answers (should be an ordered pair)
+    let correctAnswers: string[] = [];
+    if (Array.isArray(problem.answer) && problem.answer.length === 2) {
+      correctAnswers = problem.answer.map(ans => String(ans));
+    } else {
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: 'Invalid answer format',
+        errorMessage: 'Problem does not have a valid ordered pair solution'
+      };
+    }
+
+    // For systems, order matters (x-value, y-value)
+    let isCorrect = false;
+
+    if (ce) {
+      try {
+        const userSimplified = userAnswers.map(ans => ce.parse(ans).simplify().latex);
+        const correctSimplified = correctAnswers.map(ans => ce.parse(String(ans)).simplify().latex);
+
+        isCorrect = userSimplified[0] === correctSimplified[0] &&
+                   userSimplified[1] === correctSimplified[1];
+
+        return {
+          isCorrect,
+          userAnswerSimplified: `(${userSimplified[0]}, ${userSimplified[1]})`,
+          correctAnswerSimplified: `(${correctSimplified[0]}, ${correctSimplified[1]})`,
+          errorMessage: isCorrect ? undefined : 'Order matters: first value is x, second is y'
+        };
+      } catch (error) {
+        console.warn('Error using MathLive for systems validation, falling back to string comparison');
+      }
+    }
+
+    // Fallback to string comparison
+    const userNormalized = userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, ''));
+    const correctNormalized = correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, ''));
+
+    isCorrect = userNormalized[0] === correctNormalized[0] &&
+               userNormalized[1] === correctNormalized[1];
+
+    return {
+      isCorrect,
+      userAnswerSimplified: `(${userAnswers[0]}, ${userAnswers[1]})`,
+      correctAnswerSimplified: `(${correctAnswers[0]}, ${correctAnswers[1]})`,
+      errorMessage: isCorrect ? undefined : 'Order matters: first value is x, second is y'
+    };
+  };
+
   // Function to verify answer using MathLive's simplify
   const verifyAnswer = (userAnswer: string): VerificationResult => {
+    console.log('🔍 verifyAnswer called with:', userAnswer);
+    console.log('🔍 problem:', problem);
+
     if (!problem) {
+      console.log('❌ No problem available');
       return {
         isCorrect: false,
         userAnswerSimplified: userAnswer,
@@ -222,77 +418,26 @@ export default function TrainingMathInput({
       };
     }
 
+    console.log('🔍 problem.problemType:', problem.problemType);
+
     // Check compute engine availability
     const ce = (window as any)?.MathfieldElement?.computeEngine;
+    console.log('🔍 compute engine available:', !!ce);
 
     try {
-      // Use the already declared compute engine variable
-      if (!ce) {
-        console.warn('MathLive compute engine not available, falling back to string comparison');
-
-        if (problem.problemType === 'polynomial-simplification') {
-          // For polynomial simplification, use exact string matching (excluding whitespace)
-          const userNormalized = userAnswer.replace(/\s+/g, '');
-
-          // Determine correct answer for comparison
-          let correctAnswer: string;
-          let isCorrect = false;
-
-          if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-            correctAnswer = String(problem.answerRHS);
-            const correctNormalized = correctAnswer.replace(/\s+/g, '');
-            isCorrect = userNormalized === correctNormalized;
-          } else if (problem.answerLHS && problem.answer) {
-            const fullAnswer = `${problem.answerLHS}${problem.answer}`;
-            const answerOnly = String(problem.answer);
-            const fullAnswerNormalized = fullAnswer.replace(/\s+/g, '');
-            const answerOnlyNormalized = answerOnly.replace(/\s+/g, '');
-
-            isCorrect = userNormalized === fullAnswerNormalized || userNormalized === answerOnlyNormalized;
-            correctAnswer = userNormalized === fullAnswerNormalized ? fullAnswer : answerOnly;
-          } else {
-            correctAnswer = String(problem.answer);
-            const correctNormalized = correctAnswer.replace(/\s+/g, '');
-            isCorrect = userNormalized === correctNormalized;
-          }
-
-          return {
-            isCorrect,
-            userAnswerSimplified: userAnswer.trim(),
-            correctAnswerSimplified: correctAnswer.trim(),
-            errorMessage: isCorrect ? undefined : 'Using fallback comparison method'
-          };
-        } else {
-          // For other problem types, use case-insensitive string comparison
-          const userTrimmed = userAnswer.trim().toLowerCase();
-
-          // Determine correct answer for comparison
-          let correctAnswer: string;
-          let isCorrect = false;
-
-          if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-            correctAnswer = String(problem.answerRHS);
-            isCorrect = userTrimmed === correctAnswer.toLowerCase();
-          } else if (problem.answerLHS && problem.answer) {
-            const fullAnswer = `${problem.answerLHS}${problem.answer}`;
-            const answerOnly = String(problem.answer);
-
-            isCorrect = userTrimmed === fullAnswer.toLowerCase() || userTrimmed === answerOnly.toLowerCase();
-            correctAnswer = userTrimmed === fullAnswer.toLowerCase() ? fullAnswer : answerOnly;
-          } else {
-            correctAnswer = String(problem.answer);
-            isCorrect = userTrimmed === correctAnswer.toLowerCase();
-          }
-
-          return {
-            isCorrect,
-            userAnswerSimplified: userAnswer.trim(),
-            correctAnswerSimplified: correctAnswer,
-            errorMessage: isCorrect ? undefined : 'Using fallback comparison method'
-          };
-        }
+      // Special handling for quadratics - require both answers
+      if (problem.problemType === 'quadratic-factoring' || problem.problemType === 'quadratic-formula') {
+        console.log('🔍 Using quadratic validation');
+        return validateQuadraticAnswer(userAnswer, problem, ce);
       }
 
+      // Special handling for systems of equations - require ordered pair
+      if (problem.problemType === 'systems-of-equations') {
+        console.log('🔍 Using systems validation');
+        return validateSystemsAnswer(userAnswer, problem, ce);
+      }
+
+      console.log('🔍 Using standard validation');
       // Determine the correct answer to compare against
       let correctAnswerStr: string;
 
@@ -570,7 +715,7 @@ export default function TrainingMathInput({
         return {
           isCorrect,
           userAnswerSimplified: userAnswer.trim(),
-          correctAnswerSimplified: String(problem.answer),
+          correctAnswerSimplified: correctStr,
           errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
         };
       }
@@ -705,8 +850,85 @@ export default function TrainingMathInput({
           "
         >${equationWithBreaks}</math-field>
       </div>
+      <div style="
+        font-size: 16px;
+        color: #9ca3af;
+        margin-top: 16px;
+        margin-bottom: 16px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      ">Answer Format: ${getAnswerFormatInstructions(problem.problemType)}</div>
     `;
   };
+
+  // Set up global button handler that persists across re-renders with debounce
+  useEffect(() => {
+    let isProcessing = false;
+    let lastClickTime = 0;
+
+    (window as any).handleVerifyButtonClick = () => {
+      const now = Date.now();
+
+      // Debounce: prevent multiple clicks within 500ms
+      if (isProcessing || (now - lastClickTime < 500)) {
+        console.log('🔍 Button click ignored (debounced)');
+        return;
+      }
+
+      lastClickTime = now;
+      isProcessing = true;
+
+      console.log('🌍 GLOBAL HANDLER CALLED! (debounced)');
+      console.log('🔍 Current buttonState:', buttonState);
+      console.log('🔍 mathFieldRef.current:', !!mathFieldRef.current);
+      console.log('🔍 onVerifyAnswer:', !!onVerifyAnswer);
+      console.log('🔍 onButtonPress:', !!onButtonPress);
+
+      try {
+        if (buttonState === 'verify') {
+          const currentValue = mathFieldRef.current?.value;
+          console.log('🔍 Current value from math field:', currentValue);
+
+          if (currentValue?.trim()) {
+            if (onVerifyAnswer) {
+              console.log('🔍 Calling verifyAnswer with:', currentValue);
+              const result = verifyAnswer(currentValue);
+              console.log('🔍 Verification result:', result);
+              onVerifyAnswer(result);
+
+              // Visual feedback
+              if (mathFieldRef.current) {
+                if (result.isCorrect) {
+                  mathFieldRef.current.style.borderColor = '#10b981';
+                  mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                } else {
+                  mathFieldRef.current.style.borderColor = '#ef4444';
+                  mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+                }
+              }
+            } else {
+              console.error('❌ onVerifyAnswer callback is not provided');
+            }
+          } else {
+            console.log('❌ No value to verify - currentValue:', currentValue);
+          }
+        } else if (onButtonPress) {
+          console.log('🔍 Calling onButtonPress for next problem');
+          onButtonPress();
+        }
+      } finally {
+        // Reset processing flag after a short delay to allow UI updates
+        setTimeout(() => {
+          isProcessing = false;
+        }, 100);
+      }
+    };
+
+    return () => {
+      delete (window as any).handleVerifyButtonClick;
+    };
+  }, [buttonState, onVerifyAnswer, onButtonPress, mathFieldRef.current]);
 
   // Initialize MathLive once (no problem dependencies)
   useEffect(() => {
@@ -781,6 +1003,7 @@ export default function TrainingMathInput({
               ">
                 <button
                   id="${ELEMENT_IDS.MAIN_BUTTON}"
+                  onclick="window.handleVerifyButtonClick && window.handleVerifyButtonClick()"
                   style="
                     flex: 1;
                     background: ${buttonState === 'verify' ? '#10b981' : '#6b7280'};
@@ -879,87 +1102,31 @@ export default function TrainingMathInput({
   const buttonMouseEnterHandlerRef = useRef<(() => void) | null>(null);
   const buttonMouseLeaveHandlerRef = useRef<(() => void) | null>(null);
 
-  // Update button functionality when buttonState changes
+    // Update button styling when buttonState changes
   useEffect(() => {
-    if (!containerRef.current || !mathFieldRef.current || !isInitializedRef.current) return;
+    if (!containerRef.current || !isInitializedRef.current) return;
 
     const mainBtn = containerRef.current.querySelector(`#${ELEMENT_IDS.MAIN_BUTTON}`) as HTMLElement;
-    if (!mainBtn) return;
-
-    // Clean up previous event listeners
-    if (buttonClickHandlerRef.current) {
-      mainBtn.removeEventListener('click', buttonClickHandlerRef.current);
-    }
-    if (buttonMouseEnterHandlerRef.current) {
-      mainBtn.removeEventListener('mouseenter', buttonMouseEnterHandlerRef.current);
-    }
-    if (buttonMouseLeaveHandlerRef.current) {
-      mainBtn.removeEventListener('mouseleave', buttonMouseLeaveHandlerRef.current);
+    if (!mainBtn) {
+      console.log('❌ Button element not found for styling!');
+      return;
     }
 
-    // Update button appearance
-    mainBtn.textContent = buttonState === 'verify' ? 'Verify Answer' : 'Next Problem';
-    mainBtn.style.background = buttonState === 'verify' ? '#10b981' : '#6b7280';
-    mainBtn.setAttribute('aria-label', buttonState === 'verify' ? 'Verify your answer' : 'Go to next problem');
+    console.log('🔍 Updating button styling for buttonState:', buttonState);
 
-    // Create new event handlers
-    const handleMainButton = () => {
-      if (buttonState === 'verify') {
-        const currentValue = mathFieldRef.current?.value;
-        if (currentValue?.trim() && onVerifyAnswer) {
-          const result = verifyAnswer(currentValue);
-          onVerifyAnswer(result);
+    // Set button text and styling
+    if (buttonState === 'verify') {
+      mainBtn.textContent = 'Verify Answer';
+      mainBtn.style.background = '#10b981';
+      mainBtn.style.color = '#ffffff';
+    } else {
+      mainBtn.textContent = 'Continue';
+      mainBtn.style.background = '#6b7280';
+      mainBtn.style.color = '#ffffff';
+    }
 
-          // Visual feedback
-          if (mathFieldRef.current) {
-            if (result.isCorrect) {
-              mathFieldRef.current.style.borderColor = '#10b981';
-              mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-            } else {
-              mathFieldRef.current.style.borderColor = '#ef4444';
-              mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
-            }
-          }
-        }
-      } else if (onButtonPress) {
-        onButtonPress();
-      }
-    };
-
-    const handleMouseEnter = () => {
-      if (buttonState === 'verify') {
-        mainBtn.style.background = '#059669';
-      } else {
-        mainBtn.style.background = '#4b5563';
-      }
-      mainBtn.style.transform = 'translateY(-1px)';
-    };
-
-    const handleMouseLeave = () => {
-      if (buttonState === 'verify') {
-        mainBtn.style.background = '#10b981';
-      } else {
-        mainBtn.style.background = '#6b7280';
-      }
-      mainBtn.style.transform = 'translateY(0)';
-    };
-
-    // Store handlers in refs and add event listeners
-    buttonClickHandlerRef.current = handleMainButton;
-    buttonMouseEnterHandlerRef.current = handleMouseEnter;
-    buttonMouseLeaveHandlerRef.current = handleMouseLeave;
-
-    mainBtn.addEventListener('click', handleMainButton);
-    mainBtn.addEventListener('mouseenter', handleMouseEnter);
-    mainBtn.addEventListener('mouseleave', handleMouseLeave);
-
-    // Cleanup function
-    return () => {
-      mainBtn.removeEventListener('click', handleMainButton);
-      mainBtn.removeEventListener('mouseenter', handleMouseEnter);
-      mainBtn.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [buttonState, onVerifyAnswer, onButtonPress]);
+    console.log('🔍 Button styling updated successfully');
+  }, [buttonState]);
 
   // Separate effect to handle solution display
   useEffect(() => {

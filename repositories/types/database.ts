@@ -2,7 +2,8 @@
 export interface ProblemRow {
   id: string;
   batchId: string;
-  equation: string;
+  equation: string; // Legacy single equation
+  equations?: string; // JSON string array of equations
   direction: string;
   answer: string; // JSON string or primitive
   answerLHS?: string;
@@ -51,7 +52,8 @@ export interface DatabaseQueryResult<T> {
 export interface SerializedProblem {
   id: string;
   batchId: string;
-  equation: string;
+  equation: string; // Legacy single equation
+  equations: string | null; // JSON string array of equations
   direction: string;
   answer: string; // Always string for DB storage
   answerLHS: string | null;

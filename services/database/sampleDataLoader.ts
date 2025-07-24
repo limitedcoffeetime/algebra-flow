@@ -13,6 +13,7 @@ interface SampleProblemsData {
     id: string;
     batchId: string;
     equation: string;
+    equations?: string[]; // Optional array of equations for systems
     direction: string;
     answer: string | number[];
     answerLHS?: string;

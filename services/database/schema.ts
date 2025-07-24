@@ -3,7 +3,8 @@ import { SolutionStep } from '../problemGeneration/openaiGenerator';
 export interface Problem {
   id: string; // UUID, primary key
   batchId: string; // Foreign key to ProblemBatch
-  equation: string;
+  equation: string; // Legacy single equation (for backward compatibility)
+  equations?: string[]; // New: array of equations (max 2 for systems)
   direction: string; // e.g., "Solve for x", "Simplify", "Factor"
   answer: string | number | number[]; // Can be array for quadratic solutions
   answerLHS?: string; // e.g., "x = " - for problems that solve for a variable
@@ -11,7 +12,7 @@ export interface Problem {
   solutionSteps: SolutionStep[]; // Structured solution steps
   variables: string[]; // Variables used in the problem
   difficulty: 'easy' | 'medium' | 'hard';
-  problemType: string; // e.g., 'linear-one-variable', 'quadratic-factoring'
+  problemType: string; // e.g., 'linear-one-variable', 'quadratic-factoring', 'systems-of-equations'
   isCompleted: boolean;
   userAnswer?: string | number | null;
   solutionStepsShown: boolean; // Track if user viewed solution
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS Problems (
   id TEXT PRIMARY KEY NOT NULL,
   batchId TEXT NOT NULL,
   equation TEXT NOT NULL,
+  equations TEXT, -- JSON array of equations for systems
   direction TEXT NOT NULL,
   answer TEXT NOT NULL,
   answerLHS TEXT,
@@ -79,8 +81,7 @@ CREATE TABLE IF NOT EXISTS Problems (
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
   FOREIGN KEY (batchId) REFERENCES ProblemBatches(id) ON DELETE CASCADE
-);
-`;
+);`;
 
 export const CREATE_USER_PROGRESS_TABLE = `
 CREATE TABLE IF NOT EXISTS UserProgress (
@@ -92,5 +93,4 @@ CREATE TABLE IF NOT EXISTS UserProgress (
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
   FOREIGN KEY (currentBatchId) REFERENCES ProblemBatches(id) ON DELETE SET NULL
-);
-`;
+);`;

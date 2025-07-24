@@ -14,7 +14,8 @@ export interface SolutionStep {
 }
 
 export interface GeneratedProblem {
-  equation: string;
+  equation: string; // Legacy single equation
+  equations?: string[]; // New: array of equations (max 2 for systems)
   direction: string;
   answer: unknown;
   answerLHS?: string; // e.g., "x = " - for problems that solve for a variable
@@ -119,6 +120,7 @@ Constraints:
         type: p.problemType,
         difficulty: p.difficulty,
         equation: p.equation.substring(0, 50) + '...',
+        hasEquations: !!p.equations,
         hasAnswer: !!p.answer,
         hasLHS: !!p.answerLHS,
         hasRHS: !!p.answerRHS
@@ -139,6 +141,7 @@ Constraints:
 
       return {
         equation: p.equation,
+        equations: p.equations, // Include the equations array for systems
         direction: p.direction,
         answer: p.answer,
         answerLHS: p.answerLHS,

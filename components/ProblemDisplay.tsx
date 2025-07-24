@@ -7,6 +7,24 @@ interface ProblemDisplayProps {
   problem: Problem;
 }
 
+// Helper function to get answer format instructions
+const getAnswerFormatInstructions = (problemType: string): string => {
+  switch (problemType) {
+    case 'quadratic-factoring':
+    case 'quadratic-formula':
+      return 'Submit both answers separated by a comma (e.g., "3, -2"). Order does not matter.';
+    case 'systems-of-equations':
+      return 'Submit your answer as an ordered pair (x, y), for example: (3, -2) or 3, -2';
+    case 'polynomial-simplification':
+      return 'Submit your answer in standard form (terms in ascending order of degree) and fully simplified.';
+    case 'linear-one-variable':
+    case 'linear-two-variables':
+      return 'Submit your answer in fully simplified form.';
+    default:
+      return 'Submit your answer in fully simplified form.';
+  }
+};
+
 export default function ProblemDisplay({ problem }: ProblemDisplayProps) {
   // Get screen dimensions for responsive calculations
   const screenWidth = Dimensions.get('window').width;
@@ -14,6 +32,8 @@ export default function ProblemDisplay({ problem }: ProblemDisplayProps) {
 
   // Calculate responsive font sizes for native platform
   const responsiveSettings = calculateResponsiveFontSize(problem.equation, problem.direction, containerWidth, 'native');
+
+  const answerInstructions = getAnswerFormatInstructions(problem.problemType);
 
   return (
     <View style={styles.problemContainer}>
@@ -28,18 +48,42 @@ export default function ProblemDisplay({ problem }: ProblemDisplayProps) {
         {problem.direction}
       </Text>
 
-      {/* Problem Equation */}
+      {/* Problem Equation(s) */}
       <View style={styles.equationContainer}>
-        <Text style={[
-          styles.equation,
-          {
-            fontSize: responsiveSettings.equationFontSize,
-            lineHeight: responsiveSettings.equationFontSize * 1.3,
-            flexWrap: responsiveSettings.shouldWrap ? 'wrap' : 'nowrap',
-          }
-        ]}>
-          {problem.equation}
-        </Text>
+        {problem.equations && problem.equations.length > 1 ? (
+          // Display multiple equations for systems
+          problem.equations.map((equation, index) => (
+            <Text key={index} style={[
+              styles.equation,
+              {
+                fontSize: responsiveSettings.equationFontSize,
+                lineHeight: responsiveSettings.equationFontSize * 1.3,
+                flexWrap: responsiveSettings.shouldWrap ? 'wrap' : 'nowrap',
+                marginBottom: index < problem.equations!.length - 1 ? 8 : 0,
+              }
+            ]}>
+              {equation}
+            </Text>
+          ))
+        ) : (
+          // Display single equation
+          <Text style={[
+            styles.equation,
+            {
+              fontSize: responsiveSettings.equationFontSize,
+              lineHeight: responsiveSettings.equationFontSize * 1.3,
+              flexWrap: responsiveSettings.shouldWrap ? 'wrap' : 'nowrap',
+            }
+          ]}>
+            {problem.equation}
+          </Text>
+        )}
+      </View>
+
+      {/* Answer Format Instructions */}
+      <View style={styles.instructionsContainer}>
+        <Text style={styles.instructionsLabel}>Answer Format:</Text>
+        <Text style={styles.instructionsText}>{answerInstructions}</Text>
       </View>
 
       {/* Difficulty Badge */}
@@ -95,6 +139,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'monospace',
     maxWidth: '100%',
+  },
+  instructionsContainer: {
+    backgroundColor: '#0f1629',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#fbbf24',
+    maxWidth: '100%',
+  },
+  instructionsLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fbbf24',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  instructionsText: {
+    fontSize: 12,
+    color: '#fde68a',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   difficultyBadge: {
     backgroundColor: '#10b981',

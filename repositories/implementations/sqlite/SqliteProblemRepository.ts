@@ -27,6 +27,16 @@ export class SqliteProblemRepository implements IProblemRepository {
       }
     }
 
+    // Parse equations from JSON if present
+    let equations: string[] | undefined;
+    if (row.equations) {
+      try {
+        equations = JSON.parse(row.equations);
+      } catch (error) {
+        logger.error('Failed to parse equations JSON:', { equations: row.equations, error: error instanceof Error ? error.message : String(error) });
+      }
+    }
+
     // Parse solution steps
     let solutionSteps;
     try {
@@ -63,6 +73,7 @@ export class SqliteProblemRepository implements IProblemRepository {
       id: row.id,
       batchId: row.batchId,
       equation: row.equation,
+      equations: equations, // Add the parsed equations array
       direction: row.direction,
       answer,
       answerLHS: row.answerLHS || undefined,
@@ -86,6 +97,7 @@ export class SqliteProblemRepository implements IProblemRepository {
       id: problem.id || generateId(),
       batchId: problem.batchId,
       equation: problem.equation,
+      equations: problem.equations ? JSON.stringify(problem.equations) : null, // Serialize equations array
       direction: problem.direction,
       answer: Array.isArray(problem.answer) ? JSON.stringify(problem.answer) : String(problem.answer),
       answerLHS: problem.answerLHS || null,
@@ -124,10 +136,10 @@ export class SqliteProblemRepository implements IProblemRepository {
 
     const sql = `
       INSERT INTO Problems (
-        id, batchId, equation, direction, answer, answerLHS, answerRHS, solutionSteps, variables,
+        id, batchId, equation, equations, direction, answer, answerLHS, answerRHS, solutionSteps, variables,
         difficulty, problemType, isCompleted, userAnswer, solutionStepsShown, createdAt, updatedAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await db.runAsync(
@@ -135,6 +147,7 @@ export class SqliteProblemRepository implements IProblemRepository {
       serialized.id,
       serialized.batchId,
       serialized.equation,
+      serialized.equations,
       serialized.direction,
       serialized.answer,
       serialized.answerLHS,

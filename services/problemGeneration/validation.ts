@@ -61,8 +61,11 @@ export function validateAnswerFormat(answer: any, problemType: ProblemType): boo
       return typeof answer === 'string';
     case 'quadratic-factoring':
     case 'quadratic-formula':
-      // Now accepts arrays of strings (LaTeX fractions) or numbers (integers)
-      return Array.isArray(answer) && answer.every((a) => typeof a === 'string' || typeof a === 'number');
+      // Now accepts arrays of exactly 2 strings (LaTeX fractions) or numbers (integers)
+      return Array.isArray(answer) && answer.length === 2 && answer.every((a) => typeof a === 'string' || typeof a === 'number');
+    case 'systems-of-equations':
+      // Accepts arrays of exactly 2 strings representing ordered pair (x, y)
+      return Array.isArray(answer) && answer.length === 2 && answer.every((a) => typeof a === 'string' || typeof a === 'number');
     default:
       return true;
   }
