@@ -3,8 +3,7 @@ import { SolutionStep } from '../problemGeneration/openaiGenerator';
 export interface Problem {
   id: string; // UUID, primary key
   batchId: string; // Foreign key to ProblemBatch
-  equation: string; // Legacy single equation (for backward compatibility)
-  equations?: string[]; // New: array of equations (max 2 for systems)
+  equations: string[]; // Array of equations (always used - single item for regular problems, multiple for systems)
   direction: string; // e.g., "Solve for x", "Simplify", "Factor"
   answer: string | number | number[]; // Can be array for quadratic solutions
   answerLHS?: string; // e.g., "x = " - for problems that solve for a variable

@@ -12,8 +12,7 @@ interface SampleProblemsData {
   problems: Array<{
     id: string;
     batchId: string;
-    equation: string;
-    equations?: string[]; // Optional array of equations for systems
+    equations: string[]; // Array of equations (always used)
     direction: string;
     answer: string | number[];
     answerLHS?: string;
@@ -60,7 +59,7 @@ export const getSampleBatchAndProblemsInput = async () => {
       .map(problem => ({
         id: problem.id,
         batchId: problem.batchId,
-        equation: problem.equation,
+        equations: problem.equations,
         direction: problem.direction,
         answer: problem.answer,
         answerLHS: problem.answerLHS,
@@ -98,7 +97,7 @@ export const getSampleProblems = async (): Promise<ProblemInput[]> => {
   return data.problems.map(problem => ({
     id: problem.id,
     batchId: problem.batchId,
-    equation: problem.equation,
+    equations: problem.equations,
     direction: problem.direction,
     answer: problem.answer,
     answerLHS: problem.answerLHS,

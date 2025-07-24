@@ -234,7 +234,7 @@ export class SqliteProblemRepository implements IProblemRepository {
     try {
       const sql = `
         INSERT INTO Problems (
-          id, batchId, equation, direction, answer, answerLHS, answerRHS, solutionSteps, variables,
+          id, batchId, equations, direction, answer, answerLHS, answerRHS, solutionSteps, variables,
           difficulty, problemType, isCompleted, userAnswer, solutionStepsShown, createdAt, updatedAt
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -246,7 +246,7 @@ export class SqliteProblemRepository implements IProblemRepository {
           sql,
           serialized.id,
           serialized.batchId,
-          serialized.equation,
+          serialized.equations,
           serialized.direction,
           serialized.answer,
           serialized.answerLHS,

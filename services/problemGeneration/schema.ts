@@ -92,7 +92,7 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
     }
   };
 
-  // Add equation(s) field based on problem type
+  // Always use equations field for all problem types (clean and simple!)
   if (problemType === 'systems-of-equations') {
     problemProperties.equations = {
       type: 'array',
@@ -104,24 +104,21 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
       maxItems: 2,
       description: 'Array of exactly 2 equations for the system in LaTeX format'
     };
-    // Also include legacy equation field for backward compatibility (use first equation)
-    problemProperties.equation = {
-      type: 'string',
-      description: 'First equation (for backward compatibility) in LaTeX format'
-    };
   } else {
-    problemProperties.equation = {
-      type: 'string',
-      description: 'The algebra problem equation in LaTeX format (use \\frac{a}{b} for fractions, \\sqrt{x} for roots)'
+    // For single equation problems, use an array with one equation
+    problemProperties.equations = {
+      type: 'array',
+      items: {
+        type: 'string',
+        description: 'The equation in LaTeX format (use \\frac{a}{b} for fractions, \\sqrt{x} for roots)'
+      },
+      minItems: 1,
+      maxItems: 1,
+      description: 'Array with one equation in LaTeX format'
     };
   }
 
-  let requiredFields = ['equation', 'direction', 'solutionSteps', 'variables'];
-
-  // Add equations to required fields for systems
-  if (problemType === 'systems-of-equations') {
-    requiredFields.push('equations');
-  }
+  let requiredFields = ['equations', 'direction', 'solutionSteps', 'variables'];
 
   if (includesAnswerLHS) {
     // For problems like "solve for x", generate LHS and RHS

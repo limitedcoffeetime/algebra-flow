@@ -14,8 +14,7 @@ export interface SolutionStep {
 }
 
 export interface GeneratedProblem {
-  equation: string; // Legacy single equation
-  equations?: string[]; // New: array of equations (max 2 for systems)
+  equations: string[]; // Array of equations (always used - single item for regular problems, multiple for systems)
   direction: string;
   answer: unknown;
   answerLHS?: string; // e.g., "x = " - for problems that solve for a variable
@@ -119,8 +118,7 @@ Constraints:
       logger.info(`🔍 Processing problem ${index + 1}:`, {
         type: p.problemType,
         difficulty: p.difficulty,
-        equation: p.equation.substring(0, 50) + '...',
-        hasEquations: !!p.equations,
+        equations: p.equations.map(eq => eq.substring(0, 50) + '...'),
         hasAnswer: !!p.answer,
         hasLHS: !!p.answerLHS,
         hasRHS: !!p.answerRHS
@@ -140,8 +138,7 @@ Constraints:
       logger.info(`✅ Problem ${index + 1} validation target:`, answerToValidate);
 
       return {
-        equation: p.equation,
-        equations: p.equations, // Include the equations array for systems
+        equations: p.equations, // Always use equations array
         direction: p.direction,
         answer: p.answer,
         answerLHS: p.answerLHS,
