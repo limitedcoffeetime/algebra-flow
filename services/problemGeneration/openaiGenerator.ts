@@ -39,7 +39,44 @@ export async function generateProblemsWithAI(
 Problem Type Specific Instructions:
 ${typeInstructions.instructions}
 
+CRITICAL DIRECTION FIELD RULES:
+- The "direction" field should NEVER contain mathematical expressions or symbols
+- Do NOT restate the problem equation - the actual equation is displayed separately below
+- Use simple English instructions only: "Solve for x", "Simplify the expression", "Factor the polynomial", "Solve the system of equations"
+- NO LaTeX, NO fractions, NO variables, NO equations in the direction field
+- Math rendering is NOT supported in this field
+
+EXAMPLES OF GOOD DIRECTIONS:
+✓ "Solve for x"
+✓ "Simplify the expression" 
+✓ "Factor the polynomial"
+✓ "Solve the system of equations"
+
+EXAMPLES OF BAD DIRECTIONS (DO NOT USE):
+✗ "Simplify the polynomial expression \\frac{3}{4}(x+4)^2 - 3(x-2) + x(x-1)"
+✗ "Solve 2x + 3 = 7 for x"
+✗ "Find the value of x in the equation x^2 - 4 = 0"
+
 ${getSolutionStepsInstructions()}
+
+CRITICAL SOLUTION STEPS EXPLANATION RULES:
+- The "explanation" field in solution steps should avoid explicit mathematical notation
+- Do NOT write fractions like "\\frac{2}{3}" or "2/3" in explanations
+- Do NOT write exponents like "x^2" in explanations  
+- Instead use descriptive language: "Add the constant term", "Divide by the coefficient", "Square both sides"
+- Simple variables (x, y, z) and integers are acceptable in explanations
+- Save all complex math for the "mathExpression" field
+
+EXAMPLES OF GOOD EXPLANATIONS:
+✓ "Add 5 to both sides"
+✓ "Divide by the coefficient of x"  
+✓ "Multiply the first equation by 2"
+✓ "Substitute the value back into the original equation"
+
+EXAMPLES OF BAD EXPLANATIONS (DO NOT USE):
+✗ "Add \\frac{3}{4} to both sides"
+✗ "Multiply by x^2 + 1"
+✗ "The coefficient \\frac{2}{3} becomes \\frac{3}{2}"
 
 CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
 - For NUMERIC answers: must be integers or simple fractions (like 1/2, 2/3, 3/4, 5/6)
