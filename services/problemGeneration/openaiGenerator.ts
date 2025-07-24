@@ -118,7 +118,7 @@ Constraints:
       logger.info(`🔍 Processing problem ${index + 1}:`, {
         type: p.problemType,
         difficulty: p.difficulty,
-        equations: p.equations.map(eq => eq.substring(0, 50) + '...'),
+        equations: p.equations.map((eq: string) => eq.substring(0, 50) + '...'),
         hasAnswer: !!p.answer,
         hasLHS: !!p.answerLHS,
         hasRHS: !!p.answerRHS
