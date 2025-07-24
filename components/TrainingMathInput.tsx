@@ -50,8 +50,7 @@ interface SolutionStep {
 
 interface Problem {
   id: string;
-  equation: string;
-  equations?: string[]; // Optional array of equations for systems
+  equations: string[]; // Array of equations (always used)
   direction: string;
   difficulty: 'easy' | 'medium' | 'hard';
   answer: string | number | number[];
@@ -767,9 +766,46 @@ export default function TrainingMathInput({
       return;
     }
 
-    // Normal problem state
-    const responsiveSettings = calculateResponsiveFontSize(problem.equation, problem.direction, 350, 'web');
-    const equationWithBreaks = addIntelligentLineBreaks(problem.equation);
+    // Always use equations array (clean and simple!)
+    const equationsToDisplay = problem.equations;
+    
+    // Use first equation for responsive text calculation
+    const responsiveSettings = calculateResponsiveFontSize(equationsToDisplay[0], problem.direction, 350, 'web');
+
+    // Generate equation HTML for multiple equations
+    const equationHTML = equationsToDisplay.map((equation, index) => {
+      const equationWithBreaks = addIntelligentLineBreaks(equation);
+      return `
+        <div style="
+          background: #111827;
+          border-radius: 12px;
+          padding: 9px;
+          border: 2px solid #3b82f6;
+          overflow-x: auto;
+          overflow-y: hidden;
+          ${index > 0 ? 'margin-top: 8px;' : ''}
+        " role="math" aria-label="Problem equation ${index + 1}">
+          <math-field
+            readonly
+            style="
+              width: 100%;
+              max-width: 100%;
+              background: transparent;
+              border: none;
+              color: #ffffff;
+              font-size: ${responsiveSettings.equationFontSize}px;
+              min-height: auto;
+              padding: 0;
+              line-height: 1.3;
+              word-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
+              overflow-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
+              white-space: ${responsiveSettings.shouldWrap ? 'normal' : 'nowrap'};
+              box-sizing: border-box;
+            "
+          >${equationWithBreaks}</math-field>
+        </div>
+      `;
+    }).join('');
 
     problemSection.innerHTML = `
       <div style="
@@ -823,33 +859,7 @@ export default function TrainingMathInput({
         overflow-wrap: break-word;
         line-height: 1.4;
       ">${problem.direction}</div>
-      <div style="
-        background: #111827;
-        border-radius: 12px;
-        padding: 9px;
-        border: 2px solid #3b82f6;
-        overflow-x: auto;
-        overflow-y: hidden;
-      " role="math" aria-label="Problem equation">
-        <math-field
-          readonly
-          style="
-            width: 100%;
-            max-width: 100%;
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            font-size: ${responsiveSettings.equationFontSize}px;
-            min-height: auto;
-            padding: 0;
-            line-height: 1.3;
-            word-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
-            overflow-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
-            white-space: ${responsiveSettings.shouldWrap ? 'normal' : 'nowrap'};
-            box-sizing: border-box;
-          "
-        >${equationWithBreaks}</math-field>
-      </div>
+      ${equationHTML}
       <div style="
         font-size: 16px;
         color: #9ca3af;

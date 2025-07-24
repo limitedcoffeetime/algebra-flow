@@ -30,8 +30,11 @@ export default function ProblemDisplay({ problem }: ProblemDisplayProps) {
   const screenWidth = Dimensions.get('window').width;
   const containerWidth = Math.min(screenWidth - 64, 400); // Account for margins and max width
 
-  // Calculate responsive font sizes for native platform
-  const responsiveSettings = calculateResponsiveFontSize(problem.equation, problem.direction, containerWidth, 'native');
+  // Always use equations array (clean and simple!)
+  const equationsToDisplay = problem.equations;
+  
+  // Calculate responsive font sizes for native platform using first equation
+  const responsiveSettings = calculateResponsiveFontSize(equationsToDisplay[0], problem.direction, containerWidth, 'native');
 
   const answerInstructions = getAnswerFormatInstructions(problem.problemType);
 
@@ -50,34 +53,19 @@ export default function ProblemDisplay({ problem }: ProblemDisplayProps) {
 
       {/* Problem Equation(s) */}
       <View style={styles.equationContainer}>
-        {problem.equations && problem.equations.length > 1 ? (
-          // Display multiple equations for systems
-          problem.equations.map((equation, index) => (
-            <Text key={index} style={[
-              styles.equation,
-              {
-                fontSize: responsiveSettings.equationFontSize,
-                lineHeight: responsiveSettings.equationFontSize * 1.3,
-                flexWrap: responsiveSettings.shouldWrap ? 'wrap' : 'nowrap',
-                marginBottom: index < problem.equations!.length - 1 ? 8 : 0,
-              }
-            ]}>
-              {equation}
-            </Text>
-          ))
-        ) : (
-          // Display single equation
-          <Text style={[
+        {equationsToDisplay.map((equation, index) => (
+          <Text key={index} style={[
             styles.equation,
             {
               fontSize: responsiveSettings.equationFontSize,
               lineHeight: responsiveSettings.equationFontSize * 1.3,
               flexWrap: responsiveSettings.shouldWrap ? 'wrap' : 'nowrap',
+              marginBottom: index < equationsToDisplay.length - 1 ? 8 : 0,
             }
           ]}>
-            {problem.equation}
+            {equation}
           </Text>
-        )}
+        ))}
       </View>
 
       {/* Answer Format Instructions */}

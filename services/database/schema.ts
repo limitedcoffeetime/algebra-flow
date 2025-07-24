@@ -65,8 +65,7 @@ export const CREATE_PROBLEMS_TABLE = `
 CREATE TABLE IF NOT EXISTS Problems (
   id TEXT PRIMARY KEY NOT NULL,
   batchId TEXT NOT NULL,
-  equation TEXT NOT NULL,
-  equations TEXT, -- JSON array of equations for systems
+  equations TEXT NOT NULL, -- JSON array of equations (always used)
   direction TEXT NOT NULL,
   answer TEXT NOT NULL,
   answerLHS TEXT,

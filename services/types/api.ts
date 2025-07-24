@@ -18,8 +18,7 @@ export interface ProblemBatchApiResponse {
 
 export interface ProblemApiData {
   id?: string;
-  equation: string;
-  equations?: string[]; // Optional array of equations for systems
+  equations: string[]; // Array of equations (always used)
   direction: string;
   answer: string | number | number[];
   answerLHS?: string;

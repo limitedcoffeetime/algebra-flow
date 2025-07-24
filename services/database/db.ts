@@ -67,95 +67,11 @@ async function logDatabaseSchema(database: SQLite.SQLiteDatabase) {
       }))
     });
 
-    // Check for missing columns
-    const hasVariablesColumn = problemsTableInfo.some((col) => col.name === 'variables');
-    const hasDirectionColumn = problemsTableInfo.some((col) => col.name === 'direction');
-    const hasAnswerLHSColumn = problemsTableInfo.some((col) => col.name === 'answerLHS');
-    const hasAnswerRHSColumn = problemsTableInfo.some((col) => col.name === 'answerRHS');
-
-    logger.info('Database column status:', {
-      variables: hasVariablesColumn,
-      direction: hasDirectionColumn,
-      answerLHS: hasAnswerLHSColumn,
-      answerRHS: hasAnswerRHSColumn
+    // Clean development approach - just log the schema
+    logger.debug('Problems table schema:', {
+      exists: problemsTableInfo.length > 0,
+      columns: problemsTableInfo.map(col => col.name)
     });
-
-    // Add missing variables column
-    if (!hasVariablesColumn && problemsTableInfo.length > 0) {
-      logger.warn('❌ Variables column missing - adding it now!');
-      try {
-        await database.execAsync(`
-          ALTER TABLE Problems
-          ADD COLUMN variables TEXT DEFAULT '["x"]'
-        `);
-        logger.info('✅ Added variables column to existing table');
-
-        // Update existing records to have default variables
-        await database.execAsync(`
-          UPDATE Problems
-          SET variables = '["x"]'
-          WHERE variables IS NULL OR variables = ''
-        `);
-        logger.info('✅ Updated existing records with default variables');
-      } catch (alterError) {
-        logger.error('Failed to add variables column:', alterError);
-      }
-    }
-
-    // Add missing direction column
-    if (!hasDirectionColumn && problemsTableInfo.length > 0) {
-      logger.warn('❌ Direction column missing - adding it now!');
-      try {
-        await database.execAsync(`
-          ALTER TABLE Problems
-          ADD COLUMN direction TEXT DEFAULT 'Solve for x'
-        `);
-        logger.info('✅ Added direction column to existing table');
-
-        // Update existing records with default direction based on problem type
-        await database.execAsync(`
-          UPDATE Problems
-          SET direction = CASE
-            WHEN problemType LIKE '%quadratic%' THEN 'Find all solutions'
-            WHEN problemType LIKE '%simplification%' THEN 'Simplify'
-            WHEN problemType LIKE '%factoring%' THEN 'Factor'
-            ELSE 'Solve for x'
-          END
-          WHERE direction IS NULL OR direction = ''
-        `);
-        logger.info('✅ Updated existing records with appropriate directions');
-      } catch (alterError) {
-        logger.error('Failed to add direction column:', alterError);
-      }
-    }
-
-    // Add missing answerLHS column
-    if (!hasAnswerLHSColumn && problemsTableInfo.length > 0) {
-      logger.warn('❌ answerLHS column missing - adding it now!');
-      try {
-        await database.execAsync(`
-          ALTER TABLE Problems
-          ADD COLUMN answerLHS TEXT
-        `);
-        logger.info('✅ Added answerLHS column to existing table');
-      } catch (alterError) {
-        logger.error('Failed to add answerLHS column:', alterError);
-      }
-    }
-
-    // Add missing answerRHS column
-    if (!hasAnswerRHSColumn && problemsTableInfo.length > 0) {
-      logger.warn('❌ answerRHS column missing - adding it now!');
-      try {
-        await database.execAsync(`
-          ALTER TABLE Problems
-          ADD COLUMN answerRHS TEXT
-        `);
-        logger.info('✅ Added answerRHS column to existing table');
-      } catch (alterError) {
-        logger.error('Failed to add answerRHS column:', alterError);
-      }
-    }
 
   } catch (error) {
     logger.error('Failed to check database schema:', error);
