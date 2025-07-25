@@ -1,6 +1,7 @@
 'use dom';
 
 import { addIntelligentLineBreaks, calculateResponsiveFontSize } from '@/utils/responsiveText';
+import { configureVirtualKeyboard, initializeCustomKeyboard } from '@/utils/customKeyboard';
 import { useEffect, useRef } from 'react';
 
 // Global MathLive initialization cache
@@ -26,6 +27,9 @@ const initMathLive = async () => {
       if ((window as any).MathfieldElement) {
         (window as any).MathfieldElement.fontsDirectory = null;
       }
+
+      // Initialize custom virtual keyboard
+      initializeCustomKeyboard();
 
       // Give compute engine time to initialize
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -1048,6 +1052,9 @@ export default function TrainingMathInput({
             mathField.smartFence = true;
             mathField.smartSuperscript = false;
             mathField.removeExtraneousParentheses = true;
+
+            // Configure custom virtual keyboard
+            configureVirtualKeyboard(mathField);
 
 
             // Initial button setup will be handled by the button state effect
