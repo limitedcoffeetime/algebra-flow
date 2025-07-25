@@ -960,6 +960,10 @@ export default function TrainingMathInput({
                 -webkit-font-smoothing: antialiased !important;
                 -moz-osx-font-smoothing: grayscale !important;
               }
+              /* Hide the virtual keyboard toggle button */
+              math-field::part(virtual-keyboard-toggle) {
+                display: none !important;
+              }
             </style>
             <div style="
               height: 100%;
@@ -1055,6 +1059,52 @@ export default function TrainingMathInput({
 
             // Configure custom virtual keyboard
             configureVirtualKeyboard(mathField);
+
+            // Filter out unwanted menu items
+            const filterMenuItem = (item: any): boolean => {
+              // Filter out Compute Engine commands (items with IDs starting with 'ce-')
+              if (item.id && item.id.startsWith('ce-')) {
+                return false;
+              }
+              
+              // Filter out other unwanted menu items by their IDs or labels
+              if (item.id) {
+                const unwantedIds = ['insert-matrix', 'insert', 'mode', 'font-style', 'evaluate', 'simplify', 'solve'];
+                if (unwantedIds.includes(item.id.toLowerCase())) {
+                  return false;
+                }
+              }
+              
+              if (item.label) {
+                const unwantedLabels = ['insert matrix', 'insert', 'mode', 'font style', 'evaluate', 'simplify', 'solve'];
+                const labelText = typeof item.label === 'string' ? item.label.toLowerCase() : '';
+                if (unwantedLabels.some(unwanted => labelText.includes(unwanted))) {
+                  return false;
+                }
+              }
+              
+              return true;
+            };
+
+            const filterMenuRecursively = (items: any[]): any[] => {
+              return items.filter((item: any) => {
+                // First check if this item should be filtered out
+                if (!filterMenuItem(item)) {
+                  return false;
+                }
+                
+                // If it has a submenu, filter it recursively
+                if (item.submenu && Array.isArray(item.submenu)) {
+                  item.submenu = filterMenuRecursively(item.submenu);
+                  // Keep the submenu item only if it still has content after filtering
+                  return item.submenu.length > 0;
+                }
+                
+                return true;
+              });
+            };
+
+            mathField.menuItems = filterMenuRecursively(mathField.menuItems);
 
 
             // Initial button setup will be handled by the button state effect
