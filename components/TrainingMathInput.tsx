@@ -231,13 +231,13 @@ export default function TrainingMathInput({
 
   // Helper function to validate quadratic answers (requires both solutions)
   const validateQuadraticAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
-    console.log('🔍 validateQuadraticAnswer called with:', userAnswer);
-    console.log('🔍 problem.answerRHS:', problem.answerRHS);
-    console.log('🔍 problem.answer:', problem.answer);
+    // console.log('🔍 validateQuadraticAnswer called with:', userAnswer);
+    // console.log('🔍 problem.answerRHS:', problem.answerRHS);
+    // console.log('🔍 problem.answer:', problem.answer);
 
     // Parse user input - expect comma-separated values
     const userAnswers = userAnswer.split(',').map(ans => ans.trim());
-    console.log('🔍 userAnswers:', userAnswers);
+    // console.log('🔍 userAnswers:', userAnswers);
 
     if (userAnswers.length !== 2) {
       console.log('❌ Not exactly 2 answers provided');
@@ -404,8 +404,8 @@ export default function TrainingMathInput({
 
   // Function to verify answer using MathLive's simplify
   const verifyAnswer = (userAnswer: string): VerificationResult => {
-    console.log('🔍 verifyAnswer called with:', userAnswer);
-    console.log('🔍 problem:', problem);
+    // console.log('🔍 verifyAnswer called with:', userAnswer);
+    // console.log('🔍 problem:', problem);
 
     if (!problem) {
       console.log('❌ No problem available');
@@ -417,7 +417,7 @@ export default function TrainingMathInput({
       };
     }
 
-    console.log('🔍 problem.problemType:', problem.problemType);
+    // console.log('🔍 problem.problemType:', problem.problemType);
 
     // Check compute engine availability
     const ce = (window as any)?.MathfieldElement?.computeEngine;
