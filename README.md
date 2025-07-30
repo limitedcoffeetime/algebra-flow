@@ -85,7 +85,7 @@ Basically made the validation smarter about when mathematical equivalence should
 - **Still evaluating**: WebView rendering vs SVG/native alternatives for performance
 
 #### Batch Management
-- **Auto-cleanup**: Orphaned batches removed during sync
+- **Auto-cleanup**: Unused batches removed during sync
 - **Management UI**: Settings screen for manual batch deletion and storage stats
 - **Better control**: Individual batch deletion and force cleanup options
 

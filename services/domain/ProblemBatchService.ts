@@ -98,11 +98,6 @@ export class ProblemBatchService {
    */
   async cleanupOrphanedBatches(validBatchIds: string[]): Promise<number> {
     const deletedCount = await this.batchRepo.cleanupOrphaned(validBatchIds);
-
-    if (deletedCount > 0) {
-      logger.info(`Cleaned up ${deletedCount} orphaned batches`);
-    }
-
     return deletedCount;
   }
 

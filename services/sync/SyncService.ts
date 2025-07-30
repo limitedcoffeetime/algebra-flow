@@ -57,7 +57,7 @@ export class SyncService implements ISyncService {
         await this.cacheService.set(this.config.lastHashKey, latestInfo.hash);
         await this.updateLastSyncTime();
 
-        // Clean up orphaned batches after successful sync
+        // Clean up old batches after successful sync
         try {
           await this.cleanupOrphanedBatches();
         } catch (error) {
@@ -134,24 +134,14 @@ export class SyncService implements ISyncService {
    */
   async cleanupOrphanedBatches(): Promise<number> {
     try {
-      logger.info('🧹 Cleaning up orphaned batches...');
-
       // Get available batches from S3
       const availableBatchIds = await this.batchSyncService.getAvailableBatchIds();
       if (!availableBatchIds) {
-        logger.warn('⚠️ Could not fetch available batches, skipping cleanup');
         return 0;
       }
 
       // Clean up orphaned batches using domain service
       const deletedCount = await this.databaseService.batches.cleanupOrphaned(availableBatchIds);
-
-      if (deletedCount > 0) {
-        logger.info(`✅ Cleaned up ${deletedCount} orphaned batches`);
-      } else {
-        logger.info('✅ No orphaned batches found');
-      }
-
       return deletedCount;
     } catch (error) {
       handleError(error, 'Failed to cleanup orphaned batches', ErrorStrategy.SILENT);

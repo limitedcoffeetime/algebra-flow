@@ -1,6 +1,6 @@
 'use dom';
 
-import { addIntelligentLineBreaks, calculateResponsiveFontSize } from '@/utils/responsiveText';
+import { calculateResponsiveFontSize } from '@/utils/responsiveText';
 import { configureVirtualKeyboard, initializeCustomKeyboard } from '@/utils/customKeyboard';
 import { useEffect, useRef } from 'react';
 
@@ -778,7 +778,7 @@ export default function TrainingMathInput({
 
     // Generate equation HTML for multiple equations
     const equationHTML = equationsToDisplay.map((equation, index) => {
-      const equationWithBreaks = addIntelligentLineBreaks(equation);
+      const equationWithBreaks = equation; // No line breaking
       return `
         <div style="
           background: #111827;
@@ -801,9 +801,9 @@ export default function TrainingMathInput({
               min-height: auto;
               padding: 0;
               line-height: 1.3;
-              word-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
-              overflow-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
-              white-space: ${responsiveSettings.shouldWrap ? 'normal' : 'nowrap'};
+              word-wrap: normal;
+              overflow-wrap: normal;
+              white-space: nowrap;
               box-sizing: border-box;
             "
           >${equationWithBreaks}</math-field>

@@ -39,7 +39,7 @@ This is a React Native Expo app for algebra learning with offline-first architec
 - `services/sync/` - Interface-based sync system with dependency injection
 - `SyncService` orchestrates HTTP, caching, and batch operations
 - Concrete implementations in `services/sync/implementations/`
-- Daily sync from S3 with intelligent caching and orphaned batch cleanup
+- Daily sync from S3 with intelligent caching and automatic batch cleanup
 
 **Problem Generation Pipeline:**
 - GitHub Actions workflow generates problems daily using OpenAI API
@@ -93,7 +93,7 @@ This is a React Native Expo app for algebra learning with offline-first architec
 **Sync Strategy:**
 - Check S3 daily for new problem batches
 - Hash-based caching prevents unnecessary downloads
-- Automatic cleanup of orphaned local batches
+- Automatic cleanup of unused local batches
 - Force sync capability for testing/debugging
 
 ## Important Development Notes

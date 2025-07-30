@@ -54,15 +54,17 @@ export default function ProblemDisplay({ problem }: ProblemDisplayProps) {
       {/* Problem Equation(s) */}
       <View style={styles.equationContainer}>
         {equationsToDisplay.map((equation, index) => (
-          <Text key={index} style={[
-            styles.equation,
-            {
-              fontSize: responsiveSettings.equationFontSize,
-              lineHeight: responsiveSettings.equationFontSize * 1.3,
-              flexWrap: responsiveSettings.shouldWrap ? 'wrap' : 'nowrap',
-              marginBottom: index < equationsToDisplay.length - 1 ? 8 : 0,
-            }
-          ]}>
+          <Text 
+            key={index} 
+            style={[
+              styles.equation,
+              {
+                fontSize: responsiveSettings.equationFontSize,
+                lineHeight: responsiveSettings.equationFontSize * 1.2,
+                marginBottom: index < equationsToDisplay.length - 1 ? 8 : 0,
+              }
+            ]}
+          >
             {equation}
           </Text>
         ))}
