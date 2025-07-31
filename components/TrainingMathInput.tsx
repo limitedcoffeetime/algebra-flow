@@ -1,6 +1,6 @@
 'use dom';
 
-import { calculateResponsiveFontSize } from '@/utils/responsiveText';
+import { calculateResponsiveFontSize, setupResponsiveMathField } from '@/utils/responsiveText';
 import { configureVirtualKeyboard, initializeCustomKeyboard } from '@/utils/customKeyboard';
 import { useEffect, useRef } from 'react';
 
@@ -117,6 +117,7 @@ export default function TrainingMathInput({
   const mathFieldRef = useRef<any>(null);
   const isInitializedRef = useRef<boolean>(false);
   const retryButtonRef = useRef<HTMLButtonElement | null>(null);
+  const responsiveCleanupFuncsRef = useRef<(() => void)[]>([]);
 
   // Constants for better maintainability
   const ELEMENT_IDS = {
@@ -164,6 +165,100 @@ export default function TrainingMathInput({
       retryButtonRef.current.removeEventListener('click', handleRetry);
       retryButtonRef.current = null;
     }
+  };
+
+  // Clean up responsive font sizing listeners
+  const cleanupResponsiveFontSizing = () => {
+    responsiveCleanupFuncsRef.current.forEach(cleanup => cleanup());
+    responsiveCleanupFuncsRef.current = [];
+  };
+
+  // Set up smooth drag scrolling for equation containers
+  const setupSmoothScrolling = (container: HTMLElement) => {
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let animationId: number | null = null;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDown = true;
+      container.style.cursor = 'grabbing';
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      // Cancel any ongoing smooth scrolling
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    };
+
+    const handleMouseLeave = () => {
+      isDown = false;
+      container.style.cursor = 'grab';
+    };
+
+    const handleMouseUp = () => {
+      isDown = false;
+      container.style.cursor = 'grab';
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - startX) * 1.5; // Scroll speed multiplier
+      container.scrollLeft = scrollLeft - walk;
+    };
+
+    // Touch support for mobile
+    const handleTouchStart = (e: TouchEvent) => {
+      isDown = true;
+      const touch = e.touches[0];
+      startX = touch.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const x = touch.pageX - container.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      container.scrollLeft = scrollLeft - walk;
+    };
+
+    const handleTouchEnd = () => {
+      isDown = false;
+    };
+
+    // Add event listeners
+    container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mouseleave', handleMouseLeave);
+    container.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mousemove', handleMouseMove);
+    container.addEventListener('touchstart', handleTouchStart);
+    container.addEventListener('touchmove', handleTouchMove);
+    container.addEventListener('touchend', handleTouchEnd);
+
+    // Return cleanup function
+    const cleanup = () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+      container.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+
+    responsiveCleanupFuncsRef.current.push(cleanup);
   };
 
   // Retry button handler
@@ -732,8 +827,9 @@ export default function TrainingMathInput({
     const problemSection = containerRef.current.querySelector(`#${ELEMENT_IDS.PROBLEM_SECTION}`);
     if (!problemSection) return;
 
-    // Clean up any existing retry button listeners
+    // Clean up any existing listeners
     cleanupRetryButton();
+    cleanupResponsiveFontSizing();
 
     // Handle loading state
     if (isLoading) {
@@ -780,20 +876,25 @@ export default function TrainingMathInput({
     const equationHTML = equationsToDisplay.map((equation, index) => {
       const equationWithBreaks = equation; // No line breaking
       return `
-        <div style="
+        <div class="equation-container-${index}" style="
           background: #111827;
           border-radius: 12px;
           padding: 9px;
           border: 2px solid #3b82f6;
           overflow-x: auto;
           overflow-y: hidden;
+          scroll-behavior: smooth;
+          cursor: grab;
+          user-select: none;
           ${index > 0 ? 'margin-top: 8px;' : ''}
         " role="math" aria-label="Problem equation ${index + 1}">
           <math-field
             readonly
+            class="equation-mathfield-${index}"
             style="
-              width: 100%;
-              max-width: 100%;
+              width: max-content;
+              min-width: 100%;
+              max-width: none;
               background: transparent;
               border: none;
               color: #ffffff;
@@ -805,6 +906,7 @@ export default function TrainingMathInput({
               overflow-wrap: normal;
               white-space: nowrap;
               box-sizing: border-box;
+              pointer-events: none;
             "
           >${equationWithBreaks}</math-field>
         </div>
@@ -874,6 +976,17 @@ export default function TrainingMathInput({
         -moz-osx-font-smoothing: grayscale;
       ">Answer Format: ${getAnswerFormatInstructions(problem.problemType)}</div>
     `;
+
+    // Set up smooth scrolling for equation containers
+    cleanupResponsiveFontSizing();
+    
+    // Wait for DOM to update, then set up smooth scrolling
+    setTimeout(() => {
+      const equationContainers = problemSection.querySelectorAll('[class*="equation-container-"]');
+      equationContainers.forEach((container) => {
+        setupSmoothScrolling(container as HTMLElement);
+      });
+    }, 150); // Wait for MathLive to render
   };
 
   // Set up global button handler that persists across re-renders with debounce
@@ -1148,6 +1261,7 @@ export default function TrainingMathInput({
     // Cleanup function
     return () => {
       cleanupRetryButton();
+      cleanupResponsiveFontSizing();
     };
   }, [onInput, onVerifyAnswer, onButtonPress]); // Removed problem and userProgress from deps
 
@@ -1276,7 +1390,7 @@ export default function TrainingMathInput({
                     max-width: 100%;
                   ">${step.explanation}</div>
                 </div>
-                <div style="
+                <div class="solution-container-${index}" style="
                   background: #0f172a;
                   border-radius: 8px;
                   padding: 16px;
@@ -1286,13 +1400,17 @@ export default function TrainingMathInput({
                   box-sizing: border-box;
                   overflow-x: auto;
                   overflow-y: hidden;
+                  scroll-behavior: smooth;
+                  cursor: grab;
+                  user-select: none;
                 ">
                   <math-field
                     readonly
                     class="solution-step-${index}"
                     style="
-                      width: 100%;
-                      max-width: 100%;
+                      width: max-content;
+                      min-width: 100%;
+                      max-width: none;
                       background: transparent;
                       border: none;
                       color: #ffffff;
@@ -1300,6 +1418,7 @@ export default function TrainingMathInput({
                       min-height: auto;
                       padding: 0;
                       box-sizing: border-box;
+                      pointer-events: none;
                     "
                   >${step.mathExpression}</math-field>
                 </div>
@@ -1311,6 +1430,14 @@ export default function TrainingMathInput({
         const inputField = containerRef.current.querySelector(`#${ELEMENT_IDS.MATH_FIELD}`);
         if (inputField) {
           inputField.insertAdjacentHTML('afterend', solutionHTML);
+          
+          // Set up smooth scrolling for solution step containers
+          setTimeout(() => {
+            const solutionContainers = containerRef.current?.querySelectorAll('[class*="solution-container-"]');
+            solutionContainers?.forEach((container) => {
+              setupSmoothScrolling(container as HTMLElement);
+            });
+          }, 200); // Wait for MathLive to render the solution steps
         }
       }
     } else if (existingSolution) {

@@ -9,6 +9,7 @@ import { DashboardData } from '../types/dashboard';
 import { ProblemBatchService } from './ProblemBatchService';
 import { ProblemService } from './ProblemService';
 import { UserProgressService } from './UserProgressService';
+import { validateAnswer, ValidationResult } from '@/utils/strictValidation';
 
 /**
  * Main database service that provides a unified interface for all database operations.
@@ -143,6 +144,8 @@ export class DatabaseService {
    */
   async submitAnswer(problemId: string, userAnswer: string): Promise<{
     isCorrect: boolean;
+    needsFeedback: boolean;
+    feedbackMessage?: string;
     problem: Problem | null;
   }> {
     const problem = await this.problemService.getProblemById(problemId);
@@ -150,20 +153,24 @@ export class DatabaseService {
       throw new Error(`Problem ${problemId} not found`);
     }
 
-    // TODO: Replace with new validation package
-    // For now, just do basic string comparison as placeholder
-    const isCorrect = userAnswer.trim().toLowerCase() === String(problem.answer).toLowerCase();
+    // Use strict validation with feedback for improvement suggestions
+    const validationResult = validateAnswer(userAnswer.trim(), String(problem.answer));
 
-    // Update problem with user's answer
-    await this.problemService.submitAnswer(problemId, userAnswer, isCorrect);
+    // Only record attempt and update problem if it's correct or definitely wrong (no feedback)
+    if (validationResult.isCorrect || !validationResult.needsFeedback) {
+      await this.problemService.submitAnswer(problemId, userAnswer, validationResult.isCorrect);
+      await this.userProgressService.recordProblemAttempt(validationResult.isCorrect);
+    }
 
-    // Record attempt in user progress
-    await this.userProgressService.recordProblemAttempt(isCorrect);
-
-    logger.info(`Answer submitted for problem ${problemId}: ${isCorrect ? 'correct' : 'incorrect'}`);
+    logger.info(`Answer submitted for problem ${problemId}: ${
+      validationResult.isCorrect ? 'correct' : 
+      validationResult.needsFeedback ? 'needs feedback' : 'incorrect'
+    }`);
 
     return {
-      isCorrect,
+      isCorrect: validationResult.isCorrect,
+      needsFeedback: validationResult.needsFeedback,
+      feedbackMessage: validationResult.feedbackMessage,
       problem: await this.problemService.getProblemById(problemId) // Return updated problem
     };
   }

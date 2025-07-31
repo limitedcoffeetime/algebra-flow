@@ -13,6 +13,8 @@ interface ProblemStore {
   loadNextProblem: () => Promise<void>;
   submitAnswer: (userAnswer: string) => Promise<{
     isCorrect: boolean;
+    needsFeedback: boolean;
+    feedbackMessage?: string;
     problem: Problem | null;
   }>;
   clearError: () => void;

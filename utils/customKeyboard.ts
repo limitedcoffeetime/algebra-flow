@@ -60,7 +60,7 @@ export const customKeyboardLayouts = [
         '[separator-5]',
         '[0]',
         '[.]',
-        '[,]',
+        { key: ',' },
         '[+]',
         '[separator-5]',
         '[left]',
