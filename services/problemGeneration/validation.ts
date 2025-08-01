@@ -59,10 +59,15 @@ export function validateAnswerFormat(answer: any, problemType: ProblemType): boo
     case 'linear-two-variables':
     case 'polynomial-simplification':
       return typeof answer === 'string';
-    case 'quadratic-factoring':
-    case 'quadratic-formula':
-      // Now accepts arrays of exactly 2 strings (LaTeX fractions) or numbers (integers)
-      return Array.isArray(answer) && answer.length === 2 && answer.every((a) => typeof a === 'string' || typeof a === 'number');
+    case 'quadratic-completing-square':
+      // Accepts either a single string/number (double root) or array of exactly 2 strings/numbers (distinct roots)
+      if (typeof answer === 'string' || typeof answer === 'number') {
+        return true; // Single answer for double roots
+      }
+      if (Array.isArray(answer) && answer.length === 2) {
+        return answer.every((a) => typeof a === 'string' || typeof a === 'number'); // Two answers for distinct roots
+      }
+      return false;
     case 'systems-of-equations':
       // Accepts arrays of exactly 2 strings representing ordered pair (x, y)
       return Array.isArray(answer) && answer.length === 2 && answer.every((a) => typeof a === 'string' || typeof a === 'number');

@@ -16,17 +16,25 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
       answerSchema = { type: 'string' };
       includesAnswerLHS = true;
       break;
-    case 'quadratic-factoring':
-    case 'quadratic-formula':
+    case 'quadratic-completing-square':
       answerSchema = {
-        type: 'array',
-        items: {
-          type: 'string',
-          description: 'Use LaTeX format for fractions like \\frac{2}{3} instead of decimals. For integers, use plain numbers like "5".'
-        },
-        minItems: 2,
-        maxItems: 2,
-        description: 'Array of BOTH solutions in LaTeX format. Always provide exactly 2 solutions. Use \\frac{a}{b} for fractions, plain numbers for integers.',
+        oneOf: [
+          {
+            type: 'string',
+            description: 'Single solution for double roots (repeated solution). Use LaTeX format for fractions like \\frac{2}{3} instead of decimals. For integers, use plain numbers like "5".'
+          },
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+              description: 'Use LaTeX format for fractions like \\frac{2}{3} instead of decimals. For integers, use plain numbers like "5".'
+            },
+            minItems: 2,
+            maxItems: 2,
+            description: 'Array of BOTH distinct solutions in LaTeX format. Use \\frac{a}{b} for fractions, plain numbers for integers.'
+          }
+        ],
+        description: 'For double roots (repeated solution), provide a single string. For distinct solutions, provide an array of exactly 2 solutions. Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.',
       };
       includesAnswerLHS = true;
       break;
