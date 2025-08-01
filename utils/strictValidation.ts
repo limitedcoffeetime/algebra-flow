@@ -18,7 +18,7 @@ function areAlgebraicallyEquivalent(expr1: string, expr2: string): boolean {
     // Get the MathLive Compute Engine
     const ce = (window as any)?.MathfieldElement?.computeEngine;
     if (!ce) {
-      console.warn('MathLive Compute Engine not available, falling back to string comparison');
+      console.warn('MathLive Compute Engine not available');
       return false;
     }
     
@@ -95,17 +95,13 @@ export function isInCanonicalForm(expression: string): boolean {
 function extractCoefficients(expression: string): number[] {
   const coefficients: number[] = [];
   
-  // Match patterns like: 12y, -4, +6x, etc.
-  const termRegex = /([+-]?)(\d*)([a-zA-Z]*)/g;
-  let match;
+  // Match patterns like: 12y, -4, +6x, 2y-6, etc.
+  const matches = expression.match(/([+-]?\d+)/g) || [];
   
-  while ((match = termRegex.exec(expression)) !== null) {
-    const [, sign, coeff, variable] = match;
-    if (coeff || sign) {
-      const coefficient = parseInt(`${sign}${coeff || '1'}`) || (sign === '-' ? -1 : 1);
-      if (!isNaN(coefficient) && coefficient !== 0) {
-        coefficients.push(Math.abs(coefficient));
-      }
+  for (const match of matches) {
+    const coeff = parseInt(match);
+    if (!isNaN(coeff) && coeff !== 0) {
+      coefficients.push(Math.abs(coeff));
     }
   }
   
@@ -187,8 +183,10 @@ function getTermDegree(term: string): number {
 }
 
 /**
- * Performs strict validation with helpful feedback
- * Returns correct/incorrect/feedback based on the answer quality
+ * Simple validation logic:
+ * 1. Identical? → Correct
+ * 2. Mathematically equivalent after simplification? → Tell to simplify
+ * 3. Otherwise → Wrong
  */
 export function validateAnswer(userAnswer: string, correctAnswer: string): ValidationResult {
   if (!userAnswer || !correctAnswer) {
@@ -198,46 +196,21 @@ export function validateAnswer(userAnswer: string, correctAnswer: string): Valid
   const normalizedUser = normalizeExpression(userAnswer);
   const normalizedCorrect = normalizeExpression(correctAnswer);
   
-  // Check for exact match first
+  // Step 1: Identical check
   if (normalizedUser === normalizedCorrect) {
     return { isCorrect: true, needsFeedback: false };
   }
   
-  // IMPORTANT: Check if user's answer is in canonical form FIRST
-  // If it's not simplified, we should give feedback regardless of algebraic equivalence
-  const userCanonical = isInCanonicalForm(normalizedUser);
-  const userInOrder = !hasPolynomialTerms(normalizedUser) || isInDescendingDegreeOrder(normalizedUser);
-  
-  // If the answer is not in canonical form, check if it's algebraically equivalent
-  if (!userCanonical || !userInOrder) {
-    // Only check algebraic equivalence if the form is wrong
-    if (areAlgebraicallyEquivalent(userAnswer, correctAnswer)) {
-      let feedbackMessage = "Your answer is mathematically correct, but please ";
-      const issues: string[] = [];
-      
-      if (!userCanonical) {
-        issues.push("simplify your answer fully");
-      }
-      
-      if (!userInOrder) {
-        issues.push("write terms in descending degree order");
-      }
-      
-      feedbackMessage += issues.join(" and ") + ".";
-      return { 
-        isCorrect: false, 
-        needsFeedback: true, 
-        feedbackMessage 
-      };
-    }
-  } else {
-    // User's answer is in canonical form, check if algebraically equivalent
-    if (areAlgebraicallyEquivalent(userAnswer, correctAnswer)) {
-      return { isCorrect: true, needsFeedback: false };
-    }
+  // Step 2: Check if mathematically equivalent after simplification
+  if (areAlgebraicallyEquivalent(userAnswer, correctAnswer)) {
+    return { 
+      isCorrect: false, 
+      needsFeedback: true, 
+      feedbackMessage: "Your answer is mathematically correct, but please simplify your answer fully."
+    };
   }
   
-  // Not equivalent at all
+  // Step 3: Not equivalent at all
   return { isCorrect: false, needsFeedback: false };
 }
 
@@ -251,12 +224,18 @@ export function strictCompare(userAnswer: string, correctAnswer: string): boolea
 
 /**
  * Normalizes expression by removing unnecessary whitespace
- * but preserves the exact mathematical form
+ * and standardizing LaTeX fraction and exponent formats
  */
 function normalizeExpression(expression: string): string {
   return expression
     .trim()
     .replace(/\s+/g, '') // Remove all whitespace
     .replace(/\+\-/g, '-') // Normalize +- to -
-    .replace(/^\+/, ''); // Remove leading +
+    .replace(/^\+/, '') // Remove leading +
+    .replace(/\\frac(\d+)(\d+)/g, '\\frac{$1}{$2}') // Convert \frac34 to \frac{3}{4}
+    .replace(/\\frac([a-zA-Z]+)(\d+)/g, '\\frac{$1}{$2}') // Convert \fracx2 to \frac{x}{2}
+    .replace(/\\frac\{([^}]+)\}(\d+)/g, '\\frac{$1}{$2}') // Convert \frac{3x+1}2 to \frac{3x+1}{2}
+    .replace(/\\frac(\d+)\{([^}]+)\}/g, '\\frac{$1}{$2}') // Convert \frac3{x+1} to \frac{3}{x+1}
+    .replace(/\^{(\d+)}/g, '^$1') // Convert x^{2} to x^2
+    .replace(/\^{([^}]+)}/g, '^{$1}'); // Keep complex exponents in braces like x^{n+1}
 }

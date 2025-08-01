@@ -3,6 +3,7 @@
 import { calculateResponsiveFontSize, setupResponsiveMathField } from '@/utils/responsiveText';
 import { configureVirtualKeyboard, initializeCustomKeyboard } from '@/utils/customKeyboard';
 import { useEffect, useRef } from 'react';
+import { validateAnswer } from '@/utils/strictValidation';
 
 // Global MathLive initialization cache
 let mathLiveInitPromise: Promise<void> | null = null;
@@ -310,6 +311,24 @@ export default function TrainingMathInput({
     }
   };
 
+  // Helper function to normalize LaTeX expressions for comparison
+  const normalizeLatexExpression = (expression: string): string => {
+    return expression
+      .toLowerCase()
+      .replace(/\s+/g, '') // Remove all whitespace
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, (match, num, den) => {
+        // Convert \frac{a}{b} to (a)/b if numerator has multiple terms, otherwise a/b
+        const needsParens = num.includes('+') || num.includes('-');
+        return needsParens ? `(${num})/${den}` : `${num}/${den}`;
+      })
+      .replace(/\\frac(\d+)(\d+)/g, '$1/$2') // Convert \frac34 to 3/4
+      .replace(/\{([^}]*)\}/g, '$1') // Remove braces around single terms
+      .replace(/\^{(\d+)}/g, '^$1') // Simplify exponents
+      .replace(/\\\\/g, '') // Remove escape characters
+      .replace(/\\([a-z]+)/g, '') // Remove other LaTeX commands
+      .trim();
+  };
+
   // Helper function to get answer format instructions
   const getAnswerFormatInstructions = (problemType: string): string => {
     switch (problemType) {
@@ -329,13 +348,11 @@ export default function TrainingMathInput({
 
   // Helper function to validate quadratic answers (handles both single and double roots)
   const validateQuadraticAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
-    // console.log('🔍 validateQuadraticAnswer called with:', userAnswer);
-    // console.log('🔍 problem.answerRHS:', problem.answerRHS);
-    // console.log('🔍 problem.answer:', problem.answer);
+    console.log('🔍 validateQuadraticAnswer called with:', userAnswer);
 
     // Parse user input - expect comma-separated values for distinct roots, single value for double roots
     const userAnswers = userAnswer.split(',').map(ans => ans.trim()).filter(ans => ans.length > 0);
-    // console.log('🔍 userAnswers:', userAnswers);
+    console.log('🔍 userAnswers:', userAnswers);
 
     // Get correct answers first to determine if we have single or double root
     let correctAnswers: string[] = [];
@@ -345,17 +362,29 @@ export default function TrainingMathInput({
       if (Array.isArray(problem.answerRHS)) {
         correctAnswers = problem.answerRHS.map(ans => String(ans));
       } else {
-        // Single answer (double root case)
-        correctAnswers = [String(problem.answerRHS)];
-        isDoubleRoot = true;
+        const answerString = String(problem.answerRHS);
+        // Handle backward compatibility: if answerRHS is a string with comma, split it
+        if (answerString.includes(',')) {
+          correctAnswers = answerString.split(',').map(ans => ans.trim()).filter(ans => ans.length > 0);
+          console.log('🔧 Backward compatibility: split comma-separated answer string:', correctAnswers);
+        } else {
+          correctAnswers = [answerString];
+          isDoubleRoot = true;
+        }
       }
     } else if (problem.answer !== undefined && problem.answer !== null) {
       if (Array.isArray(problem.answer)) {
         correctAnswers = problem.answer.map(ans => String(ans));
       } else {
-        // Single answer (double root case)
-        correctAnswers = [String(problem.answer)];
-        isDoubleRoot = true;
+        const answerString = String(problem.answer);
+        // Handle backward compatibility: if answer is a string with comma, split it
+        if (answerString.includes(',')) {
+          correctAnswers = answerString.split(',').map(ans => ans.trim()).filter(ans => ans.length > 0);
+          console.log('🔧 Backward compatibility: split comma-separated answer string:', correctAnswers);
+        } else {
+          correctAnswers = [answerString];
+          isDoubleRoot = true;
+        }
       }
     } else {
       console.log('❌ Problem does not have valid answers');
@@ -415,82 +444,126 @@ export default function TrainingMathInput({
       }
     }
 
-    // Now validate the answers
+    // Now validate the answers using simplified strategy
     if (isDoubleRoot) {
       // For double roots, compare user's answer(s) against the single correct answer
       const correctAnswer = correctAnswers[0];
       const userAnswerToCheck = userAnswers[0]; // Use the first (and possibly only) user answer
       
-      if (ce) {
-        try {
-          const userSimplified = ce.parse(userAnswerToCheck).simplify().latex;
-          const correctSimplified = ce.parse(correctAnswer).simplify().latex;
-          
-          const isCorrect = userSimplified === correctSimplified;
-          return {
-            isCorrect,
-            userAnswerSimplified: userAnswerToCheck.trim(),
-            correctAnswerSimplified: correctAnswer,
-            errorMessage: isCorrect ? undefined : 'Double root answer is incorrect'
-          };
-        } catch (error) {
-          console.warn('Error using MathLive for double root validation, falling back to string comparison', error);
-        }
+      // Step 1: Direct comparison
+      if (userAnswerToCheck.trim() === correctAnswer.trim()) {
+        console.log('✅ Direct match for double root');
+        return {
+          isCorrect: true,
+          userAnswerSimplified: userAnswerToCheck.trim(),
+          correctAnswerSimplified: correctAnswer
+        };
       }
+
+      // Step 2: Strict validation for double root
+      const validation = validateAnswer(userAnswerToCheck, correctAnswer);
+      console.log(`🔍 Strict validation for double root "${userAnswerToCheck}" vs "${correctAnswer}":`, validation);
       
-      // Fallback to string comparison for double roots
-      const normalizedUser = userAnswerToCheck.toLowerCase().replace(/\s+/g, '');
-      const normalizedCorrect = correctAnswer.toLowerCase().replace(/\s+/g, '');
-      const isCorrect = normalizedUser === normalizedCorrect;
-      
-      return {
-        isCorrect,
-        userAnswerSimplified: userAnswerToCheck.trim(),
-        correctAnswerSimplified: correctAnswer,
-        errorMessage: isCorrect ? undefined : 'Double root answer is incorrect'
-      };
+      if (validation.isCorrect) {
+        console.log('✅ Double root is correct and simplified');
+        return {
+          isCorrect: true,
+          userAnswerSimplified: userAnswerToCheck.trim(),
+          correctAnswerSimplified: correctAnswer
+        };
+      } else if (validation.needsFeedback) {
+        console.log('🟡 Double root needs simplification');
+        return {
+          isCorrect: false,
+          userAnswerSimplified: userAnswerToCheck.trim(),
+          correctAnswerSimplified: correctAnswer,
+          errorMessage: validation.feedbackMessage || 'Please simplify your answer further.'
+        };
+      } else {
+        console.log('❌ Double root is incorrect');
+        return {
+          isCorrect: false,
+          userAnswerSimplified: userAnswerToCheck.trim(),
+          correctAnswerSimplified: correctAnswer,
+          errorMessage: 'Double root answer is incorrect'
+        };
+      }
     } else {
-      // For distinct roots, use the original logic
-      // Check if user answers match correct answers (order doesn't matter)
-      const userSet = new Set(userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, '')));
-      const correctSet = new Set(correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, '')));
-
-      console.log('🔍 userSet:', userSet);
-      console.log('🔍 correctSet:', correctSet);
-
-      // For more sophisticated comparison with MathLive if available
-      if (ce) {
-        try {
-          const userSimplified = userAnswers.map(ans => ce.parse(ans).simplify().latex);
-          const correctSimplified = correctAnswers.map(ans => ce.parse(String(ans)).simplify().latex);
-
-          const userSimplifiedSet = new Set(userSimplified);
-          const correctSimplifiedSet = new Set(correctSimplified);
-
-          console.log('🔍 userSimplified:', userSimplified);
-          console.log('🔍 correctSimplified:', correctSimplified);
-
-          const isCorrect = userSimplifiedSet.size === correctSimplifiedSet.size &&
-                           [...userSimplifiedSet].every(ans => correctSimplifiedSet.has(ans));
-
-          console.log('🔍 isCorrect (MathLive):', isCorrect);
-
-          return {
-            isCorrect,
-            userAnswerSimplified: userSimplified.join(', '),
-            correctAnswerSimplified: correctSimplified.join(', '),
-            errorMessage: isCorrect ? undefined : 'Both solutions must be correct'
-          };
-        } catch (error) {
-          console.warn('Error using MathLive for quadratic validation, falling back to string comparison', error);
-        }
+      // For distinct roots, each user answer must match one of the correct answers
+      console.log('🔍 Validating distinct roots');
+      
+      // Step 1: Direct comparison
+      const userSet = new Set(userAnswers.map(ans => ans.trim()));
+      const correctSet = new Set(correctAnswers.map(ans => String(ans).trim()));
+      
+      if (userSet.size === correctSet.size && [...userSet].every(ans => correctSet.has(ans))) {
+        console.log('✅ Direct match for distinct roots');
+        return {
+          isCorrect: true,
+          userAnswerSimplified: userAnswers.join(', '),
+          correctAnswerSimplified: correctAnswers.join(', ')
+        };
       }
 
-      // Fallback to string comparison
-      const isCorrect = userSet.size === correctSet.size &&
-                       [...userSet].every(ans => correctSet.has(ans));
+      // Step 2: Strict validation for each answer
+      console.log('🔍 Applying strict validation to each answer');
+      const validationResults = [];
+      const userAnswerMatches = [];
+      
+      // Validate each user answer against each correct answer to find matches
+      for (const userAns of userAnswers) {
+        let bestMatch = null;
+        let matchFound = false;
+        
+        for (const correctAns of correctAnswers) {
+          const validation = validateAnswer(userAns, correctAns);
+          console.log(`🔍 Validating "${userAns}" vs "${correctAns}":`, validation);
+          
+          if (validation.isCorrect) {
+            bestMatch = { userAns, correctAns, validation };
+            matchFound = true;
+            break;
+          } else if (validation.needsFeedback && !bestMatch) {
+            bestMatch = { userAns, correctAns, validation };
+          }
+        }
+        
+        if (matchFound) {
+          userAnswerMatches.push(bestMatch);
+        } else if (bestMatch) {
+          // Found algebraically equivalent but not simplified
+          console.log('🟡 Answer needs simplification:', bestMatch);
+          return {
+            isCorrect: false,
+            userAnswerSimplified: userAnswers.join(', '),
+            correctAnswerSimplified: correctAnswers.join(', '),
+            errorMessage: bestMatch.validation.feedbackMessage || 'Please simplify your answer further.'
+          };
+        } else {
+          // No match found at all
+          console.log('❌ No match found for:', userAns);
+          validationResults.push({ userAns, match: false });
+        }
+      }
+      
+      // Check if we have the right number of matches
+      if (userAnswerMatches.length === correctAnswers.length && userAnswers.length === correctAnswers.length) {
+        console.log('✅ All answers correct and simplified');
+        return {
+          isCorrect: true,
+          userAnswerSimplified: userAnswers.join(', '),
+          correctAnswerSimplified: correctAnswers.join(', ')
+        };
+      }
 
-      console.log('🔍 isCorrect (fallback):', isCorrect);
+      // Step 3: Fallback to normalized string comparison
+      const userNormalizedSet = new Set(userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, '')));
+      const correctNormalizedSet = new Set(correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, '')));
+
+      const isCorrect = userNormalizedSet.size === correctNormalizedSet.size &&
+                       [...userNormalizedSet].every(ans => correctNormalizedSet.has(ans));
+
+      console.log(isCorrect ? '✅ Normalized match for distinct roots' : '❌ No match for distinct roots');
 
       return {
         isCorrect,
@@ -503,6 +576,8 @@ export default function TrainingMathInput({
 
   // Helper function to validate systems of equations answers (requires ordered pair)
   const validateSystemsAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
+    console.log('🔍 validateSystemsAnswer called with:', userAnswer);
+    
     // Parse user input - expect (x, y) format or x, y format
     let userAnswers: string[] = [];
 
@@ -540,47 +615,64 @@ export default function TrainingMathInput({
       };
     }
 
+    console.log('🔍 userAnswers:', userAnswers);
+    console.log('🔍 correctAnswers:', correctAnswers);
+
     // For systems, order matters (x-value, y-value)
-    let isCorrect = false;
-
-    if (ce) {
-      try {
-        const userSimplified = userAnswers.map(ans => ce.parse(ans).simplify().latex);
-        const correctSimplified = correctAnswers.map(ans => ce.parse(String(ans)).simplify().latex);
-
-        isCorrect = userSimplified[0] === correctSimplified[0] &&
-                   userSimplified[1] === correctSimplified[1];
-
-        return {
-          isCorrect,
-          userAnswerSimplified: `(${userSimplified[0]}, ${userSimplified[1]})`,
-          correctAnswerSimplified: `(${correctSimplified[0]}, ${correctSimplified[1]})`,
-          errorMessage: isCorrect ? undefined : 'Order matters: first value is x, second is y'
-        };
-      } catch (error) {
-        console.warn('Error using MathLive for systems validation, falling back to string comparison');
-      }
+    // Step 1: Direct comparison
+    if (userAnswers[0].trim() === correctAnswers[0].trim() && 
+        userAnswers[1].trim() === correctAnswers[1].trim()) {
+      console.log('✅ Direct match for systems');
+      return {
+        isCorrect: true,
+        userAnswerSimplified: `(${userAnswers[0]}, ${userAnswers[1]})`,
+        correctAnswerSimplified: `(${correctAnswers[0]}, ${correctAnswers[1]})`
+      };
     }
 
-    // Fallback to string comparison
-    const userNormalized = userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, ''));
-    const correctNormalized = correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, ''));
+    // Step 2: Strict validation for each coordinate (order matters)
+    const xValidation = validateAnswer(userAnswers[0], correctAnswers[0]);
+    const yValidation = validateAnswer(userAnswers[1], correctAnswers[1]);
+    
+    console.log(`🔍 X validation ("${userAnswers[0]}" vs "${correctAnswers[0]}"):`, xValidation);
+    console.log(`🔍 Y validation ("${userAnswers[1]}" vs "${correctAnswers[1]}"):`, yValidation);
 
-    isCorrect = userNormalized[0] === correctNormalized[0] &&
-               userNormalized[1] === correctNormalized[1];
+    // Check if both coordinates are correct and simplified
+    if (xValidation.isCorrect && yValidation.isCorrect) {
+      console.log('✅ Both coordinates correct and simplified');
+      return {
+        isCorrect: true,
+        userAnswerSimplified: `(${userAnswers[0]}, ${userAnswers[1]})`,
+        correctAnswerSimplified: `(${correctAnswers[0]}, ${correctAnswers[1]})`
+      };
+    }
 
+    // Check if either coordinate needs simplification
+    if (xValidation.needsFeedback || yValidation.needsFeedback) {
+      console.log('🟡 One or both coordinates need simplification');
+      const feedbackMessage = xValidation.needsFeedback ? 
+        xValidation.feedbackMessage : yValidation.feedbackMessage;
+      return {
+        isCorrect: false,
+        userAnswerSimplified: `(${userAnswers[0]}, ${userAnswers[1]})`,
+        correctAnswerSimplified: `(${correctAnswers[0]}, ${correctAnswers[1]})`,
+        errorMessage: feedbackMessage || 'Please simplify your answer further.'
+      };
+    }
+
+    // Neither coordinate matches
+    console.log('❌ Coordinates are incorrect');
     return {
-      isCorrect,
+      isCorrect: false,
       userAnswerSimplified: `(${userAnswers[0]}, ${userAnswers[1]})`,
       correctAnswerSimplified: `(${correctAnswers[0]}, ${correctAnswers[1]})`,
-      errorMessage: isCorrect ? undefined : 'Order matters: first value is x, second is y'
+      errorMessage: 'Order matters: first value is x, second is y'
     };
   };
 
-  // Function to verify answer using MathLive's simplify
+  // Strict validation strategy: check canonical form first, then equivalence
   const verifyAnswer = (userAnswer: string): VerificationResult => {
-    // console.log('🔍 verifyAnswer called with:', userAnswer);
-    // console.log('🔍 problem:', problem);
+    console.log('🔍 verifyAnswer called with:', userAnswer);
 
     if (!problem) {
       console.log('❌ No problem available');
@@ -592,7 +684,7 @@ export default function TrainingMathInput({
       };
     }
 
-    // console.log('🔍 problem.problemType:', problem.problemType);
+    console.log('🔍 problem.problemType:', problem.problemType);
 
     // Check compute engine availability
     const ce = (window as any)?.MathfieldElement?.computeEngine;
@@ -611,288 +703,70 @@ export default function TrainingMathInput({
         return validateSystemsAnswer(userAnswer, problem, ce);
       }
 
-      console.log('🔍 Using standard validation');
-      // Determine the correct answer to compare against
-      let correctAnswerStr: string;
-
-      // If answerRHS exists, use it (user typically enters just the RHS part)
+      console.log('🔍 Using strict validation strategy');
+      
+      // Get the expected answer
+      let expectedAnswer: string;
       if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-        if (Array.isArray(problem.answerRHS)) {
-          // For arrays (like multiple solutions), check if user answer matches any
-          if (problem.problemType === 'polynomial-simplification') {
-            // For polynomial simplification, use exact string matching
-            const userNormalized = userAnswer.replace(/\s+/g, '');
-
-            for (const ans of problem.answerRHS) {
-              const correctNormalized = String(ans).replace(/\s+/g, '');
-              if (userNormalized === correctNormalized) {
-                return {
-                  isCorrect: true,
-                  userAnswerSimplified: userAnswer.trim(),
-                  correctAnswerSimplified: String(ans).trim()
-                };
-              }
-            }
-          } else {
-            // For other problem types, use MathLive's simplification
-            const userSimplified = ce.parse(userAnswer).simplify().latex;
-
-            for (const ans of problem.answerRHS) {
-              try {
-                const correctSimplified = ce.parse(String(ans)).simplify().latex;
-                if (userSimplified === correctSimplified) {
-                  return {
-                    isCorrect: true,
-                    userAnswerSimplified: userSimplified,
-                    correctAnswerSimplified: correctSimplified
-                  };
-                }
-              } catch (error) {
-                console.warn(`Error processing answerRHS option ${ans}:`, error);
-              }
-            }
-          }
-
-          // If no match found, return false with first answer as reference
-          correctAnswerStr = String(problem.answerRHS[0]);
-        } else {
-          correctAnswerStr = String(problem.answerRHS);
-        }
-      }
-      // If answerRHS doesn't exist, check if user entered the full answer (answerLHS + answer)
-      else if (problem.answerLHS && problem.answer) {
-        const fullAnswer = `${problem.answerLHS}${problem.answer}`;
-
-        if (problem.problemType === 'polynomial-simplification') {
-          // For polynomial simplification, use exact string matching
-          const userNormalized = userAnswer.replace(/\s+/g, '');
-          const fullAnswerNormalized = fullAnswer.replace(/\s+/g, '');
-
-          if (userNormalized === fullAnswerNormalized) {
-            return {
-              isCorrect: true,
-              userAnswerSimplified: userAnswer.trim(),
-              correctAnswerSimplified: fullAnswer.trim()
-            };
-          }
-
-          // Also check if they just entered the answer part (without LHS)
-          if (Array.isArray(problem.answer)) {
-            for (const ans of problem.answer) {
-              const correctNormalized = String(ans).replace(/\s+/g, '');
-              if (userNormalized === correctNormalized) {
-                return {
-                  isCorrect: true,
-                  userAnswerSimplified: userAnswer.trim(),
-                  correctAnswerSimplified: String(ans).trim()
-                };
-              }
-            }
-            correctAnswerStr = String(problem.answer[0]);
-          } else {
-            const answerOnlyNormalized = String(problem.answer).replace(/\s+/g, '');
-            if (userNormalized === answerOnlyNormalized) {
-              return {
-                isCorrect: true,
-                userAnswerSimplified: userAnswer.trim(),
-                correctAnswerSimplified: String(problem.answer).trim()
-              };
-            }
-            correctAnswerStr = String(problem.answer);
-          }
-        } else {
-          // For other problem types, use MathLive's simplification
-          const userSimplified = ce.parse(userAnswer).simplify().latex;
-          const correctSimplified = ce.parse(fullAnswer).simplify().latex;
-
-          if (userSimplified === correctSimplified) {
-            return {
-              isCorrect: true,
-              userAnswerSimplified: userSimplified,
-              correctAnswerSimplified: correctSimplified
-            };
-          }
-
-          // Also check if they just entered the answer part (without LHS)
-          if (Array.isArray(problem.answer)) {
-            for (const ans of problem.answer) {
-              try {
-                const correctSimplified = ce.parse(String(ans)).simplify().latex;
-                if (userSimplified === correctSimplified) {
-                  return {
-                    isCorrect: true,
-                    userAnswerSimplified: userSimplified,
-                    correctAnswerSimplified: correctSimplified
-                  };
-                }
-              } catch (error) {
-                console.warn(`Error processing answer option ${ans}:`, error);
-              }
-            }
-            correctAnswerStr = String(problem.answer[0]);
-          } else {
-            const answerOnlySimplified = ce.parse(String(problem.answer)).simplify().latex;
-            if (userSimplified === answerOnlySimplified) {
-              return {
-                isCorrect: true,
-                userAnswerSimplified: userSimplified,
-                correctAnswerSimplified: answerOnlySimplified
-              };
-            }
-            correctAnswerStr = String(problem.answer);
-          }
-        }
-      }
-      // Fallback to original answer field
-      else if (Array.isArray(problem.answer)) {
-        // For arrays (like multiple solutions), check if user answer matches any
-        if (problem.problemType === 'polynomial-simplification') {
-          // For polynomial simplification, use exact string matching
-          const userNormalized = userAnswer.replace(/\s+/g, '');
-
-          for (const ans of problem.answer) {
-            const correctNormalized = String(ans).replace(/\s+/g, '');
-            if (userNormalized === correctNormalized) {
-              return {
-                isCorrect: true,
-                userAnswerSimplified: userAnswer.trim(),
-                correctAnswerSimplified: String(ans).trim()
-              };
-            }
-          }
-        } else {
-          // For other problem types, use MathLive's simplification
-          const userSimplified = ce.parse(userAnswer).simplify().latex;
-
-          for (const ans of problem.answer) {
-            try {
-              const correctSimplified = ce.parse(String(ans)).simplify().latex;
-              if (userSimplified === correctSimplified) {
-                return {
-                  isCorrect: true,
-                  userAnswerSimplified: userSimplified,
-                  correctAnswerSimplified: correctSimplified
-                };
-              }
-            } catch (error) {
-              console.warn(`Error processing answer option ${ans}:`, error);
-            }
-          }
-        }
-
-        // If no match found, return false with first answer as reference
-        correctAnswerStr = String(problem.answer[0]);
+        expectedAnswer = Array.isArray(problem.answerRHS) ? String(problem.answerRHS[0]) : String(problem.answerRHS);
+      } else if (problem.answerLHS && problem.answer) {
+        // For "solve for x" problems, use just the answer part, not the full equation
+        expectedAnswer = Array.isArray(problem.answer) ? String(problem.answer[0]) : String(problem.answer);
       } else {
-        correctAnswerStr = String(problem.answer);
+        expectedAnswer = Array.isArray(problem.answer) ? String(problem.answer[0]) : String(problem.answer);
       }
 
-      // For polynomial simplification, use exact string matching (excluding whitespace)
-      // For other problems, use MathLive's simplification for semantic comparison
-      if (problem.problemType === 'polynomial-simplification') {
-        // Normalize both answers by removing whitespace and comparing exactly
-        const userNormalized = userAnswer.replace(/\s+/g, '');
-        const correctNormalized = correctAnswerStr.replace(/\s+/g, '');
+      console.log('🔍 Expected answer:', expectedAnswer);
 
-        const isCorrect = userNormalized === correctNormalized;
+      // Use the strict validation system
+      const validationResult = validateAnswer(userAnswer, expectedAnswer);
+      console.log('🔍 Strict validation result:', validationResult);
 
+      const userTrimmed = userAnswer.trim();
+      const expectedTrimmed = expectedAnswer.trim();
+
+      if (validationResult.isCorrect) {
+        console.log('✅ Answer is correct and in canonical form');
         return {
-          isCorrect,
-          userAnswerSimplified: userAnswer.trim(),
-          correctAnswerSimplified: correctAnswerStr.trim()
+          isCorrect: true,
+          userAnswerSimplified: userTrimmed,
+          correctAnswerSimplified: expectedTrimmed
+        };
+      } else if (validationResult.needsFeedback) {
+        console.log('🟡 Answer is mathematically correct but needs simplification');
+        return {
+          isCorrect: false,
+          userAnswerSimplified: userTrimmed,
+          correctAnswerSimplified: expectedTrimmed,
+          errorMessage: validationResult.feedbackMessage || 'Please simplify your answer further.'
         };
       } else {
-        // For non-polynomial problems, use MathLive's compute engine for semantic comparison
-        const userSimplified = ce.parse(userAnswer).simplify().latex;
-        const correctSimplified = ce.parse(correctAnswerStr).simplify().latex;
-
-        const isCorrect = userSimplified === correctSimplified;
-
+        console.log('❌ Answer is incorrect');
         return {
-          isCorrect,
-          userAnswerSimplified: userSimplified,
-          correctAnswerSimplified: correctSimplified
+          isCorrect: false,
+          userAnswerSimplified: userTrimmed,
+          correctAnswerSimplified: expectedTrimmed
         };
       }
 
     } catch (error) {
       console.error('Error during answer verification:', error);
+      
+      // Ultimate fallback
+      const userTrimmed = userAnswer.trim().toLowerCase();
+      const expectedAnswer = problem.answerRHS !== undefined && problem.answerRHS !== null 
+        ? (Array.isArray(problem.answerRHS) ? String(problem.answerRHS[0]) : String(problem.answerRHS))
+        : (Array.isArray(problem.answer) ? String(problem.answer[0]) : String(problem.answer));
+      const expectedTrimmed = expectedAnswer.trim().toLowerCase();
 
-      // Fallback validation logic
-      if (problem.problemType === 'polynomial-simplification') {
-        // For polynomial simplification, use exact string matching even in fallback
-        const userNormalized = userAnswer.replace(/\s+/g, '');
+      const isCorrect = userTrimmed === expectedTrimmed;
 
-        // Determine correct answer for fallback comparison
-        let correctAnswer: string;
-        let isCorrect = false;
-
-        if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-          const correctNormalized = Array.isArray(problem.answerRHS)
-            ? String(problem.answerRHS[0]).replace(/\s+/g, '')
-            : String(problem.answerRHS).replace(/\s+/g, '');
-          correctAnswer = Array.isArray(problem.answerRHS) ? String(problem.answerRHS[0]) : String(problem.answerRHS);
-          isCorrect = userNormalized === correctNormalized;
-        } else if (problem.answerLHS && problem.answer) {
-          const fullAnswer = `${problem.answerLHS}${problem.answer}`;
-          const fullAnswerNormalized = fullAnswer.replace(/\s+/g, '');
-          const answerOnly = Array.isArray(problem.answer) ? String(problem.answer[0]) : String(problem.answer);
-          const answerOnlyNormalized = answerOnly.replace(/\s+/g, '');
-
-          isCorrect = userNormalized === fullAnswerNormalized || userNormalized === answerOnlyNormalized;
-          correctAnswer = userNormalized === fullAnswerNormalized ? fullAnswer : answerOnly;
-        } else {
-          correctAnswer = Array.isArray(problem.answer) ? String(problem.answer[0]) : String(problem.answer);
-          const correctNormalized = correctAnswer.replace(/\s+/g, '');
-          isCorrect = userNormalized === correctNormalized;
-        }
-
-        return {
-          isCorrect,
-          userAnswerSimplified: userAnswer.trim(),
-          correctAnswerSimplified: correctAnswer.trim(),
-          errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
-        };
-      } else {
-        // For other problem types, use case-insensitive string comparison as fallback
-        const userTrimmed = userAnswer.trim().toLowerCase();
-
-        // Determine correct answer for fallback comparison
-        let correctStr: string;
-        if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-          correctStr = Array.isArray(problem.answerRHS)
-            ? String(problem.answerRHS[0]).toLowerCase()
-            : String(problem.answerRHS).toLowerCase();
-        } else if (problem.answerLHS && problem.answer) {
-          // Try both full answer and just the answer part
-          const fullAnswer = `${problem.answerLHS}${problem.answer}`.toLowerCase();
-          const answerOnly = Array.isArray(problem.answer)
-            ? String(problem.answer[0]).toLowerCase()
-            : String(problem.answer).toLowerCase();
-
-          const isCorrect = userTrimmed === fullAnswer || userTrimmed === answerOnly;
-          correctStr = userTrimmed === fullAnswer ? fullAnswer : answerOnly;
-
-          return {
-            isCorrect,
-            userAnswerSimplified: userAnswer.trim(),
-            correctAnswerSimplified: isCorrect ? correctStr : fullAnswer,
-            errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
-          };
-        } else {
-          correctStr = Array.isArray(problem.answer)
-            ? String(problem.answer[0]).toLowerCase()
-            : String(problem.answer).toLowerCase();
-        }
-
-        const isCorrect = userTrimmed === correctStr;
-
-        return {
-          isCorrect,
-          userAnswerSimplified: userAnswer.trim(),
-          correctAnswerSimplified: correctStr,
-          errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
-        };
-      }
+      return {
+        isCorrect,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: expectedAnswer.trim(),
+        errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
     }
   };
 
@@ -1244,7 +1118,7 @@ export default function TrainingMathInput({
             mathField.mathVirtualKeyboardPolicy = 'auto';
             mathField.smartFence = true;
             mathField.smartSuperscript = false;
-            mathField.removeExtraneousParentheses = true;
+            mathField.removeExtraneousParentheses = false; // Keep braces in fractions
 
             // Configure custom virtual keyboard
             configureVirtualKeyboard(mathField);

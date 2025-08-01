@@ -18,8 +18,23 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
       break;
     case 'quadratic-completing-square':
       answerSchema = {
-        type: 'string',
-        description: 'For double roots (repeated solution), provide a single solution like "3" or "\\frac{1}{2}". For distinct solutions, provide both solutions separated by comma and space like "2, -3" or "\\frac{1}{2}, \\frac{3}{4}". Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
+        oneOf: [
+          {
+            type: 'string',
+            description: 'For double roots (repeated solution), provide a single solution like "3" or "\\frac{1}{2}". Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
+          },
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+              description: 'Each solution as a string using LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
+            },
+            minItems: 2,
+            maxItems: 2,
+            description: 'For distinct solutions, provide an array of exactly 2 solutions like ["2", "-3"] or ["\\frac{1}{2}", "\\frac{3}{4}"].'
+          }
+        ],
+        description: 'For double roots (repeated solution), provide a single string. For distinct solutions, provide an array of exactly 2 strings. Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
       };
       includesAnswerLHS = true;
       break;
