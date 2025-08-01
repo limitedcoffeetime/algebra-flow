@@ -68,7 +68,7 @@ export default function MathLiveTest() {
       // Correct answer flow
       Alert.alert(
         '🎉 Correct!',
-        `Great job! Your answer "${result.userAnswerSimplified}" is correct.\n\nWould you like to see the step-by-step solution?`,
+        'Great job! You solved the equation correctly.\n\nWould you like to see the step-by-step solution?',
         [
           {
             text: 'No, Next Problem',
@@ -89,7 +89,7 @@ export default function MathLiveTest() {
       // Incorrect answer flow
       Alert.alert(
         '❌ Not Quite Right',
-        `Your answer: ${result.userAnswerSimplified}\nCorrect answer: ${result.correctAnswerSimplified}${result.errorMessage ? `\n\nNote: ${result.errorMessage}` : ''}`,
+        `${result.errorMessage ? result.errorMessage : 'Would you like to try again or see the solution?'}`,
         [
           {
             text: 'Try Again',
