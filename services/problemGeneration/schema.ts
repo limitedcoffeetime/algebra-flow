@@ -18,23 +18,8 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
       break;
     case 'quadratic-completing-square':
       answerSchema = {
-        oneOf: [
-          {
-            type: 'string',
-            description: 'Single solution for double roots (repeated solution). Use LaTeX format for fractions like \\frac{2}{3} instead of decimals. For integers, use plain numbers like "5".'
-          },
-          {
-            type: 'array',
-            items: {
-              type: 'string',
-              description: 'Use LaTeX format for fractions like \\frac{2}{3} instead of decimals. For integers, use plain numbers like "5".'
-            },
-            minItems: 2,
-            maxItems: 2,
-            description: 'Array of BOTH distinct solutions in LaTeX format. Use \\frac{a}{b} for fractions, plain numbers for integers.'
-          }
-        ],
-        description: 'For double roots (repeated solution), provide a single string. For distinct solutions, provide an array of exactly 2 solutions. Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.',
+        type: 'string',
+        description: 'For double roots (repeated solution), provide a single solution like "3" or "\\frac{1}{2}". For distinct solutions, provide both solutions separated by comma and space like "2, -3" or "\\frac{1}{2}, \\frac{3}{4}". Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
       };
       includesAnswerLHS = true;
       break;
@@ -134,18 +119,10 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
       type: 'string',
       description: 'The left-hand side of the answer (e.g., "x = " or "y = "). Only for problems that solve for a variable.'
     };
-    // Handle answerRHS - if answerSchema has oneOf, we need to assign it directly
-    if (answerSchema.oneOf) {
-      problemProperties.answerRHS = {
-        oneOf: answerSchema.oneOf,
-        description: (answerSchema.description || 'The right-hand side value') + ' Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
-      };
-    } else {
-      problemProperties.answerRHS = {
-        ...answerSchema,
-        description: (answerSchema.description || 'The right-hand side value') + ' Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
-      };
-    }
+    problemProperties.answerRHS = {
+      ...answerSchema,
+      description: (answerSchema.description || 'The right-hand side value') + ' Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
+    };
     requiredFields.push('answerLHS', 'answerRHS');
   } else {
     // For problems like simplification or systems, just use single answer
