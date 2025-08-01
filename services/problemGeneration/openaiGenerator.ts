@@ -14,7 +14,7 @@ export interface SolutionStep {
 }
 
 export interface GeneratedProblem {
-  equation: string;
+  equations: string[]; // Array of equations (always used - single item for regular problems, multiple for systems)
   direction: string;
   answer: unknown;
   answerLHS?: string; // e.g., "x = " - for problems that solve for a variable
@@ -39,7 +39,44 @@ export async function generateProblemsWithAI(
 Problem Type Specific Instructions:
 ${typeInstructions.instructions}
 
+CRITICAL DIRECTION FIELD RULES:
+- The "direction" field should NEVER contain mathematical expressions or symbols
+- Do NOT restate the problem equation - the actual equation is displayed separately below
+- Use simple English instructions only: "Solve for x", "Simplify the expression", "Factor the polynomial", "Solve the system of equations"
+- NO LaTeX, NO fractions, NO variables, NO equations in the direction field
+- Math rendering is NOT supported in this field
+
+EXAMPLES OF GOOD DIRECTIONS:
+✓ "Solve for x"
+✓ "Simplify the expression" 
+✓ "Factor the polynomial"
+✓ "Solve the system of equations"
+
+EXAMPLES OF BAD DIRECTIONS (DO NOT USE):
+✗ "Simplify the polynomial expression \\frac{3}{4}(x+4)^2 - 3(x-2) + x(x-1)"
+✗ "Solve 2x + 3 = 7 for x"
+✗ "Find the value of x in the equation x^2 - 4 = 0"
+
 ${getSolutionStepsInstructions()}
+
+CRITICAL SOLUTION STEPS EXPLANATION RULES:
+- The "explanation" field in solution steps should avoid explicit mathematical notation
+- Do NOT write fractions like "\\frac{2}{3}" or "2/3" in explanations
+- Do NOT write exponents like "x^2" in explanations  
+- Instead use descriptive language: "Add the constant term", "Divide by the coefficient", "Square both sides"
+- Simple variables (x, y, z) and integers are acceptable in explanations
+- Save all complex math for the "mathExpression" field
+
+EXAMPLES OF GOOD EXPLANATIONS:
+✓ "Add 5 to both sides"
+✓ "Divide by the coefficient of x"  
+✓ "Multiply the first equation by 2"
+✓ "Substitute the value back into the original equation"
+
+EXAMPLES OF BAD EXPLANATIONS (DO NOT USE):
+✗ "Add \\frac{3}{4} to both sides"
+✗ "Multiply by x^2 + 1"
+✗ "The coefficient \\frac{2}{3} becomes \\frac{3}{2}"
 
 CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
 - For NUMERIC answers: must be integers or simple fractions (like 1/2, 2/3, 3/4, 5/6)
@@ -49,7 +86,7 @@ CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
 - Design problems so the algebra works out to clean, simple answers
 - Students should never need a calculator to verify the answer
 
-ACCEPTABLE NUMERIC ANSWERS: 3, -2, 1/2, 2/3, 0, 7, -1/4, 5/3
+ACCEPTABLE NUMERIC ANSWERS: 3, -2, \\frac{1}{2}, \\frac{2}{3}, 0, 7, \\frac{-1}{4}, \\frac{5}{3}
 ACCEPTABLE VARIABLE ANSWERS: \\frac{5-3y}{2}, \\frac{2x+7}{3}, 3x^2 + 2x - 1
 UNACCEPTABLE ANSWERS: 1.2839, 2.7182, 0.3333..., √2, 3.14159, 1.7320
 
@@ -118,7 +155,7 @@ Constraints:
       logger.info(`🔍 Processing problem ${index + 1}:`, {
         type: p.problemType,
         difficulty: p.difficulty,
-        equation: p.equation.substring(0, 50) + '...',
+        equations: p.equations.map((eq: string) => eq.substring(0, 50) + '...'),
         hasAnswer: !!p.answer,
         hasLHS: !!p.answerLHS,
         hasRHS: !!p.answerRHS
@@ -138,7 +175,7 @@ Constraints:
       logger.info(`✅ Problem ${index + 1} validation target:`, answerToValidate);
 
       return {
-        equation: p.equation,
+        equations: p.equations, // Always use equations array
         direction: p.direction,
         answer: p.answer,
         answerLHS: p.answerLHS,

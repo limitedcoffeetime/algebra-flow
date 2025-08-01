@@ -25,10 +25,12 @@ export const useAnswerSubmission = () => {
         return;
       }
 
-      // TODO: Replace with new validation package
-      // For now, using the database service's validation
       const result = await problemStore.submitAnswer(userAnswer);
-      await userProgressStore.recordAttempt(result.isCorrect);
+      
+      // Only record attempt if not giving feedback (correct or definitely wrong)
+      if (!result.needsFeedback) {
+        await userProgressStore.recordAttempt(result.isCorrect);
+      }
 
       if (result.isCorrect) {
         Alert.alert(
@@ -37,6 +39,14 @@ export const useAnswerSubmission = () => {
           [
             { text: 'View Solution', onPress: () => onSuccess?.() },
             { text: 'Next Problem', onPress: () => problemStore.loadNextProblem() },
+          ]
+        );
+      } else if (result.needsFeedback && result.feedbackMessage) {
+        Alert.alert(
+          'Almost there! 💡',
+          result.feedbackMessage,
+          [
+            { text: 'Try Again', style: 'default' }
           ]
         );
       } else {

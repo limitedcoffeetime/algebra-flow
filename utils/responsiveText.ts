@@ -1,115 +1,106 @@
 /**
- * Utility functions for responsive text sizing and line breaking in mathematical content
+ * Responsive text utilities with dynamic font sizing
  */
 
 export interface ResponsiveTextSettings {
   equationFontSize: number;
   directionFontSize: number;
-  shouldWrap: boolean;
 }
 
 /**
- * Calculate responsive font size based on equation length and direction length
- * @param equation - The mathematical equation string
- * @param direction - The problem direction/instruction text
- * @param containerWidth - Available container width in pixels
+ * Calculate responsive font sizes based on content and container
+ * @param equation - Equation text to analyze
+ * @param _direction - Direction text (unused but kept for API compatibility)
+ * @param containerWidth - Available container width
  * @param platform - Platform type for different base sizes
- * @returns ResponsiveTextSettings object
+ * @returns Responsive font settings
  */
 export function calculateResponsiveFontSize(
   equation: string,
-  direction: string,
+  _direction: string,
   containerWidth: number = 350,
   platform: 'web' | 'native' = 'web'
 ): ResponsiveTextSettings {
-  // Base font sizes (different for web vs native)
-  const baseEquationSize = platform === 'web' ? 27 : 31;
-  const baseDirectionSize = 18;
+  // Base font sizes
+  const baseEquationFontSize = platform === 'web' ? 24 : 28;
+  const directionFontSize = 16;
 
-  // Calculate estimated width for equation (rough approximation)
-  // LaTeX equations with fractions, exponents, etc. can be quite wide
-  const equationComplexity = (equation.match(/\\frac|\\sqrt|\\pm|\^|\{|\}/g) || []).length;
-  const estimatedEquationWidth = equation.length * (platform === 'web' ? 12 : 14) + equationComplexity * (platform === 'web' ? 20 : 25);
-
-  // Calculate estimated width for direction
-  const estimatedDirectionWidth = direction.length * 8;
-
-  // Determine if we need to scale down the equation
-  let equationFontSize = baseEquationSize;
-  let shouldWrap = false;
-
-  const widthThreshold = platform === 'web' ? 0.85 : 0.8;
-
-  if (estimatedEquationWidth > containerWidth * widthThreshold) {
-    // Scale down equation font if it's too wide
-    const scaleFactor = (containerWidth * widthThreshold) / estimatedEquationWidth;
-    const minSize = platform === 'web' ? 19 : 21;
-    equationFontSize = Math.max(minSize, Math.floor(baseEquationSize * scaleFactor));
-
-    // If equation is still too large even after scaling, enable wrapping
-    const wrapThreshold = platform === 'web' ? 21 : 23;
-    if (equationFontSize <= wrapThreshold) {
-      shouldWrap = true;
-    }
-  }
-
-  // Direction font size scaling (less aggressive)
-  let directionFontSize = baseDirectionSize;
-  if (estimatedDirectionWidth > containerWidth * 0.9) {
-    const scaleFactor = (containerWidth * 0.9) / estimatedDirectionWidth;
-    directionFontSize = Math.max(16, Math.floor(baseDirectionSize * scaleFactor));
+  // Rough estimation of content width - LaTeX content tends to be wider
+  const roughCharWidth = baseEquationFontSize * 0.6; // Approximate character width
+  const estimatedWidth = equation.length * roughCharWidth;
+  
+  // If estimated width exceeds container, scale down the font (be less aggressive)
+  let equationFontSize = baseEquationFontSize;
+  if (estimatedWidth > containerWidth * 0.95) { // Leave only 5% margin
+    const scaleFactor = (containerWidth * 0.95) / estimatedWidth;
+    equationFontSize = Math.max(baseEquationFontSize * scaleFactor, 16); // Higher minimum 16px
   }
 
   return {
-    equationFontSize,
-    directionFontSize,
-    shouldWrap
+    equationFontSize: Math.round(equationFontSize),
+    directionFontSize
   };
 }
 
 /**
- * Add intelligent line breaks to equations for better wrapping
- * @param equation - The mathematical equation string
- * @returns Equation with intelligent line break opportunities
+ * Set up responsive font sizing for a math field element
+ * @param mathField - The math field element to make responsive
+ * @param baseFontSize - Starting font size
  */
-export function addIntelligentLineBreaks(equation: string): string {
-  if (equation.length < 40) return equation; // Short equations don't need breaks
+export function setupResponsiveMathField(mathField: HTMLElement, baseFontSize: number = 24) {
+  if (!mathField || !window.ResizeObserver) return;
 
-  let result = equation;
+  let resizeObserver: ResizeObserver | null = null;
+  
+  const adjustFontSize = () => {
+    const container = mathField.closest('div') as HTMLElement;
+    if (!container) return;
 
-  // Only add breaks if the equation is really long
-  if (equation.length > 60) {
-    // Add potential line break opportunities around key operators
-    // Using HTML word break opportunities for web platform
-    result = result.replace(/(\s*=\s*)/g, '<span style="white-space: normal;">$1</span>');
-    result = result.replace(/(\s*\+\s*(?![^{]*}))/g, '$1<wbr>'); // Word break opportunity after plus
-    result = result.replace(/(\s*-\s*(?![^{]*}))/g, '$1<wbr>'); // Word break opportunity after minus
+    const containerWidth = container.offsetWidth;
+    const contentWidth = mathField.scrollWidth;
+    
+    // If content is wider than container, reduce font size
+    if (contentWidth > containerWidth * 0.98) { // Only 2% tolerance - be less aggressive
+      const scaleFactor = (containerWidth * 0.95) / contentWidth; // Use more space
+      const newFontSize = Math.max(baseFontSize * scaleFactor, 14); // Higher minimum
+      mathField.style.fontSize = `${Math.round(newFontSize)}px`;
+    } else if (contentWidth < containerWidth * 0.85) {
+      // If content is smaller, we can increase font size up to base
+      const scaleFactor = Math.min((containerWidth * 0.92) / contentWidth, 1);
+      const newFontSize = Math.min(baseFontSize * scaleFactor, baseFontSize);
+      mathField.style.fontSize = `${Math.round(newFontSize)}px`;
+    }
+  };
+
+  // Initial adjustment
+  setTimeout(adjustFontSize, 100);
+
+  // Set up mutation observer to watch for content changes
+  const mutationObserver = new MutationObserver(() => {
+    setTimeout(adjustFontSize, 50);
+  });
+
+  mutationObserver.observe(mathField, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
+
+  // Set up resize observer for container size changes
+  resizeObserver = new ResizeObserver(() => {
+    setTimeout(adjustFontSize, 50);
+  });
+
+  const container = mathField.closest('div');
+  if (container) {
+    resizeObserver.observe(container);
   }
 
-  return result;
-}
-
-/**
- * Estimate text width for responsive calculations
- * @param text - Text to measure
- * @param fontSize - Font size in pixels
- * @param isMonospace - Whether the font is monospace
- * @returns Estimated width in pixels
- */
-export function estimateTextWidth(text: string, fontSize: number, isMonospace: boolean = true): number {
-  // Rough approximation - actual measurement would require DOM
-  const charWidth = isMonospace ? fontSize * 0.6 : fontSize * 0.5;
-  return text.length * charWidth;
-}
-
-/**
- * Check if text needs responsive treatment
- * @param text - Text to check
- * @param maxWidth - Maximum available width
- * @param fontSize - Current font size
- * @returns Whether responsive treatment is needed
- */
-export function needsResponsiveTreatment(text: string, maxWidth: number, fontSize: number): boolean {
-  const estimatedWidth = estimateTextWidth(text, fontSize);
-  return estimatedWidth > maxWidth * 0.9;
+  // Return cleanup function
+  return () => {
+    mutationObserver.disconnect();
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+    }
+  };
 }

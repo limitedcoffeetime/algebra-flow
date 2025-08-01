@@ -196,6 +196,55 @@
       "difficulty": "easy",
       "problemType": "linear-one-variable",
       "isCompleted": false
+    },
+    {
+      "id": "prob_007",
+      "batchId": "batch_sample_002",
+      "equation": "2x + y = 8",
+      "equations": ["2x + y = 8", "x - y = 1"],
+      "direction": "Solve the system of equations",
+      "answer": ["3", "2"],
+      "solutionSteps": [
+        {
+          "explanation": "Use elimination method. Add the equations to eliminate y",
+          "mathExpression": "(2x + y) + (x - y) = 8 + 1",
+          "isEquation": true
+        },
+        {
+          "explanation": "Simplify the left side",
+          "mathExpression": "3x = 9",
+          "isEquation": true
+        },
+        {
+          "explanation": "Solve for x",
+          "mathExpression": "x = 3",
+          "isEquation": true
+        },
+        {
+          "explanation": "Substitute x = 3 into the first equation",
+          "mathExpression": "2(3) + y = 8",
+          "isEquation": true
+        },
+        {
+          "explanation": "Simplify",
+          "mathExpression": "6 + y = 8",
+          "isEquation": true
+        },
+        {
+          "explanation": "Solve for y",
+          "mathExpression": "y = 2",
+          "isEquation": true
+        },
+        {
+          "explanation": "Check: Verify in both equations",
+          "mathExpression": "2(3) + 2 = 8 \\text{ and } 3 - 2 = 1",
+          "isEquation": false
+        }
+      ],
+      "variables": ["x", "y"],
+      "difficulty": "medium",
+      "problemType": "systems-of-equations",
+      "isCompleted": false
     }
   ]
 }

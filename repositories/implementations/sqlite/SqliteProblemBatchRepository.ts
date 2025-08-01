@@ -182,11 +182,8 @@ export class SqliteProblemBatchRepository implements IProblemBatchRepository {
         .filter(id => !validBatchIds.includes(id));
 
       if (orphanedBatchIds.length === 0) {
-        logger.info('No orphaned batches found');
         return 0;
       }
-
-      logger.info(`Found ${orphanedBatchIds.length} orphaned batches: ${orphanedBatchIds.join(', ')}`);
 
       // Delete orphaned batches
       const deletedCount = await this.deleteMany(orphanedBatchIds);

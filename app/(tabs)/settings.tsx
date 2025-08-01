@@ -1,5 +1,6 @@
 import BatchManager from '@/components/BatchManager';
 import Button from '@/components/Button';
+import { databaseService } from '@/services/domain';
 import { BatchInfo } from '@/services/types/api';
 import { useSyncStore, useUserProgressStore } from '@/store';
 import { ErrorStrategy, handleError } from '@/utils/errorHandler';
@@ -7,6 +8,7 @@ import { logger } from '@/utils/logger';
 import * as Sentry from '@sentry/react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Simple function to get database type - will remain SQLite for now
 const getDatabaseType = () => 'SQLite';
@@ -14,8 +16,10 @@ const getDatabaseType = () => 'SQLite';
 export default function SettingsScreen() {
   const userProgressStore = useUserProgressStore();
   const syncStore = useSyncStore();
+  const insets = useSafeAreaInsets();
 
   const [isResetting, setIsResetting] = useState(false);
+  const [isClearingData, setIsClearingData] = useState(false);
   const [batchesInfo, setBatchesInfo] = useState<BatchInfo[]>([]);
   const [isLoadingBatches, setIsLoadingBatches] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -105,8 +109,63 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleClearAllData = () => {
+    Alert.alert(
+      'Clear All Data',
+      'Are you sure you want to clear all data? This will delete all problem batches and progress. The app will automatically re-sync fresh data from AWS.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            setIsClearingData(true);
+            try {
+              logger.info('🗑️ Starting clear all data process');
+              
+              // Clear all batches (this will also delete all problems due to FK constraints)
+              logger.info('🗑️ Deleting all batches and problems');
+              await databaseService.batches.deleteAll();
+              logger.info('✅ All batches and problems deleted');
+              
+              // Reset user progress
+              logger.info('🔄 Resetting user progress');
+              await userProgressStore.resetProgress();
+              logger.info('✅ User progress reset');
+              
+              // Force a fresh sync to get updated data with equations field
+              logger.info('🔄 Forcing fresh sync after clearing all data');
+              const hasNewProblems = await syncStore.forceSync();
+              logger.info(`✅ Sync completed, hasNewProblems: ${hasNewProblems}`);
+              
+              Alert.alert(
+                'Success', 
+                hasNewProblems 
+                  ? 'All data cleared and fresh problems downloaded!' 
+                  : 'All data cleared! App will download fresh problems on next sync.'
+              );
+              
+              // Reload batch info
+              logger.info('🔄 Reloading batch information');
+              await loadBatchesInfo();
+              logger.info('✅ Clear all data process completed successfully');
+            } catch (error) {
+              logger.error('Failed to clear all data:', error);
+              Alert.alert('Error', 'Failed to clear all data');
+            } finally {
+              setIsClearingData(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 20 }]}>
       <Text style={styles.title}>Settings</Text>
 
       {/* Batch Status Section */}
@@ -202,6 +261,17 @@ export default function SettingsScreen() {
         <Text style={styles.helpText}>
           This will reset all your progress and mark all problems as unsolved.
         </Text>
+        
+        <View style={styles.buttonContainer}>
+          <Button
+            label={isClearingData ? "Clearing..." : "Clear All Data & Re-sync"}
+            onPress={handleClearAllData}
+            theme="primary"
+          />
+        </View>
+        <Text style={styles.helpText}>
+          This will delete all local data and download fresh problems from AWS with the latest format.
+        </Text>
       </View>
 
       {/* App Info Section */}
@@ -285,7 +355,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    paddingTop: 40,
   },
   title: {
     fontSize: 28,

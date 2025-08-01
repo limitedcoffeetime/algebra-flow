@@ -3,21 +3,21 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 export const PROBLEM_TYPES = [
   'linear-one-variable',
   'linear-two-variables',
-  'quadratic-factoring',
-  'quadratic-formula',
+  'quadratic-completing-square',
   'polynomial-simplification',
+  'systems-of-equations',
 ] as const;
 
 export type ProblemType = typeof PROBLEM_TYPES[number];
 
 export const PROBLEM_TYPES_BY_DIFFICULTY: Record<Difficulty, ProblemType[]> = {
   easy: ['linear-one-variable', 'polynomial-simplification'],
-  medium: ['linear-two-variables', 'quadratic-factoring', 'polynomial-simplification'],
+  medium: ['linear-two-variables', 'quadratic-completing-square', 'polynomial-simplification', 'systems-of-equations'],
   hard: [
     'linear-two-variables',
-    'quadratic-factoring',
-    'quadratic-formula',
+    'quadratic-completing-square',
     'polynomial-simplification',
+    'systems-of-equations',
   ],
 };
 

@@ -7,13 +7,35 @@ interface ProblemDisplayProps {
   problem: Problem;
 }
 
+// Helper function to get answer format instructions
+const getAnswerFormatInstructions = (problemType: string): string => {
+  switch (problemType) {
+    case 'quadratic-completing-square':
+      return 'For two distinct solutions, submit both answers separated by a comma (e.g., "3, -2"). For double roots, submit just one answer.';
+    case 'systems-of-equations':
+      return 'Submit your answer as x, y (no parentheses required), for example: 3, -2';
+    case 'polynomial-simplification':
+      return 'Submit your answer in standard form (terms in descending order of degree) and fully simplified.';
+    case 'linear-one-variable':
+    case 'linear-two-variables':
+      return 'Submit your answer in fully simplified form.';
+    default:
+      return 'Submit your answer in fully simplified form.';
+  }
+};
+
 export default function ProblemDisplay({ problem }: ProblemDisplayProps) {
   // Get screen dimensions for responsive calculations
   const screenWidth = Dimensions.get('window').width;
   const containerWidth = Math.min(screenWidth - 64, 400); // Account for margins and max width
 
-  // Calculate responsive font sizes for native platform
-  const responsiveSettings = calculateResponsiveFontSize(problem.equation, problem.direction, containerWidth, 'native');
+  // Always use equations array (clean and simple!)
+  const equationsToDisplay = problem.equations;
+  
+  // Calculate responsive font sizes for native platform using first equation
+  const responsiveSettings = calculateResponsiveFontSize(equationsToDisplay[0], problem.direction, containerWidth, 'native');
+
+  const answerInstructions = getAnswerFormatInstructions(problem.problemType);
 
   return (
     <View style={styles.problemContainer}>
@@ -28,18 +50,29 @@ export default function ProblemDisplay({ problem }: ProblemDisplayProps) {
         {problem.direction}
       </Text>
 
-      {/* Problem Equation */}
+      {/* Problem Equation(s) */}
       <View style={styles.equationContainer}>
-        <Text style={[
-          styles.equation,
-          {
-            fontSize: responsiveSettings.equationFontSize,
-            lineHeight: responsiveSettings.equationFontSize * 1.3,
-            flexWrap: responsiveSettings.shouldWrap ? 'wrap' : 'nowrap',
-          }
-        ]}>
-          {problem.equation}
-        </Text>
+        {equationsToDisplay.map((equation, index) => (
+          <Text 
+            key={index} 
+            style={[
+              styles.equation,
+              {
+                fontSize: responsiveSettings.equationFontSize,
+                lineHeight: responsiveSettings.equationFontSize * 1.2,
+                marginBottom: index < equationsToDisplay.length - 1 ? 8 : 0,
+              }
+            ]}
+          >
+            {equation}
+          </Text>
+        ))}
+      </View>
+
+      {/* Answer Format Instructions */}
+      <View style={styles.instructionsContainer}>
+        <Text style={styles.instructionsLabel}>Answer Format:</Text>
+        <Text style={styles.instructionsText}>{answerInstructions}</Text>
       </View>
 
       {/* Difficulty Badge */}
@@ -95,6 +128,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'monospace',
     maxWidth: '100%',
+  },
+  instructionsContainer: {
+    backgroundColor: '#0f1629',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#fbbf24',
+    maxWidth: '100%',
+  },
+  instructionsLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fbbf24',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  instructionsText: {
+    fontSize: 12,
+    color: '#fde68a',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   difficultyBadge: {
     backgroundColor: '#10b981',

@@ -3,7 +3,7 @@ import { SolutionStep } from '../../services/problemGeneration/openaiGenerator';
 export interface Problem {
   id: string;
   batchId: string;
-  equation: string;
+  equations: string[]; // Array of equations (always used - single item for regular problems, multiple for systems)
   direction: string;
   answer: string | number | number[];
   answerLHS?: string;
@@ -22,7 +22,7 @@ export interface Problem {
 export interface CreateProblemInput {
   id?: string; // Optional, will be generated if not provided
   batchId: string;
-  equation: string;
+  equations: string[]; // Array of equations (always used)
   direction: string;
   answer: string | number | number[];
   answerLHS?: string;

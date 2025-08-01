@@ -1,6 +1,7 @@
 'use dom';
 
-import { addIntelligentLineBreaks, calculateResponsiveFontSize } from '@/utils/responsiveText';
+import { calculateResponsiveFontSize, setupResponsiveMathField } from '@/utils/responsiveText';
+import { configureVirtualKeyboard, initializeCustomKeyboard } from '@/utils/customKeyboard';
 import { useEffect, useRef } from 'react';
 
 // Global MathLive initialization cache
@@ -8,11 +9,11 @@ let mathLiveInitPromise: Promise<void> | null = null;
 
 const initMathLive = async () => {
   if (mathLiveInitPromise) return mathLiveInitPromise;
-  
+
   mathLiveInitPromise = (async () => {
     try {
       console.log('Initializing MathLive...');
-      
+
       // Import MathLive and compute engine in parallel
       await Promise.all([
         import('mathlive'),
@@ -27,6 +28,9 @@ const initMathLive = async () => {
         (window as any).MathfieldElement.fontsDirectory = null;
       }
 
+      // Initialize custom virtual keyboard
+      initializeCustomKeyboard();
+
       // Give compute engine time to initialize
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -37,7 +41,7 @@ const initMathLive = async () => {
       throw error;
     }
   })();
-  
+
   return mathLiveInitPromise;
 };
 
@@ -50,7 +54,7 @@ interface SolutionStep {
 
 interface Problem {
   id: string;
-  equation: string;
+  equations: string[]; // Array of equations (always used)
   direction: string;
   difficulty: 'easy' | 'medium' | 'hard';
   answer: string | number | number[];
@@ -113,6 +117,7 @@ export default function TrainingMathInput({
   const mathFieldRef = useRef<any>(null);
   const isInitializedRef = useRef<boolean>(false);
   const retryButtonRef = useRef<HTMLButtonElement | null>(null);
+  const responsiveCleanupFuncsRef = useRef<(() => void)[]>([]);
 
   // Constants for better maintainability
   const ELEMENT_IDS = {
@@ -160,6 +165,100 @@ export default function TrainingMathInput({
       retryButtonRef.current.removeEventListener('click', handleRetry);
       retryButtonRef.current = null;
     }
+  };
+
+  // Clean up responsive font sizing listeners
+  const cleanupResponsiveFontSizing = () => {
+    responsiveCleanupFuncsRef.current.forEach(cleanup => cleanup());
+    responsiveCleanupFuncsRef.current = [];
+  };
+
+  // Set up smooth drag scrolling for equation containers
+  const setupSmoothScrolling = (container: HTMLElement) => {
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let animationId: number | null = null;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDown = true;
+      container.style.cursor = 'grabbing';
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      // Cancel any ongoing smooth scrolling
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    };
+
+    const handleMouseLeave = () => {
+      isDown = false;
+      container.style.cursor = 'grab';
+    };
+
+    const handleMouseUp = () => {
+      isDown = false;
+      container.style.cursor = 'grab';
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - startX) * 1.5; // Scroll speed multiplier
+      container.scrollLeft = scrollLeft - walk;
+    };
+
+    // Touch support for mobile
+    const handleTouchStart = (e: TouchEvent) => {
+      isDown = true;
+      const touch = e.touches[0];
+      startX = touch.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const x = touch.pageX - container.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      container.scrollLeft = scrollLeft - walk;
+    };
+
+    const handleTouchEnd = () => {
+      isDown = false;
+    };
+
+    // Add event listeners
+    container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mouseleave', handleMouseLeave);
+    container.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mousemove', handleMouseMove);
+    container.addEventListener('touchstart', handleTouchStart);
+    container.addEventListener('touchmove', handleTouchMove);
+    container.addEventListener('touchend', handleTouchEnd);
+
+    // Return cleanup function
+    const cleanup = () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+      container.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+
+    responsiveCleanupFuncsRef.current.push(cleanup);
   };
 
   // Retry button handler
@@ -211,9 +310,280 @@ export default function TrainingMathInput({
     }
   };
 
+  // Helper function to get answer format instructions
+  const getAnswerFormatInstructions = (problemType: string): string => {
+    switch (problemType) {
+      case 'quadratic-completing-square':
+        return 'For two distinct solutions, submit both answers separated by a comma (e.g., "3, -2"). For double roots, submit just one answer.';
+      case 'systems-of-equations':
+        return 'Submit your answer as x, y (no parentheses required), for example: 3, -2';
+      case 'polynomial-simplification':
+        return 'Submit your answer in standard form and fully simplified.';
+      case 'linear-one-variable':
+      case 'linear-two-variables':
+        return 'Submit your answer in fully simplified form.';
+      default:
+        return 'Submit your answer in fully simplified form.';
+    }
+  };
+
+  // Helper function to validate quadratic answers (handles both single and double roots)
+  const validateQuadraticAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
+    // console.log('🔍 validateQuadraticAnswer called with:', userAnswer);
+    // console.log('🔍 problem.answerRHS:', problem.answerRHS);
+    // console.log('🔍 problem.answer:', problem.answer);
+
+    // Parse user input - expect comma-separated values for distinct roots, single value for double roots
+    const userAnswers = userAnswer.split(',').map(ans => ans.trim()).filter(ans => ans.length > 0);
+    // console.log('🔍 userAnswers:', userAnswers);
+
+    // Get correct answers first to determine if we have single or double root
+    let correctAnswers: string[] = [];
+    let isDoubleRoot = false;
+    
+    if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+      if (Array.isArray(problem.answerRHS)) {
+        correctAnswers = problem.answerRHS.map(ans => String(ans));
+      } else {
+        // Single answer (double root case)
+        correctAnswers = [String(problem.answerRHS)];
+        isDoubleRoot = true;
+      }
+    } else if (problem.answer !== undefined && problem.answer !== null) {
+      if (Array.isArray(problem.answer)) {
+        correctAnswers = problem.answer.map(ans => String(ans));
+      } else {
+        // Single answer (double root case)
+        correctAnswers = [String(problem.answer)];
+        isDoubleRoot = true;
+      }
+    } else {
+      console.log('❌ Problem does not have valid answers');
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: 'Invalid answer format',
+        errorMessage: 'Problem does not have valid solutions'
+      };
+    }
+
+    console.log('🔍 correctAnswers:', correctAnswers);
+    console.log('🔍 isDoubleRoot:', isDoubleRoot);
+
+    // Check if it's a double root (two identical solutions)
+    if (!isDoubleRoot && correctAnswers.length === 2) {
+      const normalizedCorrect = correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, ''));
+      isDoubleRoot = normalizedCorrect[0] === normalizedCorrect[1];
+    }
+
+    console.log('🔍 final isDoubleRoot:', isDoubleRoot);
+
+    // Validate user input based on whether it's a double root or not
+    if (isDoubleRoot) {
+      // For double roots, accept either single answer or two identical answers
+      if (userAnswers.length === 1) {
+        // Single answer is fine for double roots
+      } else if (userAnswers.length === 2) {
+        // Two identical answers are also fine for double roots
+        const normalizedUser = userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, ''));
+        if (normalizedUser[0] !== normalizedUser[1]) {
+          return {
+            isCorrect: false,
+            userAnswerSimplified: userAnswer.trim(),
+            correctAnswerSimplified: correctAnswers[0],
+            errorMessage: 'This problem has a double root. You can submit just one answer or two identical answers.'
+          };
+        }
+      } else {
+        return {
+          isCorrect: false,
+          userAnswerSimplified: userAnswer.trim(),
+          correctAnswerSimplified: correctAnswers[0],
+          errorMessage: 'For double roots, provide either one answer or two identical answers separated by a comma'
+        };
+      }
+    } else {
+      // For distinct roots, require exactly 2 different answers
+      if (userAnswers.length !== 2) {
+        console.log('❌ Not exactly 2 answers provided for distinct roots');
+        return {
+          isCorrect: false,
+          userAnswerSimplified: userAnswer.trim(),
+          correctAnswerSimplified: 'Both solutions required (e.g., "3, -2")',
+          errorMessage: 'Please provide both solutions separated by a comma'
+        };
+      }
+    }
+
+    // Now validate the answers
+    if (isDoubleRoot) {
+      // For double roots, compare user's answer(s) against the single correct answer
+      const correctAnswer = correctAnswers[0];
+      const userAnswerToCheck = userAnswers[0]; // Use the first (and possibly only) user answer
+      
+      if (ce) {
+        try {
+          const userSimplified = ce.parse(userAnswerToCheck).simplify().latex;
+          const correctSimplified = ce.parse(correctAnswer).simplify().latex;
+          
+          const isCorrect = userSimplified === correctSimplified;
+          return {
+            isCorrect,
+            userAnswerSimplified: userAnswerToCheck.trim(),
+            correctAnswerSimplified: correctAnswer,
+            errorMessage: isCorrect ? undefined : 'Double root answer is incorrect'
+          };
+        } catch (error) {
+          console.warn('Error using MathLive for double root validation, falling back to string comparison', error);
+        }
+      }
+      
+      // Fallback to string comparison for double roots
+      const normalizedUser = userAnswerToCheck.toLowerCase().replace(/\s+/g, '');
+      const normalizedCorrect = correctAnswer.toLowerCase().replace(/\s+/g, '');
+      const isCorrect = normalizedUser === normalizedCorrect;
+      
+      return {
+        isCorrect,
+        userAnswerSimplified: userAnswerToCheck.trim(),
+        correctAnswerSimplified: correctAnswer,
+        errorMessage: isCorrect ? undefined : 'Double root answer is incorrect'
+      };
+    } else {
+      // For distinct roots, use the original logic
+      // Check if user answers match correct answers (order doesn't matter)
+      const userSet = new Set(userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, '')));
+      const correctSet = new Set(correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, '')));
+
+      console.log('🔍 userSet:', userSet);
+      console.log('🔍 correctSet:', correctSet);
+
+      // For more sophisticated comparison with MathLive if available
+      if (ce) {
+        try {
+          const userSimplified = userAnswers.map(ans => ce.parse(ans).simplify().latex);
+          const correctSimplified = correctAnswers.map(ans => ce.parse(String(ans)).simplify().latex);
+
+          const userSimplifiedSet = new Set(userSimplified);
+          const correctSimplifiedSet = new Set(correctSimplified);
+
+          console.log('🔍 userSimplified:', userSimplified);
+          console.log('🔍 correctSimplified:', correctSimplified);
+
+          const isCorrect = userSimplifiedSet.size === correctSimplifiedSet.size &&
+                           [...userSimplifiedSet].every(ans => correctSimplifiedSet.has(ans));
+
+          console.log('🔍 isCorrect (MathLive):', isCorrect);
+
+          return {
+            isCorrect,
+            userAnswerSimplified: userSimplified.join(', '),
+            correctAnswerSimplified: correctSimplified.join(', '),
+            errorMessage: isCorrect ? undefined : 'Both solutions must be correct'
+          };
+        } catch (error) {
+          console.warn('Error using MathLive for quadratic validation, falling back to string comparison', error);
+        }
+      }
+
+      // Fallback to string comparison
+      const isCorrect = userSet.size === correctSet.size &&
+                       [...userSet].every(ans => correctSet.has(ans));
+
+      console.log('🔍 isCorrect (fallback):', isCorrect);
+
+      return {
+        isCorrect,
+        userAnswerSimplified: userAnswers.join(', '),
+        correctAnswerSimplified: correctAnswers.join(', '),
+        errorMessage: isCorrect ? undefined : 'Both solutions must be correct (order doesn\'t matter)'
+      };
+    }
+  };
+
+  // Helper function to validate systems of equations answers (requires ordered pair)
+  const validateSystemsAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
+    // Parse user input - expect (x, y) format or x, y format
+    let userAnswers: string[] = [];
+
+    // Handle (x, y) format
+    const parenMatch = userAnswer.match(/\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/);
+    if (parenMatch) {
+      userAnswers = [parenMatch[1].trim(), parenMatch[2].trim()];
+    } else {
+      // Handle x, y format
+      const parts = userAnswer.split(',').map(ans => ans.trim());
+      if (parts.length === 2) {
+        userAnswers = parts;
+      }
+    }
+
+    if (userAnswers.length !== 2) {
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: 'Ordered pair required (e.g., "(3, -2)" or "3, -2")',
+        errorMessage: 'Please provide your answer as an ordered pair (x, y)'
+      };
+    }
+
+    // Get correct answers (should be an ordered pair)
+    let correctAnswers: string[] = [];
+    if (Array.isArray(problem.answer) && problem.answer.length === 2) {
+      correctAnswers = problem.answer.map(ans => String(ans));
+    } else {
+      return {
+        isCorrect: false,
+        userAnswerSimplified: userAnswer.trim(),
+        correctAnswerSimplified: 'Invalid answer format',
+        errorMessage: 'Problem does not have a valid ordered pair solution'
+      };
+    }
+
+    // For systems, order matters (x-value, y-value)
+    let isCorrect = false;
+
+    if (ce) {
+      try {
+        const userSimplified = userAnswers.map(ans => ce.parse(ans).simplify().latex);
+        const correctSimplified = correctAnswers.map(ans => ce.parse(String(ans)).simplify().latex);
+
+        isCorrect = userSimplified[0] === correctSimplified[0] &&
+                   userSimplified[1] === correctSimplified[1];
+
+        return {
+          isCorrect,
+          userAnswerSimplified: `(${userSimplified[0]}, ${userSimplified[1]})`,
+          correctAnswerSimplified: `(${correctSimplified[0]}, ${correctSimplified[1]})`,
+          errorMessage: isCorrect ? undefined : 'Order matters: first value is x, second is y'
+        };
+      } catch (error) {
+        console.warn('Error using MathLive for systems validation, falling back to string comparison');
+      }
+    }
+
+    // Fallback to string comparison
+    const userNormalized = userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, ''));
+    const correctNormalized = correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, ''));
+
+    isCorrect = userNormalized[0] === correctNormalized[0] &&
+               userNormalized[1] === correctNormalized[1];
+
+    return {
+      isCorrect,
+      userAnswerSimplified: `(${userAnswers[0]}, ${userAnswers[1]})`,
+      correctAnswerSimplified: `(${correctAnswers[0]}, ${correctAnswers[1]})`,
+      errorMessage: isCorrect ? undefined : 'Order matters: first value is x, second is y'
+    };
+  };
+
   // Function to verify answer using MathLive's simplify
   const verifyAnswer = (userAnswer: string): VerificationResult => {
+    // console.log('🔍 verifyAnswer called with:', userAnswer);
+    // console.log('🔍 problem:', problem);
+
     if (!problem) {
+      console.log('❌ No problem available');
       return {
         isCorrect: false,
         userAnswerSimplified: userAnswer,
@@ -222,77 +592,26 @@ export default function TrainingMathInput({
       };
     }
 
+    // console.log('🔍 problem.problemType:', problem.problemType);
+
     // Check compute engine availability
     const ce = (window as any)?.MathfieldElement?.computeEngine;
+    console.log('🔍 compute engine available:', !!ce);
 
     try {
-      // Use the already declared compute engine variable
-      if (!ce) {
-        console.warn('MathLive compute engine not available, falling back to string comparison');
-
-        if (problem.problemType === 'polynomial-simplification') {
-          // For polynomial simplification, use exact string matching (excluding whitespace)
-          const userNormalized = userAnswer.replace(/\s+/g, '');
-
-          // Determine correct answer for comparison
-          let correctAnswer: string;
-          let isCorrect = false;
-
-          if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-            correctAnswer = String(problem.answerRHS);
-            const correctNormalized = correctAnswer.replace(/\s+/g, '');
-            isCorrect = userNormalized === correctNormalized;
-          } else if (problem.answerLHS && problem.answer) {
-            const fullAnswer = `${problem.answerLHS}${problem.answer}`;
-            const answerOnly = String(problem.answer);
-            const fullAnswerNormalized = fullAnswer.replace(/\s+/g, '');
-            const answerOnlyNormalized = answerOnly.replace(/\s+/g, '');
-
-            isCorrect = userNormalized === fullAnswerNormalized || userNormalized === answerOnlyNormalized;
-            correctAnswer = userNormalized === fullAnswerNormalized ? fullAnswer : answerOnly;
-          } else {
-            correctAnswer = String(problem.answer);
-            const correctNormalized = correctAnswer.replace(/\s+/g, '');
-            isCorrect = userNormalized === correctNormalized;
-          }
-
-          return {
-            isCorrect,
-            userAnswerSimplified: userAnswer.trim(),
-            correctAnswerSimplified: correctAnswer.trim(),
-            errorMessage: isCorrect ? undefined : 'Using fallback comparison method'
-          };
-        } else {
-          // For other problem types, use case-insensitive string comparison
-          const userTrimmed = userAnswer.trim().toLowerCase();
-
-          // Determine correct answer for comparison
-          let correctAnswer: string;
-          let isCorrect = false;
-
-          if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
-            correctAnswer = String(problem.answerRHS);
-            isCorrect = userTrimmed === correctAnswer.toLowerCase();
-          } else if (problem.answerLHS && problem.answer) {
-            const fullAnswer = `${problem.answerLHS}${problem.answer}`;
-            const answerOnly = String(problem.answer);
-
-            isCorrect = userTrimmed === fullAnswer.toLowerCase() || userTrimmed === answerOnly.toLowerCase();
-            correctAnswer = userTrimmed === fullAnswer.toLowerCase() ? fullAnswer : answerOnly;
-          } else {
-            correctAnswer = String(problem.answer);
-            isCorrect = userTrimmed === correctAnswer.toLowerCase();
-          }
-
-          return {
-            isCorrect,
-            userAnswerSimplified: userAnswer.trim(),
-            correctAnswerSimplified: correctAnswer,
-            errorMessage: isCorrect ? undefined : 'Using fallback comparison method'
-          };
-        }
+      // Special handling for quadratics - handle both single and double roots
+      if (problem.problemType === 'quadratic-completing-square') {
+        console.log('🔍 Using quadratic validation');
+        return validateQuadraticAnswer(userAnswer, problem, ce);
       }
 
+      // Special handling for systems of equations - require ordered pair
+      if (problem.problemType === 'systems-of-equations') {
+        console.log('🔍 Using systems validation');
+        return validateSystemsAnswer(userAnswer, problem, ce);
+      }
+
+      console.log('🔍 Using standard validation');
       // Determine the correct answer to compare against
       let correctAnswerStr: string;
 
@@ -570,7 +889,7 @@ export default function TrainingMathInput({
         return {
           isCorrect,
           userAnswerSimplified: userAnswer.trim(),
-          correctAnswerSimplified: String(problem.answer),
+          correctAnswerSimplified: correctStr,
           errorMessage: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
         };
       }
@@ -584,8 +903,9 @@ export default function TrainingMathInput({
     const problemSection = containerRef.current.querySelector(`#${ELEMENT_IDS.PROBLEM_SECTION}`);
     if (!problemSection) return;
 
-    // Clean up any existing retry button listeners
+    // Clean up any existing listeners
     cleanupRetryButton();
+    cleanupResponsiveFontSizing();
 
     // Handle loading state
     if (isLoading) {
@@ -622,9 +942,52 @@ export default function TrainingMathInput({
       return;
     }
 
-    // Normal problem state
-    const responsiveSettings = calculateResponsiveFontSize(problem.equation, problem.direction, 350, 'web');
-    const equationWithBreaks = addIntelligentLineBreaks(problem.equation);
+    // Always use equations array (clean and simple!)
+    const equationsToDisplay = problem.equations;
+    
+    // Use first equation for responsive text calculation
+    const responsiveSettings = calculateResponsiveFontSize(equationsToDisplay[0], problem.direction, 350, 'web');
+
+    // Generate equation HTML for multiple equations
+    const equationHTML = equationsToDisplay.map((equation, index) => {
+      const equationWithBreaks = equation; // No line breaking
+      return `
+        <div class="equation-container-${index}" style="
+          background: #111827;
+          border-radius: 12px;
+          padding: 9px;
+          border: 2px solid #3b82f6;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scroll-behavior: smooth;
+          cursor: grab;
+          user-select: none;
+          ${index > 0 ? 'margin-top: 8px;' : ''}
+        " role="math" aria-label="Problem equation ${index + 1}">
+          <math-field
+            readonly
+            class="equation-mathfield-${index}"
+            style="
+              width: max-content;
+              min-width: 100%;
+              max-width: none;
+              background: transparent;
+              border: none;
+              color: #ffffff;
+              font-size: ${responsiveSettings.equationFontSize}px;
+              min-height: auto;
+              padding: 0;
+              line-height: 1.3;
+              word-wrap: normal;
+              overflow-wrap: normal;
+              white-space: nowrap;
+              box-sizing: border-box;
+              pointer-events: none;
+            "
+          >${equationWithBreaks}</math-field>
+        </div>
+      `;
+    }).join('');
 
     problemSection.innerHTML = `
       <div style="
@@ -678,35 +1041,97 @@ export default function TrainingMathInput({
         overflow-wrap: break-word;
         line-height: 1.4;
       ">${problem.direction}</div>
+      ${equationHTML}
       <div style="
-        background: #111827;
-        border-radius: 12px;
-        padding: 9px;
-        border: 2px solid #3b82f6;
-        overflow-x: auto;
-        overflow-y: hidden;
-      " role="math" aria-label="Problem equation">
-        <math-field
-          readonly
-          style="
-            width: 100%;
-            max-width: 100%;
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            font-size: ${responsiveSettings.equationFontSize}px;
-            min-height: auto;
-            padding: 0;
-            line-height: 1.3;
-            word-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
-            overflow-wrap: ${responsiveSettings.shouldWrap ? 'break-word' : 'normal'};
-            white-space: ${responsiveSettings.shouldWrap ? 'normal' : 'nowrap'};
-            box-sizing: border-box;
-          "
-        >${equationWithBreaks}</math-field>
-      </div>
+        font-size: 16px;
+        color: #9ca3af;
+        margin-top: 16px;
+        margin-bottom: 16px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      ">Answer Format: ${getAnswerFormatInstructions(problem.problemType)}</div>
     `;
+
+    // Set up smooth scrolling for equation containers
+    cleanupResponsiveFontSizing();
+    
+    // Wait for DOM to update, then set up smooth scrolling
+    setTimeout(() => {
+      const equationContainers = problemSection.querySelectorAll('[class*="equation-container-"]');
+      equationContainers.forEach((container) => {
+        setupSmoothScrolling(container as HTMLElement);
+      });
+    }, 150); // Wait for MathLive to render
   };
+
+  // Set up global button handler that persists across re-renders with debounce
+  useEffect(() => {
+    let isProcessing = false;
+    let lastClickTime = 0;
+
+    (window as any).handleVerifyButtonClick = () => {
+      const now = Date.now();
+
+      // Debounce: prevent multiple clicks within 500ms
+      if (isProcessing || (now - lastClickTime < 500)) {
+        console.log('🔍 Button click ignored (debounced)');
+        return;
+      }
+
+      lastClickTime = now;
+      isProcessing = true;
+
+      console.log('🌍 GLOBAL HANDLER CALLED! (debounced)');
+      console.log('🔍 Current buttonState:', buttonState);
+      console.log('🔍 mathFieldRef.current:', !!mathFieldRef.current);
+      console.log('🔍 onVerifyAnswer:', !!onVerifyAnswer);
+      console.log('🔍 onButtonPress:', !!onButtonPress);
+
+      try {
+        if (buttonState === 'verify') {
+          const currentValue = mathFieldRef.current?.value;
+          console.log('🔍 Current value from math field:', currentValue);
+
+          if (currentValue?.trim()) {
+            if (onVerifyAnswer) {
+              console.log('🔍 Calling verifyAnswer with:', currentValue);
+              const result = verifyAnswer(currentValue);
+              console.log('🔍 Verification result:', result);
+              onVerifyAnswer(result);
+
+              // Visual feedback
+              if (mathFieldRef.current) {
+                if (result.isCorrect) {
+                  mathFieldRef.current.style.borderColor = '#10b981';
+                  mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                } else {
+                  mathFieldRef.current.style.borderColor = '#ef4444';
+                  mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+                }
+              }
+            } else {
+              console.error('❌ onVerifyAnswer callback is not provided');
+            }
+          } else {
+            console.log('❌ No value to verify - currentValue:', currentValue);
+          }
+        } else if (onButtonPress) {
+          console.log('🔍 Calling onButtonPress for next problem');
+          onButtonPress();
+        }
+      } finally {
+        // Reset processing flag after a short delay to allow UI updates
+        setTimeout(() => {
+          isProcessing = false;
+        }, 100);
+      }
+    };
+
+    return () => {
+      delete (window as any).handleVerifyButtonClick;
+    };
+  }, [buttonState, onVerifyAnswer, onButtonPress, mathFieldRef.current]);
 
   // Initialize MathLive once (no problem dependencies)
   useEffect(() => {
@@ -723,6 +1148,10 @@ export default function TrainingMathInput({
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
                 -webkit-font-smoothing: antialiased !important;
                 -moz-osx-font-smoothing: grayscale !important;
+              }
+              /* Hide the virtual keyboard toggle button */
+              math-field::part(virtual-keyboard-toggle) {
+                display: none !important;
               }
             </style>
             <div style="
@@ -781,6 +1210,7 @@ export default function TrainingMathInput({
               ">
                 <button
                   id="${ELEMENT_IDS.MAIN_BUTTON}"
+                  onclick="window.handleVerifyButtonClick && window.handleVerifyButtonClick()"
                   style="
                     flex: 1;
                     background: ${buttonState === 'verify' ? '#10b981' : '#6b7280'};
@@ -815,6 +1245,55 @@ export default function TrainingMathInput({
             mathField.smartFence = true;
             mathField.smartSuperscript = false;
             mathField.removeExtraneousParentheses = true;
+
+            // Configure custom virtual keyboard
+            configureVirtualKeyboard(mathField);
+
+            // Filter out unwanted menu items
+            const filterMenuItem = (item: any): boolean => {
+              // Filter out Compute Engine commands (items with IDs starting with 'ce-')
+              if (item.id && item.id.startsWith('ce-')) {
+                return false;
+              }
+              
+              // Filter out other unwanted menu items by their IDs or labels
+              if (item.id) {
+                const unwantedIds = ['insert-matrix', 'insert', 'mode', 'font-style', 'evaluate', 'simplify', 'solve'];
+                if (unwantedIds.includes(item.id.toLowerCase())) {
+                  return false;
+                }
+              }
+              
+              if (item.label) {
+                const unwantedLabels = ['insert matrix', 'insert', 'mode', 'font style', 'evaluate', 'simplify', 'solve'];
+                const labelText = typeof item.label === 'string' ? item.label.toLowerCase() : '';
+                if (unwantedLabels.some(unwanted => labelText.includes(unwanted))) {
+                  return false;
+                }
+              }
+              
+              return true;
+            };
+
+            const filterMenuRecursively = (items: any[]): any[] => {
+              return items.filter((item: any) => {
+                // First check if this item should be filtered out
+                if (!filterMenuItem(item)) {
+                  return false;
+                }
+                
+                // If it has a submenu, filter it recursively
+                if (item.submenu && Array.isArray(item.submenu)) {
+                  item.submenu = filterMenuRecursively(item.submenu);
+                  // Keep the submenu item only if it still has content after filtering
+                  return item.submenu.length > 0;
+                }
+                
+                return true;
+              });
+            };
+
+            mathField.menuItems = filterMenuRecursively(mathField.menuItems);
 
 
             // Initial button setup will be handled by the button state effect
@@ -858,6 +1337,7 @@ export default function TrainingMathInput({
     // Cleanup function
     return () => {
       cleanupRetryButton();
+      cleanupResponsiveFontSizing();
     };
   }, [onInput, onVerifyAnswer, onButtonPress]); // Removed problem and userProgress from deps
 
@@ -879,87 +1359,31 @@ export default function TrainingMathInput({
   const buttonMouseEnterHandlerRef = useRef<(() => void) | null>(null);
   const buttonMouseLeaveHandlerRef = useRef<(() => void) | null>(null);
 
-  // Update button functionality when buttonState changes
+    // Update button styling when buttonState changes
   useEffect(() => {
-    if (!containerRef.current || !mathFieldRef.current || !isInitializedRef.current) return;
+    if (!containerRef.current || !isInitializedRef.current) return;
 
     const mainBtn = containerRef.current.querySelector(`#${ELEMENT_IDS.MAIN_BUTTON}`) as HTMLElement;
-    if (!mainBtn) return;
-
-    // Clean up previous event listeners
-    if (buttonClickHandlerRef.current) {
-      mainBtn.removeEventListener('click', buttonClickHandlerRef.current);
-    }
-    if (buttonMouseEnterHandlerRef.current) {
-      mainBtn.removeEventListener('mouseenter', buttonMouseEnterHandlerRef.current);
-    }
-    if (buttonMouseLeaveHandlerRef.current) {
-      mainBtn.removeEventListener('mouseleave', buttonMouseLeaveHandlerRef.current);
+    if (!mainBtn) {
+      console.log('❌ Button element not found for styling!');
+      return;
     }
 
-    // Update button appearance
-    mainBtn.textContent = buttonState === 'verify' ? 'Verify Answer' : 'Next Problem';
-    mainBtn.style.background = buttonState === 'verify' ? '#10b981' : '#6b7280';
-    mainBtn.setAttribute('aria-label', buttonState === 'verify' ? 'Verify your answer' : 'Go to next problem');
+    console.log('🔍 Updating button styling for buttonState:', buttonState);
 
-    // Create new event handlers
-    const handleMainButton = () => {
-      if (buttonState === 'verify') {
-        const currentValue = mathFieldRef.current?.value;
-        if (currentValue?.trim() && onVerifyAnswer) {
-          const result = verifyAnswer(currentValue);
-          onVerifyAnswer(result);
+    // Set button text and styling
+    if (buttonState === 'verify') {
+      mainBtn.textContent = 'Verify Answer';
+      mainBtn.style.background = '#10b981';
+      mainBtn.style.color = '#ffffff';
+    } else {
+      mainBtn.textContent = 'Continue';
+      mainBtn.style.background = '#6b7280';
+      mainBtn.style.color = '#ffffff';
+    }
 
-          // Visual feedback
-          if (mathFieldRef.current) {
-            if (result.isCorrect) {
-              mathFieldRef.current.style.borderColor = '#10b981';
-              mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-            } else {
-              mathFieldRef.current.style.borderColor = '#ef4444';
-              mathFieldRef.current.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
-            }
-          }
-        }
-      } else if (onButtonPress) {
-        onButtonPress();
-      }
-    };
-
-    const handleMouseEnter = () => {
-      if (buttonState === 'verify') {
-        mainBtn.style.background = '#059669';
-      } else {
-        mainBtn.style.background = '#4b5563';
-      }
-      mainBtn.style.transform = 'translateY(-1px)';
-    };
-
-    const handleMouseLeave = () => {
-      if (buttonState === 'verify') {
-        mainBtn.style.background = '#10b981';
-      } else {
-        mainBtn.style.background = '#6b7280';
-      }
-      mainBtn.style.transform = 'translateY(0)';
-    };
-
-    // Store handlers in refs and add event listeners
-    buttonClickHandlerRef.current = handleMainButton;
-    buttonMouseEnterHandlerRef.current = handleMouseEnter;
-    buttonMouseLeaveHandlerRef.current = handleMouseLeave;
-
-    mainBtn.addEventListener('click', handleMainButton);
-    mainBtn.addEventListener('mouseenter', handleMouseEnter);
-    mainBtn.addEventListener('mouseleave', handleMouseLeave);
-
-    // Cleanup function
-    return () => {
-      mainBtn.removeEventListener('click', handleMainButton);
-      mainBtn.removeEventListener('mouseenter', handleMouseEnter);
-      mainBtn.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [buttonState, onVerifyAnswer, onButtonPress]);
+    console.log('🔍 Button styling updated successfully');
+  }, [buttonState]);
 
   // Separate effect to handle solution display
   useEffect(() => {
@@ -1042,7 +1466,7 @@ export default function TrainingMathInput({
                     max-width: 100%;
                   ">${step.explanation}</div>
                 </div>
-                <div style="
+                <div class="solution-container-${index}" style="
                   background: #0f172a;
                   border-radius: 8px;
                   padding: 16px;
@@ -1052,13 +1476,17 @@ export default function TrainingMathInput({
                   box-sizing: border-box;
                   overflow-x: auto;
                   overflow-y: hidden;
+                  scroll-behavior: smooth;
+                  cursor: grab;
+                  user-select: none;
                 ">
                   <math-field
                     readonly
                     class="solution-step-${index}"
                     style="
-                      width: 100%;
-                      max-width: 100%;
+                      width: max-content;
+                      min-width: 100%;
+                      max-width: none;
                       background: transparent;
                       border: none;
                       color: #ffffff;
@@ -1066,6 +1494,7 @@ export default function TrainingMathInput({
                       min-height: auto;
                       padding: 0;
                       box-sizing: border-box;
+                      pointer-events: none;
                     "
                   >${step.mathExpression}</math-field>
                 </div>
@@ -1077,6 +1506,14 @@ export default function TrainingMathInput({
         const inputField = containerRef.current.querySelector(`#${ELEMENT_IDS.MATH_FIELD}`);
         if (inputField) {
           inputField.insertAdjacentHTML('afterend', solutionHTML);
+          
+          // Set up smooth scrolling for solution step containers
+          setTimeout(() => {
+            const solutionContainers = containerRef.current?.querySelectorAll('[class*="solution-container-"]');
+            solutionContainers?.forEach((container) => {
+              setupSmoothScrolling(container as HTMLElement);
+            });
+          }, 200); // Wait for MathLive to render the solution steps
         }
       }
     } else if (existingSolution) {

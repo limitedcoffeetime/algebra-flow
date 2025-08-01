@@ -2,6 +2,7 @@ import { databaseService } from '@/services/domain';
 import { useUserProgressStore } from '@/store';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Keep the interface compatible for now, will be restructured in Phase 4
 interface TopicAccuracy {
@@ -15,6 +16,7 @@ interface TopicAccuracy {
 export default function ProgressScreen() {
   const { userProgress } = useUserProgressStore();
   const [topicStats, setTopicStats] = useState<TopicAccuracy[]>([]);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -26,7 +28,7 @@ export default function ProgressScreen() {
   }, [userProgress]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 20 }]}>
       <Text style={styles.title}>Progress</Text>
 
       <View style={styles.section}>
@@ -86,7 +88,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    paddingTop: 40,
   },
   title: {
     fontSize: 28,
