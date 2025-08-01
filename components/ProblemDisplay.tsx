@@ -10,13 +10,12 @@ interface ProblemDisplayProps {
 // Helper function to get answer format instructions
 const getAnswerFormatInstructions = (problemType: string): string => {
   switch (problemType) {
-    case 'quadratic-factoring':
-    case 'quadratic-formula':
-      return 'Submit both answers separated by a comma (e.g., "3, -2"). Order does not matter.';
+    case 'quadratic-completing-square':
+      return 'For two distinct solutions, submit both answers separated by a comma (e.g., "3, -2"). For double roots, submit just one answer.';
     case 'systems-of-equations':
-      return 'Submit your answer as an ordered pair (x, y), for example: (3, -2) or 3, -2';
+      return 'Submit your answer as x, y (no parentheses required), for example: 3, -2';
     case 'polynomial-simplification':
-      return 'Submit your answer in standard form (terms in ascending order of degree) and fully simplified.';
+      return 'Submit your answer in standard form (terms in descending order of degree) and fully simplified.';
     case 'linear-one-variable':
     case 'linear-two-variables':
       return 'Submit your answer in fully simplified form.';

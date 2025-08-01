@@ -86,7 +86,7 @@ CRITICAL CONSTRAINT - CALCULATOR-FREE PROBLEMS ONLY:
 - Design problems so the algebra works out to clean, simple answers
 - Students should never need a calculator to verify the answer
 
-ACCEPTABLE NUMERIC ANSWERS: 3, -2, 1/2, 2/3, 0, 7, -1/4, 5/3
+ACCEPTABLE NUMERIC ANSWERS: 3, -2, \\frac{1}{2}, \\frac{2}{3}, 0, 7, \\frac{-1}{4}, \\frac{5}{3}
 ACCEPTABLE VARIABLE ANSWERS: \\frac{5-3y}{2}, \\frac{2x+7}{3}, 3x^2 + 2x - 1
 UNACCEPTABLE ANSWERS: 1.2839, 2.7182, 0.3333..., √2, 3.14159, 1.7320
 

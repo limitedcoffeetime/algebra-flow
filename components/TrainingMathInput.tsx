@@ -328,101 +328,178 @@ export default function TrainingMathInput({
     }
   };
 
-  // Helper function to validate quadratic answers (requires both solutions)
+  // Helper function to validate quadratic answers (handles both single and double roots)
   const validateQuadraticAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
     // console.log('🔍 validateQuadraticAnswer called with:', userAnswer);
     // console.log('🔍 problem.answerRHS:', problem.answerRHS);
     // console.log('🔍 problem.answer:', problem.answer);
 
-    // Parse user input - expect comma-separated values
-    const userAnswers = userAnswer.split(',').map(ans => ans.trim());
+    // Parse user input - expect comma-separated values for distinct roots, single value for double roots
+    const userAnswers = userAnswer.split(',').map(ans => ans.trim()).filter(ans => ans.length > 0);
     // console.log('🔍 userAnswers:', userAnswers);
 
-    if (userAnswers.length !== 2) {
-      console.log('❌ Not exactly 2 answers provided');
-      return {
-        isCorrect: false,
-        userAnswerSimplified: userAnswer.trim(),
-        correctAnswerSimplified: 'Both solutions required (e.g., "3, -2")',
-        errorMessage: 'Please provide both solutions separated by a comma'
-      };
-    }
-
-    // Get correct answers
+    // Get correct answers first to determine if we have single or double root
     let correctAnswers: string[] = [];
-    if (problem.answerRHS && Array.isArray(problem.answerRHS)) {
-      correctAnswers = problem.answerRHS.map(ans => String(ans));
-    } else if (Array.isArray(problem.answer)) {
-      correctAnswers = problem.answer.map(ans => String(ans));
+    let isDoubleRoot = false;
+    
+    if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
+      if (Array.isArray(problem.answerRHS)) {
+        correctAnswers = problem.answerRHS.map(ans => String(ans));
+      } else {
+        // Single answer (double root case)
+        correctAnswers = [String(problem.answerRHS)];
+        isDoubleRoot = true;
+      }
+    } else if (problem.answer !== undefined && problem.answer !== null) {
+      if (Array.isArray(problem.answer)) {
+        correctAnswers = problem.answer.map(ans => String(ans));
+      } else {
+        // Single answer (double root case)
+        correctAnswers = [String(problem.answer)];
+        isDoubleRoot = true;
+      }
     } else {
-      console.log('❌ Problem does not have array answers');
+      console.log('❌ Problem does not have valid answers');
       return {
         isCorrect: false,
         userAnswerSimplified: userAnswer.trim(),
         correctAnswerSimplified: 'Invalid answer format',
-        errorMessage: 'Problem does not have multiple solutions'
+        errorMessage: 'Problem does not have valid solutions'
       };
     }
 
     console.log('🔍 correctAnswers:', correctAnswers);
+    console.log('🔍 isDoubleRoot:', isDoubleRoot);
 
-    if (correctAnswers.length !== 2) {
-      console.log('❌ Problem should have exactly 2 solutions');
-      return {
-        isCorrect: false,
-        userAnswerSimplified: userAnswer.trim(),
-        correctAnswerSimplified: correctAnswers.join(', '),
-        errorMessage: 'Problem should have exactly 2 solutions'
-      };
+    // Check if it's a double root (two identical solutions)
+    if (!isDoubleRoot && correctAnswers.length === 2) {
+      const normalizedCorrect = correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, ''));
+      isDoubleRoot = normalizedCorrect[0] === normalizedCorrect[1];
     }
 
-    // Check if user answers match correct answers (order doesn't matter)
-    const userSet = new Set(userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, '')));
-    const correctSet = new Set(correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, '')));
+    console.log('🔍 final isDoubleRoot:', isDoubleRoot);
 
-    console.log('🔍 userSet:', userSet);
-    console.log('🔍 correctSet:', correctSet);
-
-    // For more sophisticated comparison with MathLive if available
-    if (ce) {
-      try {
-        const userSimplified = userAnswers.map(ans => ce.parse(ans).simplify().latex);
-        const correctSimplified = correctAnswers.map(ans => ce.parse(String(ans)).simplify().latex);
-
-        const userSimplifiedSet = new Set(userSimplified);
-        const correctSimplifiedSet = new Set(correctSimplified);
-
-        console.log('🔍 userSimplified:', userSimplified);
-        console.log('🔍 correctSimplified:', correctSimplified);
-
-        const isCorrect = userSimplifiedSet.size === correctSimplifiedSet.size &&
-                         [...userSimplifiedSet].every(ans => correctSimplifiedSet.has(ans));
-
-        console.log('🔍 isCorrect (MathLive):', isCorrect);
-
+    // Validate user input based on whether it's a double root or not
+    if (isDoubleRoot) {
+      // For double roots, accept either single answer or two identical answers
+      if (userAnswers.length === 1) {
+        // Single answer is fine for double roots
+      } else if (userAnswers.length === 2) {
+        // Two identical answers are also fine for double roots
+        const normalizedUser = userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, ''));
+        if (normalizedUser[0] !== normalizedUser[1]) {
+          return {
+            isCorrect: false,
+            userAnswerSimplified: userAnswer.trim(),
+            correctAnswerSimplified: correctAnswers[0],
+            errorMessage: 'This problem has a double root. You can submit just one answer or two identical answers.'
+          };
+        }
+      } else {
         return {
-          isCorrect,
-          userAnswerSimplified: userSimplified.join(', '),
-          correctAnswerSimplified: correctSimplified.join(', '),
-          errorMessage: isCorrect ? undefined : 'Both solutions must be correct'
+          isCorrect: false,
+          userAnswerSimplified: userAnswer.trim(),
+          correctAnswerSimplified: correctAnswers[0],
+          errorMessage: 'For double roots, provide either one answer or two identical answers separated by a comma'
         };
-      } catch (error) {
-        console.warn('Error using MathLive for quadratic validation, falling back to string comparison', error);
+      }
+    } else {
+      // For distinct roots, require exactly 2 different answers
+      if (userAnswers.length !== 2) {
+        console.log('❌ Not exactly 2 answers provided for distinct roots');
+        return {
+          isCorrect: false,
+          userAnswerSimplified: userAnswer.trim(),
+          correctAnswerSimplified: 'Both solutions required (e.g., "3, -2")',
+          errorMessage: 'Please provide both solutions separated by a comma'
+        };
       }
     }
 
-    // Fallback to string comparison
-    const isCorrect = userSet.size === correctSet.size &&
-                     [...userSet].every(ans => correctSet.has(ans));
+    // Now validate the answers
+    if (isDoubleRoot) {
+      // For double roots, compare user's answer(s) against the single correct answer
+      const correctAnswer = correctAnswers[0];
+      const userAnswerToCheck = userAnswers[0]; // Use the first (and possibly only) user answer
+      
+      if (ce) {
+        try {
+          const userSimplified = ce.parse(userAnswerToCheck).simplify().latex;
+          const correctSimplified = ce.parse(correctAnswer).simplify().latex;
+          
+          const isCorrect = userSimplified === correctSimplified;
+          return {
+            isCorrect,
+            userAnswerSimplified: userAnswerToCheck.trim(),
+            correctAnswerSimplified: correctAnswer,
+            errorMessage: isCorrect ? undefined : 'Double root answer is incorrect'
+          };
+        } catch (error) {
+          console.warn('Error using MathLive for double root validation, falling back to string comparison', error);
+        }
+      }
+      
+      // Fallback to string comparison for double roots
+      const normalizedUser = userAnswerToCheck.toLowerCase().replace(/\s+/g, '');
+      const normalizedCorrect = correctAnswer.toLowerCase().replace(/\s+/g, '');
+      const isCorrect = normalizedUser === normalizedCorrect;
+      
+      return {
+        isCorrect,
+        userAnswerSimplified: userAnswerToCheck.trim(),
+        correctAnswerSimplified: correctAnswer,
+        errorMessage: isCorrect ? undefined : 'Double root answer is incorrect'
+      };
+    } else {
+      // For distinct roots, use the original logic
+      // Check if user answers match correct answers (order doesn't matter)
+      const userSet = new Set(userAnswers.map(ans => ans.toLowerCase().replace(/\s+/g, '')));
+      const correctSet = new Set(correctAnswers.map(ans => String(ans).toLowerCase().replace(/\s+/g, '')));
 
-    console.log('🔍 isCorrect (fallback):', isCorrect);
+      console.log('🔍 userSet:', userSet);
+      console.log('🔍 correctSet:', correctSet);
 
-    return {
-      isCorrect,
-      userAnswerSimplified: userAnswers.join(', '),
-      correctAnswerSimplified: correctAnswers.join(', '),
-      errorMessage: isCorrect ? undefined : 'Both solutions must be correct (order doesn\'t matter)'
-    };
+      // For more sophisticated comparison with MathLive if available
+      if (ce) {
+        try {
+          const userSimplified = userAnswers.map(ans => ce.parse(ans).simplify().latex);
+          const correctSimplified = correctAnswers.map(ans => ce.parse(String(ans)).simplify().latex);
+
+          const userSimplifiedSet = new Set(userSimplified);
+          const correctSimplifiedSet = new Set(correctSimplified);
+
+          console.log('🔍 userSimplified:', userSimplified);
+          console.log('🔍 correctSimplified:', correctSimplified);
+
+          const isCorrect = userSimplifiedSet.size === correctSimplifiedSet.size &&
+                           [...userSimplifiedSet].every(ans => correctSimplifiedSet.has(ans));
+
+          console.log('🔍 isCorrect (MathLive):', isCorrect);
+
+          return {
+            isCorrect,
+            userAnswerSimplified: userSimplified.join(', '),
+            correctAnswerSimplified: correctSimplified.join(', '),
+            errorMessage: isCorrect ? undefined : 'Both solutions must be correct'
+          };
+        } catch (error) {
+          console.warn('Error using MathLive for quadratic validation, falling back to string comparison', error);
+        }
+      }
+
+      // Fallback to string comparison
+      const isCorrect = userSet.size === correctSet.size &&
+                       [...userSet].every(ans => correctSet.has(ans));
+
+      console.log('🔍 isCorrect (fallback):', isCorrect);
+
+      return {
+        isCorrect,
+        userAnswerSimplified: userAnswers.join(', '),
+        correctAnswerSimplified: correctAnswers.join(', '),
+        errorMessage: isCorrect ? undefined : 'Both solutions must be correct (order doesn\'t matter)'
+      };
+    }
   };
 
   // Helper function to validate systems of equations answers (requires ordered pair)
@@ -523,8 +600,8 @@ export default function TrainingMathInput({
     console.log('🔍 compute engine available:', !!ce);
 
     try {
-      // Special handling for quadratics - require both answers
-      if (problem.problemType === 'quadratic-factoring' || problem.problemType === 'quadratic-formula') {
+      // Special handling for quadratics - handle both single and double roots
+      if (problem.problemType === 'quadratic-completing-square') {
         console.log('🔍 Using quadratic validation');
         return validateQuadraticAnswer(userAnswer, problem, ce);
       }

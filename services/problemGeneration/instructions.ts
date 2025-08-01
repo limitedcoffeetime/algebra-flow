@@ -14,31 +14,30 @@ export function getProblemTypeInstructions(problemType: ProblemType): {
     case 'linear-two-variables':
       return {
         instructions:
-          'Solve for x in terms of y (express x = ... ). Use LaTeX fractions like \\frac{5-3y}{2} instead of decimal approximations. Use integer coefficients when possible. ANSWER SUBMISSION: Submit your answer in fully simplified form.',
+          'Solve for x in terms of y (express x = ... ). Use LaTeX fractions like \\frac{5-3y}{2} instead of decimal approximations. Use integer coefficients when possible. ANSWER SUBMISSION: Submit your answer in fully simplified form with terms in standard form (descending powers of variables).',
         answerFormat: 'LaTeX expression with fractions and integer coefficients',
       };
-    case 'quadratic-factoring':
-    case 'quadratic-formula':
+    case 'quadratic-completing-square':
       return {
         instructions:
-          'Find all solutions using COMPLETING THE SQUARE method. This method transforms any quadratic equation into the form (x + h)² = k, which is easy to solve. Always show the complete the square process with detailed explanations in your solution steps: 1) Start with the standard form and isolate x² and x terms on one side, 2) Identify the coefficient of x (call it "b") and calculate what to add: (b/2)², 3) Add this value to both sides to create a perfect square trinomial, 4) Factor the left side as (x + number)², 5) Take the square root of both sides (remember ± for the square root), 6) Solve for x. Explain WHY we add (b/2)² - because it creates a perfect square that factors nicely. Use clear language like "We add 9 to both sides because (6/2)² = 9, which will complete the square" rather than just stating the operation. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations. Always provide BOTH solutions as an array of exactly 2 elements, even if one is repeated (e.g., ["3", "3"] or ["\\frac{-2}{3}", "5"]). NO irrational numbers or decimal approximations. ANSWER SUBMISSION: Submit both answers separated by a comma (e.g., "3, -2"). The order does not matter.',
-        answerFormat: 'array of exactly 2 LaTeX fractions (\\frac{a}{b}) or integers',
+          'Find all solutions using COMPLETING THE SQUARE method. This method transforms any quadratic equation into the form (x + h)² = k, which is easy to solve. Always show the complete the square process with detailed explanations in your solution steps: 1) Start with the standard form and isolate x² and x terms on one side, 2) Identify the coefficient of x (call it "b") and calculate what to add: (b/2)², 3) Add this value to both sides to create a perfect square trinomial, 4) Factor the left side as (x + number)², 5) Take the square root of both sides (remember ± for the square root), 6) Solve for x. Explain WHY we add (b/2)² - because it creates a perfect square that factors nicely. Use clear language like "We add 9 to both sides because (6/2)² = 9, which will complete the square" rather than just stating the operation. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations. All answers must be in fully simplified form. NO irrational numbers or decimal approximations. For problems with two distinct solutions, provide BOTH solutions as an array of exactly 2 elements (e.g., ["\\frac{-2}{3}", "5"]). For problems with a double root (repeated solution), provide only ONE solution as a single string (e.g., "3"). ANSWER SUBMISSION: For two distinct solutions, submit both answers separated by a comma (e.g., "3, -2"). For double roots, submit only the single answer (e.g., "3"). The order does not matter for distinct solutions.',
+        answerFormat: 'single LaTeX fraction/integer for double roots, or array of exactly 2 LaTeX fractions/integers for distinct solutions',
       };
     case 'systems-of-equations':
       return {
         instructions:
-          'Solve the system of linear equations using substitution or elimination method. Show detailed step-by-step work: 1) For substitution: solve one equation for one variable, then substitute into the other equation, 2) For elimination: multiply equations as needed to eliminate one variable when adding/subtracting equations, 3) Solve for the remaining variable, 4) Substitute back to find the other variable, 5) Check your solution in both original equations. Use LaTeX format like \\frac{2}{3} for fractions - NEVER use decimal approximations. Provide the solution as an ordered pair (x, y). NO irrational numbers or decimal approximations. ANSWER SUBMISSION: Submit your answer as an ordered pair in the form (x, y), for example: (3, -2) or (\\frac{1}{2}, \\frac{3}{4}).',
+          'Solve the system of linear equations using substitution or elimination method. Show detailed step-by-step work: 1) For substitution: solve one equation for one variable, then substitute into the other equation, 2) For elimination: multiply equations as needed to eliminate one variable when adding/subtracting equations, 3) Solve for the remaining variable, 4) Substitute back to find the other variable, 5) Check your solution in both original equations. Use LaTeX format like \\frac{2}{3} for fractions - NEVER use decimal approximations. Provide the solution as an ordered pair (x, y). NO irrational numbers or decimal approximations. ANSWER SUBMISSION: Submit your answer as x, y (no parentheses required), for example: 3, -2 or \\frac{1}{2}, \\frac{3}{4}.',
         answerFormat: 'ordered pair (x, y) with LaTeX fractions or integers',
       };
     case 'polynomial-simplification':
       return {
         instructions:
-          'Simplify the polynomial expression. Use LaTeX fractions like \\frac{3}{4}x^2 for fractional coefficients. Use integer coefficients when possible. ANSWER SUBMISSION: Submit your answer in standard form (terms in ascending order of degree) and fully simplified (distribute all parentheses and combine like terms).',
+          'Simplify the polynomial expression. Use LaTeX fractions like \\frac{3}{4}x^2 for fractional coefficients. Use integer coefficients when possible. ANSWER SUBMISSION: Submit your answer in standard form (terms in descending order of degree, highest power first) and fully simplified (distribute all parentheses and combine like terms).',
         answerFormat: 'polynomial with LaTeX fractions and integer coefficients',
       };
     default:
       return {
-        instructions: 'Solve the equation with calculator-free answer. Use LaTeX \\frac{a}{b} for fractions, never decimal approximations. ANSWER SUBMISSION: Submit your answer in fully simplified form.',
+        instructions: 'Solve the equation with calculator-free answer. Use LaTeX \\frac{a}{b} for fractions, never decimal approximations. ANSWER SUBMISSION: Submit your answer in fully simplified form and standard form where applicable (descending powers of variables).',
         answerFormat: 'LaTeX fractions (\\frac{a}{b}) or integers',
       };
   }

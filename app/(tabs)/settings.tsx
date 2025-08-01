@@ -8,6 +8,7 @@ import { logger } from '@/utils/logger';
 import * as Sentry from '@sentry/react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Simple function to get database type - will remain SQLite for now
 const getDatabaseType = () => 'SQLite';
@@ -15,6 +16,7 @@ const getDatabaseType = () => 'SQLite';
 export default function SettingsScreen() {
   const userProgressStore = useUserProgressStore();
   const syncStore = useSyncStore();
+  const insets = useSafeAreaInsets();
 
   const [isResetting, setIsResetting] = useState(false);
   const [isClearingData, setIsClearingData] = useState(false);
@@ -163,7 +165,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 20 }]}>
       <Text style={styles.title}>Settings</Text>
 
       {/* Batch Status Section */}
@@ -353,7 +355,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    paddingTop: 40,
   },
   title: {
     fontSize: 28,
