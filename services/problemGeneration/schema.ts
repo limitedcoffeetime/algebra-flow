@@ -134,10 +134,18 @@ export function getProblemResponseSchema(problemType: ProblemType, count: number
       type: 'string',
       description: 'The left-hand side of the answer (e.g., "x = " or "y = "). Only for problems that solve for a variable.'
     };
-    problemProperties.answerRHS = {
-      ...answerSchema,
-      description: (answerSchema.description || 'The right-hand side value') + ' Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
-    };
+    // Handle answerRHS - if answerSchema has oneOf, we need to assign it directly
+    if (answerSchema.oneOf) {
+      problemProperties.answerRHS = {
+        oneOf: answerSchema.oneOf,
+        description: (answerSchema.description || 'The right-hand side value') + ' Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
+      };
+    } else {
+      problemProperties.answerRHS = {
+        ...answerSchema,
+        description: (answerSchema.description || 'The right-hand side value') + ' Use LaTeX \\frac{a}{b} for fractions, plain numbers for integers.'
+      };
+    }
     requiredFields.push('answerLHS', 'answerRHS');
   } else {
     // For problems like simplification or systems, just use single answer
