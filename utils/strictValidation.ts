@@ -206,7 +206,7 @@ export function validateAnswer(userAnswer: string, correctAnswer: string): Valid
     return { 
       isCorrect: false, 
       needsFeedback: true, 
-      feedbackMessage: "Your answer is mathematically correct, but please simplify your answer fully."
+      feedbackMessage: "Almost there! Make sure your expression is simplified, terms are listed in descending order of degree, and you've removed all extraneous parentheses."
     };
   }
   

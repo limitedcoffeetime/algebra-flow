@@ -88,7 +88,7 @@ export default function MathLiveTest() {
     } else {
       // Incorrect answer flow
       Alert.alert(
-        '❌ Not Quite Right',
+        '🔍 Almost There!',
         `${result.errorMessage ? result.errorMessage : 'Would you like to try again or see the solution?'}`,
         [
           {

@@ -18,10 +18,19 @@ export function getProblemTypeInstructions(problemType: ProblemType): {
         answerFormat: 'LaTeX expression with fractions and integer coefficients',
       };
     case 'quadratic-completing-square':
+      // DOUBLE ROOT DISABLE SWITCH - Comment out the next line to re-enable double root problems
+      const DISABLE_DOUBLE_ROOTS = true;
+      
       return {
         instructions:
-          'Find all solutions using COMPLETING THE SQUARE method. This method transforms any quadratic equation into the form (x + h)² = k, which is easy to solve. Always show the complete the square process with detailed explanations in your solution steps: 1) Start with the standard form and isolate x² and x terms on one side, 2) Identify the coefficient of x (call it "b") and calculate what to add: (b/2)², 3) Add this value to both sides to create a perfect square trinomial, 4) Factor the left side as (x + number)², 5) Take the square root of both sides (remember ± for the square root), 6) Solve for x. Explain WHY we add (b/2)² - because it creates a perfect square that factors nicely. Use clear language like "We add 9 to both sides because (6/2)² = 9, which will complete the square" rather than just stating the operation. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations. All answers must be in fully simplified form. NO irrational numbers or decimal approximations. For problems with two distinct solutions, provide BOTH solutions as an array of exactly 2 elements (e.g., ["\\frac{-2}{3}", "5"]). For problems with a double root (repeated solution), provide only ONE solution as a single string (e.g., "3"). ANSWER SUBMISSION: For two distinct solutions, submit both answers separated by a comma (e.g., "3, -2"). For double roots, submit only the single answer (e.g., "3"). The order does not matter for distinct solutions.',
-        answerFormat: 'single LaTeX fraction/integer for double roots, or array of exactly 2 LaTeX fractions/integers for distinct solutions',
+          'Find all solutions using COMPLETING THE SQUARE method. This method transforms any quadratic equation into the form (x + h)² = k, which is easy to solve. Always show the complete the square process with detailed explanations in your solution steps: 1) Start with the standard form and isolate x² and x terms on one side, 2) Identify the coefficient of x (call it "b") and calculate what to add: (b/2)², 3) Add this value to both sides to create a perfect square trinomial, 4) Factor the left side as (x + number)², 5) Take the square root of both sides (remember ± for the square root), 6) Solve for x. Explain WHY we add (b/2)² - because it creates a perfect square that factors nicely. Use clear language like "We add 9 to both sides because (6/2)² = 9, which will complete the square" rather than just stating the operation. For fractions, use LaTeX format like \\frac{2}{3} - NEVER use decimal approximations. All answers must be in fully simplified form. NO irrational numbers or decimal approximations.' +
+          (DISABLE_DOUBLE_ROOTS 
+            ? ' IMPORTANT: Do NOT generate problems with double roots (repeated solutions). All quadratic problems must have TWO DISTINCT solutions. Ensure the discriminant is positive so there are always two different real solutions. Provide BOTH solutions as an array of exactly 2 elements (e.g., ["\\frac{-2}{3}", "5"]). ANSWER SUBMISSION: Submit both answers separated by a comma (e.g., "3, -2"). The order does not matter.'
+            : ' For problems with two distinct solutions, provide BOTH solutions as an array of exactly 2 elements (e.g., ["\\frac{-2}{3}", "5"]). For problems with a double root (repeated solution), provide only ONE solution as a single string (e.g., "3"). ANSWER SUBMISSION: For two distinct solutions, submit both answers separated by a comma (e.g., "3, -2"). For double roots, submit only the single answer (e.g., "3"). The order does not matter for distinct solutions.'
+          ),
+        answerFormat: DISABLE_DOUBLE_ROOTS 
+          ? 'array of exactly 2 LaTeX fractions/integers for distinct solutions only'
+          : 'single LaTeX fraction/integer for double roots, or array of exactly 2 LaTeX fractions/integers for distinct solutions',
       };
     case 'systems-of-equations':
       return {
