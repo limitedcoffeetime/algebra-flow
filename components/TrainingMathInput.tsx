@@ -1218,7 +1218,10 @@ export default function TrainingMathInput({
     // Update problem content when problem, userProgress, loading, or error states change
   useEffect(() => {
     updateProblemContent();
+  }, [problem, userProgress, isLoading, error]);
 
+  // Separate effect to clear input field only when problem changes
+  useEffect(() => {
     // Clear the input field when problem changes (but not on first initialization or loading states)
     if (mathFieldRef.current && isInitializedRef.current && problem && !isLoading) {
       mathFieldRef.current.value = '';
@@ -1226,7 +1229,7 @@ export default function TrainingMathInput({
       mathFieldRef.current.style.borderColor = '#374151';
       mathFieldRef.current.style.boxShadow = 'none';
     }
-  }, [problem, userProgress, isLoading, error]);
+  }, [problem?.id, isLoading]); // Only depend on problem ID, not userProgress
 
   // Button event handlers stored in refs to avoid stale closures
   const buttonClickHandlerRef = useRef<(() => void) | null>(null);
