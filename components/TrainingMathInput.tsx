@@ -477,7 +477,7 @@ export default function TrainingMathInput({
           isCorrect: false,
           userAnswerSimplified: userAnswerToCheck.trim(),
           correctAnswerSimplified: correctAnswer,
-          errorMessage: validation.feedbackMessage || 'Almost there! Make sure your expression is simplified, terms are listed in descending order of degree, and you\'ve removed all extraneous parentheses.'
+          errorMessage: validation.feedbackMessage || 'Almost there! Fully simplify your answer, list terms in descending order of degree, and remove extraneous parentheses.'
         };
       } else {
         console.log('❌ Double root is incorrect');
@@ -537,7 +537,7 @@ export default function TrainingMathInput({
             isCorrect: false,
             userAnswerSimplified: userAnswers.join(', '),
             correctAnswerSimplified: correctAnswers.join(', '),
-            errorMessage: bestMatch.validation.feedbackMessage || 'Almost there! Make sure your expression is simplified, terms are listed in descending order of degree, and you\'ve removed all extraneous parentheses.'
+            errorMessage: bestMatch.validation.feedbackMessage || 'Almost there! Fully simplify your answer, list terms in descending order of degree, and remove extraneous parentheses.'
           };
         } else {
           // No match found at all
@@ -656,7 +656,7 @@ export default function TrainingMathInput({
         isCorrect: false,
         userAnswerSimplified: `(${userAnswers[0]}, ${userAnswers[1]})`,
         correctAnswerSimplified: `(${correctAnswers[0]}, ${correctAnswers[1]})`,
-        errorMessage: feedbackMessage || 'Almost there! Make sure your expression is simplified, terms are listed in descending order of degree, and you\'ve removed all extraneous parentheses.'
+        errorMessage: feedbackMessage || 'Almost there! Fully simplify your answer, list terms in descending order of degree, and remove extraneous parentheses.'
       };
     }
 
@@ -738,7 +738,7 @@ export default function TrainingMathInput({
           isCorrect: false,
           userAnswerSimplified: userTrimmed,
           correctAnswerSimplified: expectedTrimmed,
-          errorMessage: validationResult.feedbackMessage || 'Almost there! Make sure your expression is simplified, terms are listed in descending order of degree, and you\'ve removed all extraneous parentheses.'
+          errorMessage: validationResult.feedbackMessage || 'Almost there! Fully simplify your answer, list terms in descending order of degree, and remove extraneous parentheses.'
         };
       } else {
         console.log('❌ Answer is incorrect');

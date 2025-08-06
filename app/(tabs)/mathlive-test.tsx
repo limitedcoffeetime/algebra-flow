@@ -22,6 +22,7 @@ export default function MathLiveTest() {
   const [showSolution, setShowSolution] = useState(false);
   const [buttonState, setButtonState] = useState<'verify' | 'next'>('verify');
   const [hasRecordedAttempt, setHasRecordedAttempt] = useState(false);
+  const [hadWrongAttempt, setHadWrongAttempt] = useState(false);
 
   // Store hooks
   const problemStore = useProblemStore();
@@ -43,6 +44,7 @@ export default function MathLiveTest() {
     setShowSolution(false);
     setButtonState('verify');
     setHasRecordedAttempt(false);
+    setHadWrongAttempt(false);
   }, [problemStore.currentProblem?.id]);
 
   const handleInput = (latex: string) => {
@@ -58,13 +60,13 @@ export default function MathLiveTest() {
   const handleVerifyAnswer = async (result: VerificationResult) => {
     setVerificationResult(result);
 
-    // Record attempt only once per problem
-    if (!hasRecordedAttempt) {
-      await userProgressStore.recordAttempt(result.isCorrect);
-      setHasRecordedAttempt(true);
-    }
-
     if (result.isCorrect) {
+      // Record as correct if they got it right (either first try or after trying again)
+      if (!hasRecordedAttempt) {
+        await userProgressStore.recordAttempt(true);
+        setHasRecordedAttempt(true);
+      }
+
       // Correct answer flow
       Alert.alert(
         '🎉 Correct!',
@@ -86,16 +88,23 @@ export default function MathLiveTest() {
         ]
       );
     } else {
-      // Incorrect answer flow
+      // Track that they had a wrong attempt (but don't record it yet)
+      setHadWrongAttempt(true);
+
+      // Incorrect answer flow - use appropriate title based on the error message
+      const isAlmostThere = result.errorMessage?.includes('Almost there') || result.errorMessage?.includes('Fully simplify');
+      const alertTitle = isAlmostThere ? '🔍 Almost there!' : '🔄 Not Quite';
+      const alertMessage = result.errorMessage || 'Your answer doesn\'t match our solution. Would you like to try again or see the solution?';
+      
       Alert.alert(
-        '🔍 Almost There!',
-        `${result.errorMessage ? result.errorMessage : 'Would you like to try again or see the solution?'}`,
+        alertTitle,
+        alertMessage,
         [
           {
             text: 'Try Again',
             style: 'cancel',
             onPress: () => {
-              // Reset for another attempt (but don't reset hasRecordedAttempt)
+              // Reset for another attempt
               setVerificationResult(null);
               setShowSolution(false);
               setButtonState('verify');
@@ -103,7 +112,12 @@ export default function MathLiveTest() {
           },
           {
             text: 'Show Solution',
-            onPress: () => {
+            onPress: async () => {
+              // Only record as incorrect if they give up by showing solution after getting it wrong
+              if (!hasRecordedAttempt && hadWrongAttempt) {
+                await userProgressStore.recordAttempt(false);
+                setHasRecordedAttempt(true);
+              }
               setShowSolution(true);
               setButtonState('next');
             }

@@ -57,26 +57,40 @@ export default function ProgressScreen() {
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Accuracy by Topic</Text>
-        {topicStats.length === 0 ? (
-          <Text style={styles.noDataText}>No attempts yet</Text>
-        ) : (
-          <View style={styles.statsContainer}>
-            {topicStats.map((stat) => (
-              <View key={stat.problemType} style={styles.statItem}>
-                <Text style={styles.statLabel}>{stat.problemType}</Text>
-                <Text style={styles.statValue}>
-                  {stat.correct}/{stat.attempted} correct
-                  {stat.accuracy !== undefined && (
-                    <Text style={styles.accuracyText}> ({stat.accuracy.toFixed(0)}%)</Text>
-                  )}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
+      {/* 
+        TODO: ACCURACY BY TOPIC SECTION - CURRENTLY HIDDEN
+        
+        This feature is temporarily disabled as it needs further development:
+        - The topic categorization may not accurately reflect problem difficulty levels
+        - Consider implementing more granular topic tracking 
+        - May want to add visual progress charts or graphs
+        - Review if the current problem type categories are meaningful to users
+        
+        To re-enable: uncomment the section below and ensure topicStats state management
+        is still working properly with the current database schema.
+      */}
+      {false && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Accuracy by Topic</Text>
+          {topicStats.length === 0 ? (
+            <Text style={styles.noDataText}>No attempts yet</Text>
+          ) : (
+            <View style={styles.statsContainer}>
+              {topicStats.map((stat) => (
+                <View key={stat.problemType} style={styles.statItem}>
+                  <Text style={styles.statLabel}>{stat.problemType}</Text>
+                  <Text style={styles.statValue}>
+                    {stat.correct}/{stat.attempted} correct
+                    {stat.accuracy !== undefined && (
+                      <Text style={styles.accuracyText}> ({stat.accuracy.toFixed(0)}%)</Text>
+                    )}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 }

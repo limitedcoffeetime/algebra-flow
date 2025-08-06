@@ -179,13 +179,22 @@ export default function SettingsScreen() {
           />
           </View>
 
-          <View style={styles.buttonContainer}>
-          <Button
-            label="Manage Batches"
-            onPress={() => setShowBatchManager(true)}
-            theme="secondary"
-          />
-          </View>
+          {/* 
+            BATCH MANAGER BUTTON - HIDDEN
+            This opens a detailed batch management interface that could confuse users
+            or allow them to accidentally delete critical data. All batch functionality
+            remains intact and automatic sync/cleanup still works.
+            To re-enable: remove the {false && (...)} wrapper below.
+          */}
+          {false && (
+            <View style={styles.buttonContainer}>
+              <Button
+                label="Manage Batches"
+                onPress={() => setShowBatchManager(true)}
+                theme="secondary"
+              />
+            </View>
+          )}
 
         {isLoadingBatches ? (
           <Text style={styles.loadingText}>Loading batch information...</Text>
@@ -236,17 +245,23 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      {/* Database Status Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Database Status</Text>
-        <View style={styles.databaseStatusContainer}>
-          <Text style={styles.databaseTypeLabel}>Current Database:</Text>
-          <Text style={styles.databaseTypeValue}>{databaseType}</Text>
+      {/* 
+        DATABASE STATUS SECTION - HIDDEN
+        This section shows internal database information that users don't need to see.
+        To re-enable: remove the {false && (...)} wrapper below.
+      */}
+      {false && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Database Status</Text>
+          <View style={styles.databaseStatusContainer}>
+            <Text style={styles.databaseTypeLabel}>Current Database:</Text>
+            <Text style={styles.databaseTypeValue}>{databaseType}</Text>
+          </View>
+          <Text style={styles.databaseHelpText}>
+            Using SQLite database with clean repository pattern. Data is persisted locally on your device.
+          </Text>
         </View>
-        <Text style={styles.databaseHelpText}>
-          Using SQLite database with clean repository pattern. Data is persisted locally on your device.
-        </Text>
-      </View>
+      )}
 
       {/* Actions Section */}
       <View style={styles.section}>
@@ -262,16 +277,25 @@ export default function SettingsScreen() {
           This will reset all your progress and mark all problems as unsolved.
         </Text>
         
-        <View style={styles.buttonContainer}>
-          <Button
-            label={isClearingData ? "Clearing..." : "Clear All Data & Re-sync"}
-            onPress={handleClearAllData}
-            theme="primary"
-          />
-        </View>
-        <Text style={styles.helpText}>
-          This will delete all local data and download fresh problems from AWS with the latest format.
-        </Text>
+        {/* 
+          CLEAR ALL DATA BUTTON - HIDDEN
+          This is a destructive developer/debugging action that users shouldn't need.
+          To re-enable: remove the {false && (...)} wrapper below.
+        */}
+        {false && (
+          <>
+            <View style={styles.buttonContainer}>
+              <Button
+                label={isClearingData ? "Clearing..." : "Clear All Data & Re-sync"}
+                onPress={handleClearAllData}
+                theme="primary"
+              />
+            </View>
+            <Text style={styles.helpText}>
+              This will delete all local data and download fresh problems from AWS with the latest format.
+            </Text>
+          </>
+        )}
       </View>
 
       {/* App Info Section */}
@@ -282,44 +306,50 @@ export default function SettingsScreen() {
         </Text>
         <Text style={styles.versionText}>Version 1.0.0</Text>
 
-        {/* Developer Test Section */}
-        <View style={styles.devSection}>
-          <Text style={styles.devSectionTitle}>Developer</Text>
-          <View style={styles.buttonContainer}>
-            <Button
-              label="Test Error Reporting"
-              onPress={() => {
-                Alert.alert(
-                  'Test Error',
-                  'This will send a test error to Sentry for monitoring purposes.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Send Test Error',
-                      onPress: () => {
-                        Sentry.captureException(new Error(`Test error from production app - ${new Date().toISOString()}`), {
-                          tags: {
-                            source: 'settings_test_button',
-                            environment: __DEV__ ? 'development' : 'production',
-                          },
-                          extra: {
-                            timestamp: Date.now(),
-                            deviceType: 'mobile',
-                          },
-                        });
-                        Alert.alert('Test Sent', 'Error test sent to monitoring system.');
+        {/* 
+          DEVELOPER TEST SECTION - HIDDEN
+          This section contains debugging tools that are not needed in production.
+          To re-enable: remove the {false && (...)} wrapper below.
+        */}
+        {false && (
+          <View style={styles.devSection}>
+            <Text style={styles.devSectionTitle}>Developer</Text>
+            <View style={styles.buttonContainer}>
+              <Button
+                label="Test Error Reporting"
+                onPress={() => {
+                  Alert.alert(
+                    'Test Error',
+                    'This will send a test error to Sentry for monitoring purposes.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Send Test Error',
+                        onPress: () => {
+                          Sentry.captureException(new Error(`Test error from production app - ${new Date().toISOString()}`), {
+                            tags: {
+                              source: 'settings_test_button',
+                              environment: __DEV__ ? 'development' : 'production',
+                            },
+                            extra: {
+                              timestamp: Date.now(),
+                              deviceType: 'mobile',
+                            },
+                          });
+                          Alert.alert('Test Sent', 'Error test sent to monitoring system.');
+                        },
                       },
-                    },
-                  ]
-                );
-              }}
-              theme="secondary"
-            />
+                    ]
+                  );
+                }}
+                theme="secondary"
+              />
+            </View>
+            <Text style={styles.devHelpText}>
+              This helps verify error monitoring is working correctly.
+            </Text>
           </View>
-          <Text style={styles.devHelpText}>
-            This helps verify error monitoring is working correctly.
-          </Text>
-        </View>
+        )}
       </View>
 
       {/* Batch Manager Modal */}
