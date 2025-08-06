@@ -48,6 +48,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# IDE settings
+.vscode/
+.cursor/
+
 # local env files
 .env*.local
 
