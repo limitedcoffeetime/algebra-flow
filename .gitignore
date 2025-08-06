@@ -61,6 +61,10 @@ env.example
 # Environment variables
 .env
 
+# Credentials and secrets
+credentials.json
+credentials/
+
 # Documentation / guides
 june5thnotes.md
 
