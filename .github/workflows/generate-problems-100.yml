@@ -1,0 +1,55 @@
+name: Generate 100 Problems (Manual)
+
+on:
+  # Manual triggering only - no scheduled runs
+  workflow_dispatch:
+
+jobs:
+  generate-problems:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Generate Easy Problems (33 problems)
+      run: npx ts-node -r tsconfig-paths/register scripts/generateProblems.ts
+      env:
+        PROBLEMS_PER_BATCH: '33'
+        DIFFICULTY: 'easy'
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+
+    - name: Generate Medium Problems (50 problems)
+      run: npx ts-node -r tsconfig-paths/register scripts/generateProblems.ts
+      env:
+        PROBLEMS_PER_BATCH: '50'
+        DIFFICULTY: 'medium'
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+
+    - name: Generate Hard Problems (17 problems)
+      run: npx ts-node -r tsconfig-paths/register scripts/generateProblems.ts
+      env:
+        PROBLEMS_PER_BATCH: '17'
+        DIFFICULTY: 'hard'
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}

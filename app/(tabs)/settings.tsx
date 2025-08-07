@@ -302,7 +302,7 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About</Text>
         <Text style={styles.infoText}>
-          Algebro - Your personal algebra learning companion
+          Algebra Flow - Your personal algebra learning companion
         </Text>
         <Text style={styles.versionText}>Version 1.0.0</Text>
 

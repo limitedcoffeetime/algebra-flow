@@ -15,12 +15,12 @@ const getUniqueIdentifier = () => {
 
 const getAppName = () => {
     if (IS_DEV) {
-        return "Algebro Dev";
+        return "Algebra Flow Dev";
     }
     if (IS_PREVIEW) {
-        return "Algebro Preview";
+        return "Algebra Flow Preview";
     }
-    return "Algebro";
+    return "Algebra Flow";
 };
 
 export default {

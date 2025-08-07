@@ -31,7 +31,7 @@ export default function HomeScreen() {
       <View style={styles.contentWrapper}>
         {/* App Title */}
         <View style={styles.headerSection}>
-          <Text style={styles.appTitle}>🧮 Algebro</Text>
+          <Text style={styles.appTitle}>🧮 Algebra Flow</Text>
           <Text style={styles.subtitle}>Master algebra with step-by-step practice</Text>
         </View>
 
