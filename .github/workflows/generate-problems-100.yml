@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Generate Mixed Problems (100 total: 33 easy, 50 medium, 17 hard)
+    - name: Generate Mixed Problems (100 total - 33 easy, 50 medium, 17 hard)
       run: npx ts-node -r tsconfig-paths/register scripts/generateProblems.ts
       env:
         PROBLEMS_PER_BATCH: '100'
