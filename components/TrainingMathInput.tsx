@@ -1,9 +1,9 @@
 'use dom';
 
-import { calculateResponsiveFontSize, setupResponsiveMathField } from '@/utils/responsiveText';
 import { configureVirtualKeyboard, initializeCustomKeyboard } from '@/utils/customKeyboard';
+import { calculateResponsiveFontSize } from '@/utils/responsiveText';
+import { validateAnswerWithContext } from '@/utils/strictValidation';
 import { useEffect, useRef } from 'react';
-import { validateAnswer } from '@/utils/strictValidation';
 
 // Global MathLive initialization cache
 let mathLiveInitPromise: Promise<void> | null = null;
@@ -357,7 +357,7 @@ export default function TrainingMathInput({
     // Get correct answers first to determine if we have single or double root
     let correctAnswers: string[] = [];
     let isDoubleRoot = false;
-    
+
     if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
       if (Array.isArray(problem.answerRHS)) {
         correctAnswers = problem.answerRHS.map(ans => String(ans));
@@ -449,7 +449,7 @@ export default function TrainingMathInput({
       // For double roots, compare user's answer(s) against the single correct answer
       const correctAnswer = correctAnswers[0];
       const userAnswerToCheck = userAnswers[0]; // Use the first (and possibly only) user answer
-      
+
       // Step 1: Direct comparison
       if (userAnswerToCheck.trim() === correctAnswer.trim()) {
         console.log('✅ Direct match for double root');
@@ -461,9 +461,9 @@ export default function TrainingMathInput({
       }
 
       // Step 2: Strict validation for double root
-      const validation = validateAnswer(userAnswerToCheck, correctAnswer);
+      const validation = validateAnswerWithContext(userAnswerToCheck, correctAnswer, problem.problemType);
       console.log(`🔍 Strict validation for double root "${userAnswerToCheck}" vs "${correctAnswer}":`, validation);
-      
+
       if (validation.isCorrect) {
         console.log('✅ Double root is correct and simplified');
         return {
@@ -491,11 +491,11 @@ export default function TrainingMathInput({
     } else {
       // For distinct roots, each user answer must match one of the correct answers
       console.log('🔍 Validating distinct roots');
-      
+
       // Step 1: Direct comparison
       const userSet = new Set(userAnswers.map(ans => ans.trim()));
       const correctSet = new Set(correctAnswers.map(ans => String(ans).trim()));
-      
+
       if (userSet.size === correctSet.size && [...userSet].every(ans => correctSet.has(ans))) {
         console.log('✅ Direct match for distinct roots');
         return {
@@ -509,16 +509,16 @@ export default function TrainingMathInput({
       console.log('🔍 Applying strict validation to each answer');
       const validationResults = [];
       const userAnswerMatches = [];
-      
+
       // Validate each user answer against each correct answer to find matches
       for (const userAns of userAnswers) {
         let bestMatch = null;
         let matchFound = false;
-        
+
         for (const correctAns of correctAnswers) {
-          const validation = validateAnswer(userAns, correctAns);
+          const validation = validateAnswerWithContext(userAns, correctAns, problem.problemType);
           console.log(`🔍 Validating "${userAns}" vs "${correctAns}":`, validation);
-          
+
           if (validation.isCorrect) {
             bestMatch = { userAns, correctAns, validation };
             matchFound = true;
@@ -527,7 +527,7 @@ export default function TrainingMathInput({
             bestMatch = { userAns, correctAns, validation };
           }
         }
-        
+
         if (matchFound) {
           userAnswerMatches.push(bestMatch);
         } else if (bestMatch) {
@@ -545,7 +545,7 @@ export default function TrainingMathInput({
           validationResults.push({ userAns, match: false });
         }
       }
-      
+
       // Check if we have the right number of matches
       if (userAnswerMatches.length === correctAnswers.length && userAnswers.length === correctAnswers.length) {
         console.log('✅ All answers correct and simplified');
@@ -577,7 +577,7 @@ export default function TrainingMathInput({
   // Helper function to validate systems of equations answers (requires ordered pair)
   const validateSystemsAnswer = (userAnswer: string, problem: Problem, ce: any): VerificationResult => {
     console.log('🔍 validateSystemsAnswer called with:', userAnswer);
-    
+
     // Parse user input - expect (x, y) format or x, y format
     let userAnswers: string[] = [];
 
@@ -620,7 +620,7 @@ export default function TrainingMathInput({
 
     // For systems, order matters (x-value, y-value)
     // Step 1: Direct comparison
-    if (userAnswers[0].trim() === correctAnswers[0].trim() && 
+    if (userAnswers[0].trim() === correctAnswers[0].trim() &&
         userAnswers[1].trim() === correctAnswers[1].trim()) {
       console.log('✅ Direct match for systems');
       return {
@@ -631,9 +631,9 @@ export default function TrainingMathInput({
     }
 
     // Step 2: Strict validation for each coordinate (order matters)
-    const xValidation = validateAnswer(userAnswers[0], correctAnswers[0]);
-    const yValidation = validateAnswer(userAnswers[1], correctAnswers[1]);
-    
+    const xValidation = validateAnswerWithContext(userAnswers[0], correctAnswers[0], problem.problemType);
+    const yValidation = validateAnswerWithContext(userAnswers[1], correctAnswers[1], problem.problemType);
+
     console.log(`🔍 X validation ("${userAnswers[0]}" vs "${correctAnswers[0]}"):`, xValidation);
     console.log(`🔍 Y validation ("${userAnswers[1]}" vs "${correctAnswers[1]}"):`, yValidation);
 
@@ -650,7 +650,7 @@ export default function TrainingMathInput({
     // Check if either coordinate needs simplification
     if (xValidation.needsFeedback || yValidation.needsFeedback) {
       console.log('🟡 One or both coordinates need simplification');
-      const feedbackMessage = xValidation.needsFeedback ? 
+      const feedbackMessage = xValidation.needsFeedback ?
         xValidation.feedbackMessage : yValidation.feedbackMessage;
       return {
         isCorrect: false,
@@ -704,7 +704,7 @@ export default function TrainingMathInput({
       }
 
       console.log('🔍 Using strict validation strategy');
-      
+
       // Get the expected answer
       let expectedAnswer: string;
       if (problem.answerRHS !== undefined && problem.answerRHS !== null) {
@@ -719,7 +719,7 @@ export default function TrainingMathInput({
       console.log('🔍 Expected answer:', expectedAnswer);
 
       // Use the strict validation system
-      const validationResult = validateAnswer(userAnswer, expectedAnswer);
+      const validationResult = validateAnswerWithContext(userAnswer, expectedAnswer, problem.problemType);
       console.log('🔍 Strict validation result:', validationResult);
 
       const userTrimmed = userAnswer.trim();
@@ -751,10 +751,10 @@ export default function TrainingMathInput({
 
     } catch (error) {
       console.error('Error during answer verification:', error);
-      
+
       // Ultimate fallback
       const userTrimmed = userAnswer.trim().toLowerCase();
-      const expectedAnswer = problem.answerRHS !== undefined && problem.answerRHS !== null 
+      const expectedAnswer = problem.answerRHS !== undefined && problem.answerRHS !== null
         ? (Array.isArray(problem.answerRHS) ? String(problem.answerRHS[0]) : String(problem.answerRHS))
         : (Array.isArray(problem.answer) ? String(problem.answer[0]) : String(problem.answer));
       const expectedTrimmed = expectedAnswer.trim().toLowerCase();
@@ -818,7 +818,7 @@ export default function TrainingMathInput({
 
     // Always use equations array (clean and simple!)
     const equationsToDisplay = problem.equations;
-    
+
     // Use first equation for responsive text calculation
     const responsiveSettings = calculateResponsiveFontSize(equationsToDisplay[0], problem.direction, 350, 'web');
 
@@ -929,7 +929,7 @@ export default function TrainingMathInput({
 
     // Set up smooth scrolling for equation containers
     cleanupResponsiveFontSizing();
-    
+
     // Wait for DOM to update, then set up smooth scrolling
     setTimeout(() => {
       const equationContainers = problemSection.querySelectorAll('[class*="equation-container-"]');
@@ -1129,7 +1129,7 @@ export default function TrainingMathInput({
               if (item.id && item.id.startsWith('ce-')) {
                 return false;
               }
-              
+
               // Filter out other unwanted menu items by their IDs or labels
               if (item.id) {
                 const unwantedIds = ['insert-matrix', 'insert', 'mode', 'font-style', 'evaluate', 'simplify', 'solve'];
@@ -1137,7 +1137,7 @@ export default function TrainingMathInput({
                   return false;
                 }
               }
-              
+
               if (item.label) {
                 const unwantedLabels = ['insert matrix', 'insert', 'mode', 'font style', 'evaluate', 'simplify', 'solve'];
                 const labelText = typeof item.label === 'string' ? item.label.toLowerCase() : '';
@@ -1145,7 +1145,7 @@ export default function TrainingMathInput({
                   return false;
                 }
               }
-              
+
               return true;
             };
 
@@ -1155,14 +1155,14 @@ export default function TrainingMathInput({
                 if (!filterMenuItem(item)) {
                   return false;
                 }
-                
+
                 // If it has a submenu, filter it recursively
                 if (item.submenu && Array.isArray(item.submenu)) {
                   item.submenu = filterMenuRecursively(item.submenu);
                   // Keep the submenu item only if it still has content after filtering
                   return item.submenu.length > 0;
                 }
-                
+
                 return true;
               });
             };
@@ -1383,7 +1383,7 @@ export default function TrainingMathInput({
         const inputField = containerRef.current.querySelector(`#${ELEMENT_IDS.MATH_FIELD}`);
         if (inputField) {
           inputField.insertAdjacentHTML('afterend', solutionHTML);
-          
+
           // Set up smooth scrolling for solution step containers
           setTimeout(() => {
             const solutionContainers = containerRef.current?.querySelectorAll('[class*="solution-container-"]');

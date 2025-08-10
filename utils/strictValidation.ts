@@ -21,11 +21,11 @@ function areAlgebraicallyEquivalent(expr1: string, expr2: string): boolean {
       console.warn('MathLive Compute Engine not available');
       return false;
     }
-    
+
     // Parse and simplify both expressions using Compute Engine
     const userSimplified = ce.parse(expr1).simplify().latex;
     const correctSimplified = ce.parse(expr2).simplify().latex;
-    
+
     // Check if they simplify to the same form
     return userSimplified === correctSimplified;
   } catch (error) {
@@ -35,6 +35,53 @@ function areAlgebraicallyEquivalent(expr1: string, expr2: string): boolean {
 }
 
 /**
+ * Returns true if the expression is a single numeric scalar (integer or numeric fraction/decimal)
+ * with no variables. Accepts LaTeX forms like \frac{a}{b}.
+ */
+function isNumericScalar(expression: string): boolean {
+  if (!expression || typeof expression !== 'string') return false;
+
+  const trimmed = expression.trim();
+
+  // Quick reject if it contains variables or commas (multiple values)
+  if (/[a-zA-Z]/.test(trimmed) || trimmed.includes(',')) return false;
+
+  // Normalize some LaTeX to plain forms for detection
+  const plainish = trimmed
+    .replace(/\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/$2') // \frac{a}{b} -> (a)/b
+    .replace(/\frac(\d+)(\d+)/g, '$1/$2') // \frac34 -> 3/4
+    .replace(/\left|\right/g, '')
+    .replace(/[{}\s]/g, '');
+
+  // Now plainish should only contain digits, /, ., parentheses, and +/-
+  // Remove surrounding parentheses repeatedly
+  const stripParens = (s: string): string => {
+    let prev = s;
+    let cur = s;
+    do {
+      prev = cur;
+      if (cur.startsWith('(') && cur.endsWith(')')) {
+        cur = cur.slice(1, -1);
+      }
+    } while (cur !== prev);
+    return cur;
+  };
+
+  const core = stripParens(plainish);
+
+  // Accept forms like: -12, 3.5, 10/7, (12)/5, -3/4
+  // But reject anything with multiple slashes or invalid chars
+  if (!/^[-+]?\d+(?:\.\d+)?(?:\/[-+]?\d+(?:\.\d+)?)?$/.test(core)) {
+    return false;
+  }
+
+  return true;
+}
+
+const SIMPLIFY_FEEDBACK =
+  'Almost there! Fully simplify your answer, list terms in descending order of degree, and remove extraneous parentheses.';
+
+/**
  * Checks if an expression is in strict canonical form
  * - Fractions must be in lowest terms
  * - Polynomials must be in descending degree order
@@ -42,50 +89,50 @@ function areAlgebraicallyEquivalent(expr1: string, expr2: string): boolean {
  */
 export function isInCanonicalForm(expression: string): boolean {
   if (!expression || typeof expression !== 'string') return false;
-  
+
   const trimmed = expression.trim();
-  
+
   // Check for simple fraction like 15/3, 6/2, etc.
   const simpleFractionMatch = trimmed.match(/^(\d+)\/(\d+)$/);
   if (simpleFractionMatch) {
     const numerator = parseInt(simpleFractionMatch[1]);
     const denominator = parseInt(simpleFractionMatch[2]);
-    
+
     // Check if the fraction can be simplified
     const gcd = findGCD([numerator, denominator]);
     if (gcd > 1) {
       return false; // Not in lowest terms
     }
-    
+
     // Also check if it's an improper fraction that should be a whole number
     if (numerator % denominator === 0) {
       return false; // Should be simplified to whole number
     }
   }
-  
+
   // Check for complex fractions with variables
   if (trimmed.includes('/')) {
     const fractionMatch = trimmed.match(/^\(([^)]+)\)\/(\d+)$/) || trimmed.match(/^([^/]+)\/(\d+)$/);
     if (fractionMatch) {
       const numerator = fractionMatch[1];
       const denominator = parseInt(fractionMatch[2]);
-      
+
       // Extract coefficients from numerator to check GCD
       const coefficients = extractCoefficients(numerator);
       coefficients.push(denominator);
-      
+
       const gcd = findGCD(coefficients);
       if (gcd > 1) {
         return false; // Not in lowest terms
       }
     }
   }
-  
+
   // Check polynomial ordering (descending degree)
   if (hasPolynomialTerms(trimmed)) {
     return isInDescendingDegreeOrder(trimmed);
   }
-  
+
   return true;
 }
 
@@ -94,17 +141,17 @@ export function isInCanonicalForm(expression: string): boolean {
  */
 function extractCoefficients(expression: string): number[] {
   const coefficients: number[] = [];
-  
+
   // Match patterns like: 12y, -4, +6x, 2y-6, etc.
   const matches = expression.match(/([+-]?\d+)/g) || [];
-  
+
   for (const match of matches) {
     const coeff = parseInt(match);
     if (!isNaN(coeff) && coeff !== 0) {
       coefficients.push(Math.abs(coeff));
     }
   }
-  
+
   return coefficients;
 }
 
@@ -114,11 +161,11 @@ function extractCoefficients(expression: string): number[] {
 function findGCD(numbers: number[]): number {
   if (numbers.length === 0) return 1;
   if (numbers.length === 1) return numbers[0];
-  
+
   const gcd = (a: number, b: number): number => {
     return b === 0 ? Math.abs(a) : gcd(b, a % b);
   };
-  
+
   return numbers.reduce(gcd);
 }
 
@@ -135,14 +182,14 @@ function hasPolynomialTerms(expression: string): boolean {
 function isInDescendingDegreeOrder(expression: string): boolean {
   // Extract terms with their degrees
   const terms = extractPolynomialTerms(expression);
-  
+
   // Check if degrees are in descending order
   for (let i = 1; i < terms.length; i++) {
     if (terms[i].degree > terms[i-1].degree) {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -151,15 +198,15 @@ function isInDescendingDegreeOrder(expression: string): boolean {
  */
 function extractPolynomialTerms(expression: string): Array<{term: string, degree: number}> {
   const terms: Array<{term: string, degree: number}> = [];
-  
+
   // Split by + and - while keeping the signs
   const termStrings = expression.split(/(?=[+-])/).filter(t => t.trim());
-  
+
   for (const termStr of termStrings) {
     const degree = getTermDegree(termStr.trim());
     terms.push({ term: termStr.trim(), degree });
   }
-  
+
   return terms;
 }
 
@@ -172,12 +219,12 @@ function getTermDegree(term: string): number {
   if (explicitMatch) {
     return parseInt(explicitMatch[1]);
   }
-  
+
   // Handle implicit degree 1 (just variable like x, y)
   if (/[a-zA-Z]/.test(term)) {
     return 1;
   }
-  
+
   // Constant term
   return 0;
 }
@@ -192,25 +239,75 @@ export function validateAnswer(userAnswer: string, correctAnswer: string): Valid
   if (!userAnswer || !correctAnswer) {
     return { isCorrect: false, needsFeedback: false };
   }
-  
+
   const normalizedUser = normalizeExpression(userAnswer);
   const normalizedCorrect = normalizeExpression(correctAnswer);
-  
+
   // Step 1: Identical check
   if (normalizedUser === normalizedCorrect) {
     return { isCorrect: true, needsFeedback: false };
   }
-  
+
   // Step 2: Check if mathematically equivalent after simplification
   if (areAlgebraicallyEquivalent(userAnswer, correctAnswer)) {
-    return { 
-      isCorrect: false, 
-      needsFeedback: true, 
-      feedbackMessage: "Almost there! Fully simplify your answer, list terms in descending order of degree, and remove extraneous parentheses."
+    return {
+      isCorrect: false,
+      needsFeedback: true,
+      feedbackMessage: SIMPLIFY_FEEDBACK
     };
   }
-  
+
   // Step 3: Not equivalent at all
+  return { isCorrect: false, needsFeedback: false };
+}
+
+/**
+ * Context-aware validation:
+ * - If expressions are identical → correct
+ * - If problemType is 'polynomial-simplification' and algebraically equivalent → needs simplify feedback
+ * - If both answers are numeric-only (single integer/decimal/fraction) → require canonical; do NOT accept equivalence
+ * - Otherwise (variables present):
+ *   - If algebraically equivalent → correct
+ *   - Else → wrong
+ */
+export function validateAnswerWithContext(
+  userAnswer: string,
+  correctAnswer: string,
+  problemType: string
+): ValidationResult {
+  if (!userAnswer || !correctAnswer) {
+    return { isCorrect: false, needsFeedback: false };
+  }
+
+  const normalizedUser = normalizeExpression(userAnswer);
+  const normalizedCorrect = normalizeExpression(correctAnswer);
+
+  // Identical → correct
+  if (normalizedUser === normalizedCorrect) {
+    return { isCorrect: true, needsFeedback: false };
+  }
+
+  const bothNumericOnly = isNumericScalar(userAnswer) && isNumericScalar(correctAnswer);
+  const equivalent = areAlgebraicallyEquivalent(userAnswer, correctAnswer);
+
+  // Simplification problems always require canonical form when equivalent
+  if (problemType === 'polynomial-simplification') {
+    if (equivalent) {
+      return { isCorrect: false, needsFeedback: true, feedbackMessage: SIMPLIFY_FEEDBACK };
+    }
+    return { isCorrect: false, needsFeedback: false };
+  }
+
+  // For numeric-only answers on non-simplification problems, be strict: do not accept equivalence
+  if (bothNumericOnly) {
+    return { isCorrect: false, needsFeedback: false };
+  }
+
+  // For variable expressions on non-simplification problems, accept algebraic equivalence as correct
+  if (equivalent) {
+    return { isCorrect: true, needsFeedback: false };
+  }
+
   return { isCorrect: false, needsFeedback: false };
 }
 

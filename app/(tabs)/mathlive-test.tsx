@@ -2,11 +2,11 @@ import TrainingMathInput from '@/components/TrainingMathInput';
 import { useInitializeApp, useProblemStore, useUserProgressStore } from '@/store';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  StyleSheet,
-  View
+    Alert,
+    StyleSheet,
+    View
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Add the VerificationResult interface to match the component
 interface VerificationResult {
@@ -28,7 +28,7 @@ export default function MathLiveTest() {
   const problemStore = useProblemStore();
   const userProgressStore = useUserProgressStore();
   const { initializeAll } = useInitializeApp();
-  
+
   // Get safe area insets
   const insets = useSafeAreaInsets();
 
@@ -95,7 +95,7 @@ export default function MathLiveTest() {
       const isAlmostThere = result.errorMessage?.includes('Almost there') || result.errorMessage?.includes('Fully simplify');
       const alertTitle = isAlmostThere ? '🔍 Almost there!' : '🔄 Not Quite';
       const alertMessage = result.errorMessage || 'Your answer doesn\'t match our solution. Would you like to try again or see the solution?';
-      
+
       Alert.alert(
         alertTitle,
         alertMessage,
@@ -113,8 +113,9 @@ export default function MathLiveTest() {
           {
             text: 'Show Solution',
             onPress: async () => {
-              // Only record as incorrect if they give up by showing solution after getting it wrong
-              if (!hasRecordedAttempt && hadWrongAttempt) {
+              // Record as incorrect if they give up by showing solution after getting it wrong
+              // We are already in the incorrect-answer branch, so avoid relying on potentially stale state
+              if (!hasRecordedAttempt) {
                 await userProgressStore.recordAttempt(false);
                 setHasRecordedAttempt(true);
               }

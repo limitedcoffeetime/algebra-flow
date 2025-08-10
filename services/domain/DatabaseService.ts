@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { validateAnswerWithContext } from '@/utils/strictValidation';
 import { Problem, repositoryFactory } from '../../repositories';
 import { CreateProblemInput, UpdateProblemInput } from '../../repositories/models/Problem';
 import { CreateProblemBatchInput } from '../../repositories/models/ProblemBatch';
@@ -9,7 +10,6 @@ import { DashboardData } from '../types/dashboard';
 import { ProblemBatchService } from './ProblemBatchService';
 import { ProblemService } from './ProblemService';
 import { UserProgressService } from './UserProgressService';
-import { validateAnswer, ValidationResult } from '@/utils/strictValidation';
 
 /**
  * Main database service that provides a unified interface for all database operations.
@@ -153,8 +153,12 @@ export class DatabaseService {
       throw new Error(`Problem ${problemId} not found`);
     }
 
-    // Use strict validation with feedback for improvement suggestions
-    const validationResult = validateAnswer(userAnswer.trim(), String(problem.answer));
+    // Context-aware validation with problem type
+    const validationResult = validateAnswerWithContext(
+      userAnswer.trim(),
+      String(problem.answer),
+      problem.problemType
+    );
 
     // Only record attempt and update problem if it's correct or definitely wrong (no feedback)
     if (validationResult.isCorrect || !validationResult.needsFeedback) {
@@ -163,7 +167,7 @@ export class DatabaseService {
     }
 
     logger.info(`Answer submitted for problem ${problemId}: ${
-      validationResult.isCorrect ? 'correct' : 
+      validationResult.isCorrect ? 'correct' :
       validationResult.needsFeedback ? 'needs feedback' : 'incorrect'
     }`);
 
