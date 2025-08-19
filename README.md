@@ -16,6 +16,8 @@
 
 Algebra Flow is available on the App Store for iOS devices.
 
+[Download on the App Store](https://apps.apple.com/us/app/algebra-flow/id6748621915)
+
 ## Development
 
 MVP Built during summer 2025 thanks to the generous financial support of Joe Zurier.
