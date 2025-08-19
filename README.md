@@ -10,7 +10,7 @@
 - **Progress Tracking**: Monitor your learning journey with detailed statistics
 - **Offline-First**: Practice anytime, anywhere - problems sync automatically when connected
 - **Multiple Problem Types**: Linear equations, quadratic equations, systems of equations, and more
-- **Intelligent Validation**: Advanced math equivalence checking accepts multiple correct answer formats
+- **Intelligent Validation**: Advanced math equivalence checking accepts multiple correct answer formats using [MathLive](https://github.com/arnog/mathlive)
 
 ## Availability
 
