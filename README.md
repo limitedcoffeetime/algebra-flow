@@ -1,6 +1,6 @@
 # Algebra Flow
 
-A modern mobile algebra learning app that makes practicing math engaging and accessible while keeping you in a flow. Built with React Native and Expo, Algebra Flow features professional math input, step-by-step solutions, and automated problem generation.
+This repository contains the source code for Algebra Flow, a modern mobile algebra learning app that makes practicing math engaging and accessible while keeping you in a flow. Built with React Native and Expo, Algebra Flow features professional math input, step-by-step solutions, and automated problem generation.
 
 ## Features
 
