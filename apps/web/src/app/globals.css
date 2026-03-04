@@ -10,6 +10,9 @@
   --danger: #d9534f;
   --warning: #f4a62a;
   --focus-ring: rgba(139, 191, 255, 0.95);
+  --math-display-size: clamp(1.3rem, 0.95rem + 1vw, 1.75rem);
+  --math-answer-size: clamp(1.2rem, 0.9rem + 0.9vw, 1.6rem);
+  --math-step-size: clamp(1.05rem, 0.9rem + 0.45vw, 1.25rem);
 }
 
 * {
@@ -304,6 +307,11 @@ math-field:focus-visible {
   overflow-x: auto;
 }
 
+.equationRow .mathReadonly {
+  font-size: var(--math-display-size);
+  min-height: clamp(64px, 7vw, 96px);
+}
+
 .answerHint {
   font-size: 0.92rem;
 }
@@ -322,6 +330,11 @@ math-field:focus-visible {
   padding: 0.75rem;
   color: var(--text);
   display: block;
+}
+
+.mathInput {
+  font-size: var(--math-answer-size);
+  min-height: clamp(84px, 8vw, 112px);
 }
 
 .mathReadonly {
@@ -489,6 +502,10 @@ math-field:focus-visible {
   background: #091224;
   padding: 0.5rem;
   overflow-x: auto;
+}
+
+.stepMathWrap .mathReadonly {
+  font-size: var(--math-step-size);
 }
 
 .statsGrid {
