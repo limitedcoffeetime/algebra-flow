@@ -20,7 +20,6 @@ export default function SettingsPage() {
   const clearAllData = useAlgebraStore((state) => state.clearAllData);
   const selectedDifficulty = useAlgebraStore((state) => state.selectedDifficulty);
   const selectedProblemType = useAlgebraStore((state) => state.selectedProblemType);
-  const randomSampling = useAlgebraStore((state) => state.randomSampling);
   const getFilteredProblemCount = useAlgebraStore((state) => state.getFilteredProblemCount);
 
   const { showToast } = useToast();
@@ -32,12 +31,11 @@ export default function SettingsPage() {
   }, [lastSyncTimestamp]);
 
   const filteredProblemCount = getFilteredProblemCount();
-  const sessionStyleLabel = randomSampling ? 'Mixed Review' : 'Structured Path';
 
   const runSync = (force: boolean) => {
     void syncProblems(force).then((result) => {
       showToast({
-        title: result.updated ? 'Sync complete' : 'Sync status',
+        title: result.updated ? 'Library updated' : 'Library status',
         description: result.message,
         variant: result.updated ? 'success' : 'info',
       });
@@ -50,15 +48,11 @@ export default function SettingsPage() {
         <h1>Settings</h1>
         <div className="statsGrid">
           <div className="statBlock">
-            <span className="statLabel">Last Sync</span>
+            <span className="statLabel">Last Updated</span>
             <span className="statValue">{formattedLastSync}</span>
           </div>
           <div className="statBlock">
-            <span className="statLabel">Latest Batch</span>
-            <span className="statValue">{latestInfo?.batchId ?? batch?.id ?? 'Unknown'}</span>
-          </div>
-          <div className="statBlock">
-            <span className="statLabel">Problems in Batch</span>
+            <span className="statLabel">Problems Available</span>
             <span className="statValue">{batch?.problems.length ?? latestInfo?.problemCount ?? 0}</span>
           </div>
         </div>
@@ -72,7 +66,7 @@ export default function SettingsPage() {
             onClick={() => runSync(false)}
             disabled={isSyncing}
           >
-            {isSyncing ? 'Syncing...' : 'Refresh & Sync'}
+            {isSyncing ? 'Updating...' : 'Update Problem Library'}
           </button>
           <button
             type="button"
@@ -80,7 +74,7 @@ export default function SettingsPage() {
             onClick={() => runSync(true)}
             disabled={isSyncing}
           >
-            Force Sync
+            Reload Library
           </button>
         </div>
       </section>
@@ -88,15 +82,14 @@ export default function SettingsPage() {
       <section className="card">
         <h2>Learning Setup</h2>
         <p>
-          Difficulty, topic, and session style are now first-class controls on Home and Practice.
+          Difficulty and topic controls live on Home and Practice.
         </p>
         <p>
           Current setup: <strong>{formatDifficultyLabel(selectedDifficulty)}</strong>,{' '}
-          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>,{' '}
-          <strong>{sessionStyleLabel}</strong>.
+          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>.
         </p>
         <p>
-          Matching problems: <strong>{filteredProblemCount}</strong>
+          Problems left to solve: <strong>{filteredProblemCount}</strong>
         </p>
         <div className="buttonRow">
           <Link href="/" className="primaryButton">
@@ -139,7 +132,7 @@ export default function SettingsPage() {
       <ConfirmDialog
         open={dialog === 'clear'}
         title="Clear Local Data"
-        message="This removes local batches, progress, and sync cache. You can sync again afterward."
+        message="This removes downloaded problems and local progress from this browser. You can download again anytime."
         confirmText="Clear Data"
         destructive
         onCancel={() => setDialog(null)}

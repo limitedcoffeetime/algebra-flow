@@ -188,7 +188,6 @@ export default function PracticePage() {
   const syncProblems = useAlgebraStore((state) => state.syncProblems);
   const isSyncing = useAlgebraStore((state) => state.isSyncing);
   const syncError = useAlgebraStore((state) => state.syncError);
-  const randomSampling = useAlgebraStore((state) => state.randomSampling);
   const getFilteredProblemCount = useAlgebraStore((state) => state.getFilteredProblemCount);
   const getCurrentProblemPosition = useAlgebraStore((state) => state.getCurrentProblemPosition);
 
@@ -207,14 +206,14 @@ export default function PracticePage() {
       <div className="stack">
         <section className="card">
           <h1>Practice</h1>
-          <p>No local problem batch is loaded yet.</p>
+          <p>No problem library is loaded yet.</p>
           <button
             type="button"
             className="primaryButton"
             onClick={() => {
               void syncProblems(true).then((result) => {
                 showToast({
-                  title: result.updated ? 'Sync complete' : 'Sync status',
+                  title: result.updated ? 'Library updated' : 'Library status',
                   description: result.message,
                   variant: result.updated ? 'success' : 'info',
                 });
@@ -222,7 +221,7 @@ export default function PracticePage() {
             }}
             disabled={isSyncing}
           >
-            {isSyncing ? 'Syncing...' : 'Download Problems'}
+            {isSyncing ? 'Updating...' : 'Download Problems'}
           </button>
           {syncError ? <p className="errorText">{syncError}</p> : null}
         </section>
@@ -244,8 +243,7 @@ export default function PracticePage() {
   }
 
   const positionLabel = currentProblemPosition ?? 1;
-  const modeLabel = randomSampling ? 'random' : 'ordered';
-  const progressLabel = `${positionLabel}/${filteredProblemCount} (${modeLabel})`;
+  const progressLabel = `${positionLabel}/${filteredProblemCount}`;
   const sessionKey = problem.id ?? `${problem.problemType}-${currentProblemIndex}`;
 
   return (

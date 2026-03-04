@@ -26,7 +26,7 @@ export default function ProgressPage() {
 
     const completed = batch.problems.reduce((count, problem, index) => {
       const id = problem.id ?? `${problem.problemType}-${index}`;
-      return count + (problemAttempts[id]?.isCompleted ? 1 : 0);
+      return count + (problemAttempts[id]?.isCorrect ? 1 : 0);
     }, 0);
 
     return {
@@ -62,7 +62,7 @@ export default function ProgressPage() {
       </section>
 
       <section className="card">
-        <h2>Current Batch</h2>
+        <h2>Problem Library Progress</h2>
         {batch ? (
           <>
             <div className="progressMeta">
@@ -76,10 +76,6 @@ export default function ProgressPage() {
             </div>
             <div className="statsGrid">
               <div className="statBlock">
-                <span className="statLabel">Batch ID</span>
-                <span className="statValue">{batch.id}</span>
-              </div>
-              <div className="statBlock">
                 <span className="statLabel">Completed</span>
                 <span className="statValue">{batchTotals.completed}</span>
               </div>
@@ -88,13 +84,13 @@ export default function ProgressPage() {
                 <span className="statValue">{batchTotals.remaining}</span>
               </div>
               <div className="statBlock">
-                <span className="statLabel">Total Problems</span>
+                <span className="statLabel">Library Size</span>
                 <span className="statValue">{batchTotals.total}</span>
               </div>
             </div>
           </>
         ) : (
-          <p>No batch is loaded yet. Go to Settings and run sync.</p>
+          <p>No problem library is loaded yet. Open Settings to update your library.</p>
         )}
       </section>
 

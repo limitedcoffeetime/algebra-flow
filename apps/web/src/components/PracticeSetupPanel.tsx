@@ -17,10 +17,8 @@ export function PracticeSetupPanel({ context, compact = false }: PracticeSetupPa
   const batch = useAlgebraStore((state) => state.batch);
   const selectedDifficulty = useAlgebraStore((state) => state.selectedDifficulty);
   const selectedProblemType = useAlgebraStore((state) => state.selectedProblemType);
-  const randomSampling = useAlgebraStore((state) => state.randomSampling);
   const setDifficultyFilter = useAlgebraStore((state) => state.setDifficultyFilter);
   const setProblemTypeFilter = useAlgebraStore((state) => state.setProblemTypeFilter);
-  const setRandomSampling = useAlgebraStore((state) => state.setRandomSampling);
   const resetPracticePreferences = useAlgebraStore((state) => state.resetPracticePreferences);
   const getAvailableProblemTypes = useAlgebraStore((state) => state.getAvailableProblemTypes);
   const getFilteredProblemCount = useAlgebraStore((state) => state.getFilteredProblemCount);
@@ -35,14 +33,14 @@ export function PracticeSetupPanel({ context, compact = false }: PracticeSetupPa
   const title = context === 'home' ? 'Choose What To Practice' : 'Adjust Your Practice Focus';
   const description =
     context === 'home'
-      ? 'Set difficulty, topic, and session style before you start.'
+      ? 'Set difficulty and topic before you start.'
       : 'Update your difficulty and topic in-session without leaving practice.';
 
   const handleReset = () => {
     resetPracticePreferences();
     showToast({
       title: 'Practice setup reset',
-      description: 'Difficulty/type filters cleared and mixed review enabled.',
+      description: 'Difficulty and topic filters cleared.',
       variant: 'success',
     });
   };
@@ -102,45 +100,20 @@ export function PracticeSetupPanel({ context, compact = false }: PracticeSetupPa
             })}
           </div>
         ) : (
-          <p className="helperText">Sync problems first to unlock topic selection.</p>
+          <p className="helperText">Update your problem library first to unlock topic selection.</p>
         )}
-      </div>
-
-      <div className="setupSection">
-        <p className="setupLabel">Session Style</p>
-        <div className="modeCardGrid">
-          <button
-            type="button"
-            className={`modeCard ${randomSampling ? 'modeCardActive' : ''}`}
-            aria-pressed={randomSampling}
-            onClick={() => setRandomSampling(true)}
-          >
-            <span className="modeCardTitle">Mixed Review</span>
-            <span className="modeCardBody">Randomized order to improve recall and retention.</span>
-          </button>
-          <button
-            type="button"
-            className={`modeCard ${!randomSampling ? 'modeCardActive' : ''}`}
-            aria-pressed={!randomSampling}
-            onClick={() => setRandomSampling(false)}
-          >
-            <span className="modeCardTitle">Structured Path</span>
-            <span className="modeCardBody">Step through matching problems in a stable sequence.</span>
-          </button>
-        </div>
       </div>
 
       <div className="setupFooter">
         <p className="setupSummary">
           Current setup: <strong>{formatDifficultyLabel(selectedDifficulty)}</strong>,{' '}
-          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>,{' '}
-          <strong>{randomSampling ? 'Mixed Review' : 'Structured Path'}</strong>
+          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>
         </p>
         <p className={`setupCount ${hasBatch && !hasMatches ? 'setupCountWarning' : ''}`}>
-          Matching problems: <strong>{filteredProblemCount}</strong>
+          Problems left to solve: <strong>{filteredProblemCount}</strong>
         </p>
         {hasBatch && !hasMatches ? (
-          <p className="helperText">No matches found. Change difficulty/type or reset setup.</p>
+          <p className="helperText">No unsolved problems in this setup. Change filters or reset.</p>
         ) : null}
         <div className="buttonRow">
           {context === 'home' ? (
@@ -158,7 +131,7 @@ export function PracticeSetupPanel({ context, compact = false }: PracticeSetupPa
             Reset Setup
           </button>
           <Link href="/settings" className="secondaryButton">
-            Sync & Data Settings
+            Library & Data Settings
           </Link>
         </div>
       </div>

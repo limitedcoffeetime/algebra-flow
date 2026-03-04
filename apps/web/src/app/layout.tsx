@@ -5,7 +5,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Algebra Flow Web',
-  description: 'Practice algebra in your browser with daily S3 problem sync.',
+  description: 'Practice algebra in your browser with focused mixed-review sessions.',
 };
 
 export default function RootLayout({

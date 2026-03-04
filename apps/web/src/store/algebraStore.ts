@@ -28,7 +28,6 @@ interface AlgebraState {
   problemsCorrect: number;
   selectedDifficulty: DifficultyFilter;
   selectedProblemType: ProblemTypeFilter;
-  randomSampling: boolean;
   lastProblemHash: string | null;
   lastSyncTimestamp: string | null;
   isSyncing: boolean;
@@ -40,7 +39,6 @@ interface AlgebraState {
   syncProblems: (force?: boolean) => Promise<SyncResult>;
   setDifficultyFilter: (difficulty: DifficultyFilter) => void;
   setProblemTypeFilter: (problemType: ProblemTypeFilter) => void;
-  setRandomSampling: (enabled: boolean) => void;
   resetPracticePreferences: () => void;
   advanceProblem: () => void;
   recordAttempt: (problemId: string, userAnswer: string, isCorrect: boolean) => void;
@@ -57,7 +55,6 @@ interface PracticeSelectionState {
   currentProblemIndex: number;
   selectedDifficulty: DifficultyFilter;
   selectedProblemType: ProblemTypeFilter;
-  randomSampling: boolean;
 }
 
 const noopStorage: Storage = {
@@ -77,10 +74,21 @@ const syncCache = new SyncCache();
 function getEligibleIndices(
   batch: ProblemBatchApiResponse | null,
   selection: Pick<PracticeSelectionState, 'selectedDifficulty' | 'selectedProblemType'>,
+  problemAttempts: Record<string, ProblemAttemptState>,
 ): number[] {
-  return getFilteredProblemIndices(batch, {
+  if (!batch) {
+    return [];
+  }
+
+  const filtered = getFilteredProblemIndices(batch, {
     difficulty: selection.selectedDifficulty,
     problemType: selection.selectedProblemType,
+  });
+
+  return filtered.filter((problemIndex) => {
+    const problem = batch.problems[problemIndex];
+    const problemId = problem.id ?? `${problem.problemType}-${problemIndex}`;
+    return problemAttempts[problemId]?.isCorrect !== true;
   });
 }
 
@@ -90,55 +98,45 @@ function randomFromArray(values: number[]): number {
 
 function chooseInitialProblemIndex(
   batch: ProblemBatchApiResponse | null,
-  selection: Pick<PracticeSelectionState, 'selectedDifficulty' | 'selectedProblemType' | 'randomSampling'>,
+  selection: Pick<PracticeSelectionState, 'selectedDifficulty' | 'selectedProblemType'>,
+  problemAttempts: Record<string, ProblemAttemptState>,
 ): number {
-  const eligible = getEligibleIndices(batch, selection);
+  const eligible = getEligibleIndices(batch, selection, problemAttempts);
   if (eligible.length === 0) {
     return -1;
   }
 
-  if (selection.randomSampling) {
-    return randomFromArray(eligible);
-  }
-
-  return eligible[0];
+  return randomFromArray(eligible);
 }
 
 function chooseNextProblemIndex(
   batch: ProblemBatchApiResponse | null,
   selection: PracticeSelectionState,
+  problemAttempts: Record<string, ProblemAttemptState>,
 ): number {
-  const eligible = getEligibleIndices(batch, selection);
+  const eligible = getEligibleIndices(batch, selection, problemAttempts);
   if (eligible.length === 0) {
     return -1;
   }
 
-  if (selection.randomSampling) {
-    if (eligible.length === 1) {
-      return eligible[0];
-    }
-
-    let next = randomFromArray(eligible);
-    while (next === selection.currentProblemIndex) {
-      next = randomFromArray(eligible);
-    }
-
-    return next;
-  }
-
-  const currentPosition = eligible.indexOf(selection.currentProblemIndex);
-  if (currentPosition < 0) {
+  if (eligible.length === 1) {
     return eligible[0];
   }
 
-  return eligible[(currentPosition + 1) % eligible.length];
+  let next = randomFromArray(eligible);
+  while (next === selection.currentProblemIndex) {
+    next = randomFromArray(eligible);
+  }
+
+  return next;
 }
 
 function keepOrRecomputeCurrentIndex(
   batch: ProblemBatchApiResponse | null,
   selection: PracticeSelectionState,
+  problemAttempts: Record<string, ProblemAttemptState>,
 ): number {
-  const eligible = getEligibleIndices(batch, selection);
+  const eligible = getEligibleIndices(batch, selection, problemAttempts);
   if (eligible.length === 0) {
     return -1;
   }
@@ -147,11 +145,7 @@ function keepOrRecomputeCurrentIndex(
     return selection.currentProblemIndex;
   }
 
-  if (selection.randomSampling) {
-    return randomFromArray(eligible);
-  }
-
-  return eligible[0];
+  return randomFromArray(eligible);
 }
 
 export const useAlgebraStore = create<AlgebraState>()(
@@ -165,7 +159,6 @@ export const useAlgebraStore = create<AlgebraState>()(
       problemsCorrect: 0,
       selectedDifficulty: 'all',
       selectedProblemType: 'all',
-      randomSampling: true,
       lastProblemHash: null,
       lastSyncTimestamp: null,
       isSyncing: false,
@@ -227,7 +220,7 @@ export const useAlgebraStore = create<AlgebraState>()(
 
             return {
               updated: false,
-              message: 'Already up to date.',
+              message: 'Your problem library is already up to date.',
             };
           }
 
@@ -239,12 +232,11 @@ export const useAlgebraStore = create<AlgebraState>()(
               currentProblemIndex: state.currentProblemIndex,
               selectedDifficulty: state.selectedDifficulty,
               selectedProblemType: state.selectedProblemType,
-              randomSampling: state.randomSampling,
             };
 
             const nextCurrentProblemIndex = shouldResetAttempts
-              ? chooseInitialProblemIndex(batch, selection)
-              : keepOrRecomputeCurrentIndex(batch, selection);
+              ? chooseInitialProblemIndex(batch, selection, {})
+              : keepOrRecomputeCurrentIndex(batch, selection, state.problemAttempts);
 
             return {
               batch,
@@ -268,10 +260,11 @@ export const useAlgebraStore = create<AlgebraState>()(
 
           return {
             updated: true,
-            message: 'Downloaded the latest problem batch.',
+            message: 'Problem library updated.',
           };
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Failed to sync problems.';
+          console.error('Problem library update failed:', error);
+          const message = 'Could not update the problem library. Check your connection and try again.';
 
           set({
             isSyncing: false,
@@ -291,12 +284,15 @@ export const useAlgebraStore = create<AlgebraState>()(
             currentProblemIndex: state.currentProblemIndex,
             selectedDifficulty: difficulty,
             selectedProblemType: state.selectedProblemType,
-            randomSampling: state.randomSampling,
           };
 
           return {
             selectedDifficulty: difficulty,
-            currentProblemIndex: keepOrRecomputeCurrentIndex(state.batch, selection),
+            currentProblemIndex: keepOrRecomputeCurrentIndex(
+              state.batch,
+              selection,
+              state.problemAttempts,
+            ),
           };
         });
       },
@@ -307,28 +303,15 @@ export const useAlgebraStore = create<AlgebraState>()(
             currentProblemIndex: state.currentProblemIndex,
             selectedDifficulty: state.selectedDifficulty,
             selectedProblemType: problemType,
-            randomSampling: state.randomSampling,
           };
 
           return {
             selectedProblemType: problemType,
-            currentProblemIndex: keepOrRecomputeCurrentIndex(state.batch, selection),
-          };
-        });
-      },
-
-      setRandomSampling: (enabled) => {
-        set((state) => {
-          const selection: PracticeSelectionState = {
-            currentProblemIndex: state.currentProblemIndex,
-            selectedDifficulty: state.selectedDifficulty,
-            selectedProblemType: state.selectedProblemType,
-            randomSampling: enabled,
-          };
-
-          return {
-            randomSampling: enabled,
-            currentProblemIndex: keepOrRecomputeCurrentIndex(state.batch, selection),
+            currentProblemIndex: keepOrRecomputeCurrentIndex(
+              state.batch,
+              selection,
+              state.problemAttempts,
+            ),
           };
         });
       },
@@ -339,14 +322,16 @@ export const useAlgebraStore = create<AlgebraState>()(
             currentProblemIndex: state.currentProblemIndex,
             selectedDifficulty: 'all',
             selectedProblemType: 'all',
-            randomSampling: true,
           };
 
           return {
             selectedDifficulty: 'all',
             selectedProblemType: 'all',
-            randomSampling: true,
-            currentProblemIndex: keepOrRecomputeCurrentIndex(state.batch, selection),
+            currentProblemIndex: keepOrRecomputeCurrentIndex(
+              state.batch,
+              selection,
+              state.problemAttempts,
+            ),
           };
         });
       },
@@ -357,8 +342,7 @@ export const useAlgebraStore = create<AlgebraState>()(
             currentProblemIndex: state.currentProblemIndex,
             selectedDifficulty: state.selectedDifficulty,
             selectedProblemType: state.selectedProblemType,
-            randomSampling: state.randomSampling,
-          }),
+          }, state.problemAttempts),
         }));
       },
 
@@ -410,8 +394,7 @@ export const useAlgebraStore = create<AlgebraState>()(
             currentProblemIndex: state.currentProblemIndex,
             selectedDifficulty: state.selectedDifficulty,
             selectedProblemType: state.selectedProblemType,
-            randomSampling: state.randomSampling,
-          }),
+          }, {}),
           problemAttempts: {},
           problemsAttempted: 0,
           problemsCorrect: 0,
@@ -430,7 +413,6 @@ export const useAlgebraStore = create<AlgebraState>()(
           problemsCorrect: 0,
           selectedDifficulty: state.selectedDifficulty,
           selectedProblemType: state.selectedProblemType,
-          randomSampling: state.randomSampling,
           lastProblemHash: null,
           lastSyncTimestamp: null,
           syncError: null,
@@ -451,7 +433,7 @@ export const useAlgebraStore = create<AlgebraState>()(
         return getEligibleIndices(state.batch, {
           selectedDifficulty: state.selectedDifficulty,
           selectedProblemType: state.selectedProblemType,
-        }).length;
+        }, state.problemAttempts).length;
       },
 
       getCurrentProblemPosition: () => {
@@ -463,7 +445,7 @@ export const useAlgebraStore = create<AlgebraState>()(
         const eligible = getEligibleIndices(state.batch, {
           selectedDifficulty: state.selectedDifficulty,
           selectedProblemType: state.selectedProblemType,
-        });
+        }, state.problemAttempts);
 
         const position = eligible.indexOf(state.currentProblemIndex);
         return position >= 0 ? position + 1 : null;
@@ -487,7 +469,6 @@ export const useAlgebraStore = create<AlgebraState>()(
         problemsCorrect: state.problemsCorrect,
         selectedDifficulty: state.selectedDifficulty,
         selectedProblemType: state.selectedProblemType,
-        randomSampling: state.randomSampling,
         lastProblemHash: state.lastProblemHash,
         lastSyncTimestamp: state.lastSyncTimestamp,
       }),

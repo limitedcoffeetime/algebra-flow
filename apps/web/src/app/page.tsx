@@ -7,6 +7,7 @@ import { useAlgebraStore } from '@/store/algebraStore';
 export default function HomePage() {
   const isHydrated = useAlgebraStore((state) => state.isHydrated);
   const batch = useAlgebraStore((state) => state.batch);
+  const problemAttempts = useAlgebraStore((state) => state.problemAttempts);
   const problemsAttempted = useAlgebraStore((state) => state.problemsAttempted);
   const problemsCorrect = useAlgebraStore((state) => state.problemsCorrect);
   const syncError = useAlgebraStore((state) => state.syncError);
@@ -16,13 +17,22 @@ export default function HomePage() {
     return Math.round((problemsCorrect / problemsAttempted) * 100);
   }, [problemsAttempted, problemsCorrect]);
 
+  const problemsRemaining = useMemo(() => {
+    if (!batch) {
+      return 0;
+    }
+
+    return batch.problems.reduce((count, problem, index) => {
+      const problemId = problem.id ?? `${problem.problemType}-${index}`;
+      return count + (problemAttempts[problemId]?.isCorrect === true ? 0 : 1);
+    }, 0);
+  }, [batch, problemAttempts]);
+
   return (
     <div className="stack">
       <section className="hero card">
         <h1>Algebra Flow</h1>
-        <p>
-          Practice algebra problems in your browser. Content syncs from the latest batch in S3.
-        </p>
+        <p>Practice algebra problems in focused mixed-review sessions.</p>
       </section>
 
       {!isHydrated ? (
@@ -33,9 +43,9 @@ export default function HomePage() {
 
       {syncError ? (
         <section className="card warningCard">
-          <h2>Sync issue</h2>
+          <h2>Update issue</h2>
           <p>{syncError}</p>
-          <p>Open Settings and run a manual sync once your network/CORS settings are resolved.</p>
+          <p>Open Settings and try updating your problem library again.</p>
         </section>
       ) : null}
 
@@ -57,8 +67,8 @@ export default function HomePage() {
             <span className="statValue">{accuracy}%</span>
           </div>
           <div className="statBlock">
-            <span className="statLabel">Batch</span>
-            <span className="statValue">{batch?.id ?? 'Not synced yet'}</span>
+            <span className="statLabel">Left To Solve</span>
+            <span className="statValue">{problemsRemaining}</span>
           </div>
         </div>
       </section>

@@ -199,43 +199,6 @@ math-field:focus-visible {
   color: #eef5ff;
 }
 
-.modeCardGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.modeCard {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(10, 18, 34, 0.9);
-  color: var(--text);
-  padding: 0.7rem;
-  text-align: left;
-  cursor: pointer;
-  display: grid;
-  gap: 0.25rem;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.modeCard:hover {
-  border-color: rgba(116, 170, 255, 0.6);
-}
-
-.modeCardActive {
-  border-color: rgba(116, 170, 255, 0.85);
-  background: rgba(46, 126, 247, 0.2);
-}
-
-.modeCardTitle {
-  font-weight: 700;
-}
-
-.modeCardBody {
-  color: var(--muted);
-  font-size: 0.88rem;
-}
-
 .setupFooter {
   border-top: 1px solid rgba(39, 57, 95, 0.8);
   padding-top: 0.85rem;
@@ -672,7 +635,4 @@ math-field:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .modeCardGrid {
-    grid-template-columns: 1fr;
-  }
 }
