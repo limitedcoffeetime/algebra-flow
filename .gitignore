@@ -80,3 +80,4 @@ docs/
 .env.local
 
 .env.local
+report.md
