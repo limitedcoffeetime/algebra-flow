@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useId } from 'react';
+
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -19,6 +21,26 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const titleId = useId();
+  const descriptionId = useId();
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCancel();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onCancel, open]);
+
   if (!open) {
     return null;
   }
@@ -28,16 +50,19 @@ export function ConfirmDialog({
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
         className="dialogCard"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="confirm-dialog-title" className="dialogTitle">
+        <h2 id={titleId} className="dialogTitle">
           {title}
         </h2>
-        <p className="dialogMessage">{message}</p>
+        <p id={descriptionId} className="dialogMessage">
+          {message}
+        </p>
         <div className="dialogActions">
-          <button type="button" className="secondaryButton" onClick={onCancel}>
+          <button type="button" className="secondaryButton" onClick={onCancel} autoFocus>
             Cancel
           </button>
           <button

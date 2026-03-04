@@ -23,6 +23,7 @@ async function initMathLive(): Promise<void> {
 interface MathFieldInputProps {
   value: string;
   onChange: (value: string) => void;
+  onEnter?: () => void;
   placeholder?: string;
   readOnly?: boolean;
   autoFocus?: boolean;
@@ -32,6 +33,7 @@ interface MathFieldInputProps {
 export function MathFieldInput({
   value,
   onChange,
+  onEnter,
   placeholder,
   readOnly = false,
   autoFocus = false,
@@ -46,24 +48,41 @@ export function MathFieldInput({
       await initMathLive();
       if (cancelled || !ref.current) return;
 
-      ref.current.mathVirtualKeyboardPolicy = 'auto';
-      ref.current.smartFence = true;
-      ref.current.smartSuperscript = false;
-      ref.current.readOnly = readOnly;
+      const field = ref.current;
+
+      field.mathVirtualKeyboardPolicy = 'auto';
+      field.smartFence = true;
+      field.smartSuperscript = false;
+      field.readOnly = readOnly;
 
       if (autoFocus && !readOnly) {
-        ref.current.focus();
+        field.focus();
       }
 
       const onInput = () => {
-        if (!ref.current) return;
-        onChange(ref.current.value);
+        onChange(field.value);
       };
 
-      ref.current.addEventListener('input', onInput);
+      const onKeyDown = (event: Event) => {
+        if (!onEnter) {
+          return;
+        }
+
+        const keyboardEvent = event as KeyboardEvent;
+        if (keyboardEvent.key !== 'Enter' || keyboardEvent.shiftKey) {
+          return;
+        }
+
+        keyboardEvent.preventDefault();
+        onEnter();
+      };
+
+      field.addEventListener('input', onInput);
+      field.addEventListener('keydown', onKeyDown);
 
       return () => {
-        ref.current?.removeEventListener('input', onInput);
+        field.removeEventListener('input', onInput);
+        field.removeEventListener('keydown', onKeyDown);
       };
     };
 
@@ -73,7 +92,7 @@ export function MathFieldInput({
       cancelled = true;
       cleanupPromise.then((cleanup) => cleanup?.());
     };
-  }, [autoFocus, onChange, readOnly]);
+  }, [autoFocus, onChange, onEnter, readOnly]);
 
   useEffect(() => {
     if (!ref.current) return;

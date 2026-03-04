@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DifficultyFilter } from '@/lib/problemFiltering';
+import { formatDifficultyLabel, formatProblemTypeLabel } from '@/lib/problemLabels';
 import { useToast } from '@/components/ToastProvider';
 import { useAlgebraStore } from '@/store/algebraStore';
 
@@ -107,7 +108,7 @@ export default function SettingsPage() {
           >
             {difficultyOptions.map((difficulty) => (
               <option key={difficulty} value={difficulty}>
-                {difficulty}
+                {formatDifficultyLabel(difficulty)}
               </option>
             ))}
           </select>
@@ -121,10 +122,10 @@ export default function SettingsPage() {
             value={selectedProblemType}
             onChange={(event) => setProblemTypeFilter(event.target.value)}
           >
-            <option value="all">all</option>
+            <option value="all">{formatProblemTypeLabel('all')}</option>
             {availableProblemTypes.map((problemType) => (
               <option key={problemType} value={problemType}>
-                {problemType}
+                {formatProblemTypeLabel(problemType)}
               </option>
             ))}
           </select>
@@ -147,6 +148,9 @@ export default function SettingsPage() {
 
         <p>
           Matching problems: <strong>{filteredProblemCount}</strong>
+        </p>
+        <p className="helperText">
+          Use ordered mode for structured drills, or random mode for mixed review.
         </p>
 
         <div className="buttonRow">

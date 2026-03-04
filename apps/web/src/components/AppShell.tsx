@@ -25,6 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={link.href}
                 href={link.href}
                 className={`navTab ${isActive ? 'navTabActive' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
               >
                 {link.label}
               </Link>

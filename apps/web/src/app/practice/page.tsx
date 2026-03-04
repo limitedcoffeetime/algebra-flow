@@ -6,6 +6,7 @@ import { MathFieldInput } from '@/components/MathFieldInput';
 import { ProblemCard } from '@/components/ProblemCard';
 import { SolutionSteps } from '@/components/SolutionSteps';
 import { useToast } from '@/components/ToastProvider';
+import { formatDifficultyLabel, formatProblemTypeLabel } from '@/lib/problemLabels';
 import { ProblemApiData } from '@/lib/types';
 import { verifyAnswer } from '@/lib/validation';
 import { useAlgebraStore } from '@/store/algebraStore';
@@ -100,6 +101,7 @@ function PracticeSession({
     setShowSolution(true);
     setActionState('next');
     setShowIncorrectActions(false);
+    setFeedbackMessage('Review the worked solution, then continue when ready.');
   };
 
   const handleContinue = () => {
@@ -115,16 +117,32 @@ function PracticeSession({
         <MathFieldInput
           value={userAnswer}
           onChange={setUserAnswer}
+          onEnter={() => {
+            if (actionState === 'verify') {
+              handleVerify();
+              return;
+            }
+
+            handleContinue();
+          }}
           placeholder="Enter your answer"
           className="mathInput"
           autoFocus
         />
+        <p className="helperText inputHint">
+          Press <strong>Enter</strong> to {actionState === 'verify' ? 'verify your answer' : 'continue'}.
+        </p>
 
         <div className="buttonRow">
           {actionState === 'verify' ? (
-            <button type="button" className="primaryButton" onClick={handleVerify}>
-              Verify Answer
-            </button>
+            <>
+              <button type="button" className="primaryButton" onClick={handleVerify}>
+                Verify Answer
+              </button>
+              <button type="button" className="secondaryButton" onClick={handleShowSolution}>
+                Show Solution
+              </button>
+            </>
           ) : (
             <button type="button" className="primaryButton" onClick={handleContinue}>
               Continue
@@ -138,7 +156,11 @@ function PracticeSession({
           ) : null}
         </div>
 
-        {feedbackMessage ? <p className="feedbackText">{feedbackMessage}</p> : null}
+        {feedbackMessage ? (
+          <p className="feedbackText" role="status" aria-live="polite">
+            {feedbackMessage}
+          </p>
+        ) : null}
 
         {showIncorrectActions ? (
           <div className="buttonRow">
@@ -219,7 +241,8 @@ export default function PracticePage() {
           <h1>Practice</h1>
           <p>No problems match your current filters.</p>
           <p>
-            Difficulty: <strong>{selectedDifficulty}</strong> | Type: <strong>{selectedProblemType}</strong>
+            Difficulty: <strong>{formatDifficultyLabel(selectedDifficulty)}</strong> | Type:{' '}
+            <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>
           </p>
           <div className="buttonRow">
             <button
@@ -254,9 +277,32 @@ export default function PracticePage() {
     <div className="stack">
       <section className="card compactCard">
         <p>
-          Filters: <strong>{selectedDifficulty}</strong> difficulty, <strong>{selectedProblemType}</strong> type.
-          Mode: <strong>{modeLabel}</strong>.
+          Filters: <strong>{formatDifficultyLabel(selectedDifficulty)}</strong> difficulty,{' '}
+          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong> type. Mode:{' '}
+          <strong>{modeLabel}</strong>.
         </p>
+        <p className="helperText">
+          Matching problems: <strong>{filteredProblemCount}</strong>
+        </p>
+        <div className="buttonRow compactActions">
+          <Link href="/settings" className="secondaryButton">
+            Adjust Filters
+          </Link>
+          <button
+            type="button"
+            className="secondaryButton"
+            onClick={() => {
+              resetPracticePreferences();
+              showToast({
+                title: 'Filters reset',
+                description: 'Difficulty/type filters cleared and random mode enabled.',
+                variant: 'success',
+              });
+            }}
+          >
+            Reset Filters
+          </button>
+        </div>
       </section>
       <PracticeSession
         key={sessionKey}

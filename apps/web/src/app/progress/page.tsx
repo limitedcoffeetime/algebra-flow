@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { useAlgebraStore } from '@/store/algebraStore';
 
@@ -35,6 +36,11 @@ export default function ProgressPage() {
     };
   }, [batch, problemAttempts]);
 
+  const completionPercent = useMemo(() => {
+    if (!batchTotals.total) return 0;
+    return Math.round((batchTotals.completed / batchTotals.total) * 100);
+  }, [batchTotals.completed, batchTotals.total]);
+
   return (
     <div className="stack">
       <section className="card">
@@ -58,27 +64,49 @@ export default function ProgressPage() {
       <section className="card">
         <h2>Current Batch</h2>
         {batch ? (
-          <div className="statsGrid">
-            <div className="statBlock">
-              <span className="statLabel">Batch ID</span>
-              <span className="statValue">{batch.id}</span>
+          <>
+            <div className="progressMeta">
+              <strong>{completionPercent}% complete</strong>
+              <span>
+                {batchTotals.completed}/{batchTotals.total} solved
+              </span>
             </div>
-            <div className="statBlock">
-              <span className="statLabel">Completed</span>
-              <span className="statValue">{batchTotals.completed}</span>
+            <div className="progressMeter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={completionPercent}>
+              <div className="progressMeterFill" style={{ width: `${completionPercent}%` }} />
             </div>
-            <div className="statBlock">
-              <span className="statLabel">Remaining</span>
-              <span className="statValue">{batchTotals.remaining}</span>
+            <div className="statsGrid">
+              <div className="statBlock">
+                <span className="statLabel">Batch ID</span>
+                <span className="statValue">{batch.id}</span>
+              </div>
+              <div className="statBlock">
+                <span className="statLabel">Completed</span>
+                <span className="statValue">{batchTotals.completed}</span>
+              </div>
+              <div className="statBlock">
+                <span className="statLabel">Remaining</span>
+                <span className="statValue">{batchTotals.remaining}</span>
+              </div>
+              <div className="statBlock">
+                <span className="statLabel">Total Problems</span>
+                <span className="statValue">{batchTotals.total}</span>
+              </div>
             </div>
-            <div className="statBlock">
-              <span className="statLabel">Total Problems</span>
-              <span className="statValue">{batchTotals.total}</span>
-            </div>
-          </div>
+          </>
         ) : (
           <p>No batch is loaded yet. Go to Settings and run sync.</p>
         )}
+      </section>
+
+      <section className="card compactCard">
+        <div className="buttonRow">
+          <Link href="/practice" className="primaryButton">
+            Continue Practice
+          </Link>
+          <Link href="/settings" className="secondaryButton">
+            Adjust Filters
+          </Link>
+        </div>
       </section>
     </div>
   );

@@ -41,9 +41,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="toastViewport" role="region" aria-label="Notifications">
+      <div
+        className="toastViewport"
+        role="region"
+        aria-label="Notifications"
+        aria-live="polite"
+        aria-relevant="additions text"
+      >
         {toasts.map((toast) => (
-          <div key={toast.id} className={`toast toast-${toast.variant}`}>
+          <div
+            key={toast.id}
+            className={`toast toast-${toast.variant}`}
+            role={toast.variant === 'error' ? 'alert' : 'status'}
+          >
             <div className="toastTitle">{toast.title}</div>
             {toast.description ? <div className="toastDescription">{toast.description}</div> : null}
             <button

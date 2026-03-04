@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { formatDifficultyLabel, formatProblemTypeLabel } from '@/lib/problemLabels';
 import { useAlgebraStore } from '@/store/algebraStore';
 
 export default function HomePage() {
@@ -21,6 +22,7 @@ export default function HomePage() {
   }, [problemsAttempted, problemsCorrect]);
 
   const filteredProblemCount = getFilteredProblemCount();
+  const hasBatch = Boolean(batch?.problems.length);
 
   return (
     <div className="stack">
@@ -71,7 +73,8 @@ export default function HomePage() {
         <h2>Practice Mode</h2>
         <p>
           Sampling: <strong>{randomSampling ? 'random' : 'ordered'}</strong> | Difficulty:{' '}
-          <strong>{selectedDifficulty}</strong> | Type: <strong>{selectedProblemType}</strong>
+          <strong>{formatDifficultyLabel(selectedDifficulty)}</strong> | Type:{' '}
+          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>
         </p>
         <p>
           Matching problems in current batch: <strong>{filteredProblemCount}</strong>
@@ -81,13 +84,20 @@ export default function HomePage() {
       <section className="card">
         <h2>Start</h2>
         <div className="buttonRow">
-          <Link href="/practice" className="primaryButton">
-            Start Practice
-          </Link>
+          {hasBatch ? (
+            <Link href="/practice" className="primaryButton">
+              Start Practice
+            </Link>
+          ) : (
+            <Link href="/settings" className="primaryButton">
+              Download Problems
+            </Link>
+          )}
           <Link href="/settings" className="secondaryButton">
             Sync Settings
           </Link>
         </div>
+        {!hasBatch ? <p className="helperText">No local problem batch found yet.</p> : null}
       </section>
     </div>
   );
