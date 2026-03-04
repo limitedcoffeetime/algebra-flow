@@ -10,7 +10,7 @@ export interface ProblemApiData {
   id?: string;
   equations: string[];
   direction: string;
-  answer: string | number | Array<string | number>;
+  answer?: string | number | Array<string | number>;
   answerLHS?: string;
   answerRHS?: string | number | Array<string | number>;
   solutionSteps: SolutionStep[];

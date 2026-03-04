@@ -16,13 +16,21 @@ export const problemSchema = z.object({
   id: z.string().optional(),
   equations: z.array(z.string().min(1)).min(1),
   direction: z.string().min(1),
-  answer: answerSchema,
+  answer: answerSchema.optional(),
   answerLHS: z.string().optional(),
   answerRHS: answerSchema.optional(),
   solutionSteps: z.array(solutionStepSchema),
   variables: z.array(z.string()),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   problemType: z.string().min(1),
+}).superRefine((problem, ctx) => {
+  if (problem.answer === undefined && problem.answerRHS === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Problem must contain answer or answerRHS.',
+      path: ['answer'],
+    });
+  }
 });
 
 export const problemBatchSchema = z.object({

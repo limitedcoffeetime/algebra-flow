@@ -346,7 +346,7 @@ function validateQuadraticAnswer(userAnswer: string, problem: ProblemApiData): V
 }
 
 function validateSystemsAnswer(userAnswer: string, problem: ProblemApiData): VerificationResult {
-  const answers = asStringArray(problem.answer);
+  const answers = asStringArray(problem.answer ?? problem.answerRHS);
   if (answers.length !== 2) {
     return {
       isCorrect: false,
