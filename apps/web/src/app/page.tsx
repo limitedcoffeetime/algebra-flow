@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo } from 'react';
-import { formatDifficultyLabel, formatProblemTypeLabel } from '@/lib/problemLabels';
+import { PracticeSetupPanel } from '@/components/PracticeSetupPanel';
 import { useAlgebraStore } from '@/store/algebraStore';
 
 export default function HomePage() {
@@ -11,18 +10,11 @@ export default function HomePage() {
   const problemsAttempted = useAlgebraStore((state) => state.problemsAttempted);
   const problemsCorrect = useAlgebraStore((state) => state.problemsCorrect);
   const syncError = useAlgebraStore((state) => state.syncError);
-  const selectedDifficulty = useAlgebraStore((state) => state.selectedDifficulty);
-  const selectedProblemType = useAlgebraStore((state) => state.selectedProblemType);
-  const randomSampling = useAlgebraStore((state) => state.randomSampling);
-  const getFilteredProblemCount = useAlgebraStore((state) => state.getFilteredProblemCount);
 
   const accuracy = useMemo(() => {
     if (problemsAttempted === 0) return 0;
     return Math.round((problemsCorrect / problemsAttempted) * 100);
   }, [problemsAttempted, problemsCorrect]);
-
-  const filteredProblemCount = getFilteredProblemCount();
-  const hasBatch = Boolean(batch?.problems.length);
 
   return (
     <div className="stack">
@@ -47,6 +39,8 @@ export default function HomePage() {
         </section>
       ) : null}
 
+      <PracticeSetupPanel context="home" />
+
       <section className="card">
         <h2>Current Progress</h2>
         <div className="statsGrid">
@@ -67,37 +61,6 @@ export default function HomePage() {
             <span className="statValue">{batch?.id ?? 'Not synced yet'}</span>
           </div>
         </div>
-      </section>
-
-      <section className="card">
-        <h2>Practice Mode</h2>
-        <p>
-          Sampling: <strong>{randomSampling ? 'random' : 'ordered'}</strong> | Difficulty:{' '}
-          <strong>{formatDifficultyLabel(selectedDifficulty)}</strong> | Type:{' '}
-          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>
-        </p>
-        <p>
-          Matching problems in current batch: <strong>{filteredProblemCount}</strong>
-        </p>
-      </section>
-
-      <section className="card">
-        <h2>Start</h2>
-        <div className="buttonRow">
-          {hasBatch ? (
-            <Link href="/practice" className="primaryButton">
-              Start Practice
-            </Link>
-          ) : (
-            <Link href="/settings" className="primaryButton">
-              Download Problems
-            </Link>
-          )}
-          <Link href="/settings" className="secondaryButton">
-            Sync Settings
-          </Link>
-        </div>
-        {!hasBatch ? <p className="helperText">No local problem batch found yet.</p> : null}
       </section>
     </div>
   );

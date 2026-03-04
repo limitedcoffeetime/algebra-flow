@@ -1,12 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { MathFieldInput } from '@/components/MathFieldInput';
 import { ProblemCard } from '@/components/ProblemCard';
+import { PracticeSetupPanel } from '@/components/PracticeSetupPanel';
 import { SolutionSteps } from '@/components/SolutionSteps';
 import { useToast } from '@/components/ToastProvider';
-import { formatDifficultyLabel, formatProblemTypeLabel } from '@/lib/problemLabels';
 import { ProblemApiData } from '@/lib/types';
 import { verifyAnswer } from '@/lib/validation';
 import { useAlgebraStore } from '@/store/algebraStore';
@@ -189,12 +188,9 @@ export default function PracticePage() {
   const syncProblems = useAlgebraStore((state) => state.syncProblems);
   const isSyncing = useAlgebraStore((state) => state.isSyncing);
   const syncError = useAlgebraStore((state) => state.syncError);
-  const selectedDifficulty = useAlgebraStore((state) => state.selectedDifficulty);
-  const selectedProblemType = useAlgebraStore((state) => state.selectedProblemType);
   const randomSampling = useAlgebraStore((state) => state.randomSampling);
   const getFilteredProblemCount = useAlgebraStore((state) => state.getFilteredProblemCount);
   const getCurrentProblemPosition = useAlgebraStore((state) => state.getCurrentProblemPosition);
-  const resetPracticePreferences = useAlgebraStore((state) => state.resetPracticePreferences);
 
   const { showToast } = useToast();
 
@@ -239,31 +235,10 @@ export default function PracticePage() {
       <div className="stack">
         <section className="card">
           <h1>Practice</h1>
-          <p>No problems match your current filters.</p>
-          <p>
-            Difficulty: <strong>{formatDifficultyLabel(selectedDifficulty)}</strong> | Type:{' '}
-            <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>
-          </p>
-          <div className="buttonRow">
-            <button
-              type="button"
-              className="primaryButton"
-              onClick={() => {
-                resetPracticePreferences();
-                showToast({
-                  title: 'Filters reset',
-                  description: 'All problems are available again.',
-                  variant: 'success',
-                });
-              }}
-            >
-              Reset Filters
-            </button>
-            <Link href="/settings" className="secondaryButton">
-              Open Settings
-            </Link>
-          </div>
+          <p>No problems match your current setup.</p>
+          <p>Use the setup controls below to select a different difficulty or topic.</p>
         </section>
+        <PracticeSetupPanel context="practice" />
       </div>
     );
   }
@@ -275,35 +250,7 @@ export default function PracticePage() {
 
   return (
     <div className="stack">
-      <section className="card compactCard">
-        <p>
-          Filters: <strong>{formatDifficultyLabel(selectedDifficulty)}</strong> difficulty,{' '}
-          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong> type. Mode:{' '}
-          <strong>{modeLabel}</strong>.
-        </p>
-        <p className="helperText">
-          Matching problems: <strong>{filteredProblemCount}</strong>
-        </p>
-        <div className="buttonRow compactActions">
-          <Link href="/settings" className="secondaryButton">
-            Adjust Filters
-          </Link>
-          <button
-            type="button"
-            className="secondaryButton"
-            onClick={() => {
-              resetPracticePreferences();
-              showToast({
-                title: 'Filters reset',
-                description: 'Difficulty/type filters cleared and random mode enabled.',
-                variant: 'success',
-              });
-            }}
-          >
-            Reset Filters
-          </button>
-        </div>
-      </section>
+      <PracticeSetupPanel context="practice" compact />
       <PracticeSession
         key={sessionKey}
         problem={problem}

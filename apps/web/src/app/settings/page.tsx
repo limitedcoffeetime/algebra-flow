@@ -1,15 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { DifficultyFilter } from '@/lib/problemFiltering';
 import { formatDifficultyLabel, formatProblemTypeLabel } from '@/lib/problemLabels';
 import { useToast } from '@/components/ToastProvider';
 import { useAlgebraStore } from '@/store/algebraStore';
 
 type PendingDialog = 'reset' | 'clear' | null;
-
-const difficultyOptions: DifficultyFilter[] = ['all', 'easy', 'medium', 'hard'];
 
 export default function SettingsPage() {
   const latestInfo = useAlgebraStore((state) => state.latestInfo);
@@ -23,12 +21,7 @@ export default function SettingsPage() {
   const selectedDifficulty = useAlgebraStore((state) => state.selectedDifficulty);
   const selectedProblemType = useAlgebraStore((state) => state.selectedProblemType);
   const randomSampling = useAlgebraStore((state) => state.randomSampling);
-  const setDifficultyFilter = useAlgebraStore((state) => state.setDifficultyFilter);
-  const setProblemTypeFilter = useAlgebraStore((state) => state.setProblemTypeFilter);
-  const setRandomSampling = useAlgebraStore((state) => state.setRandomSampling);
-  const resetPracticePreferences = useAlgebraStore((state) => state.resetPracticePreferences);
   const getFilteredProblemCount = useAlgebraStore((state) => state.getFilteredProblemCount);
-  const getAvailableProblemTypes = useAlgebraStore((state) => state.getAvailableProblemTypes);
 
   const { showToast } = useToast();
   const [dialog, setDialog] = useState<PendingDialog>(null);
@@ -39,7 +32,7 @@ export default function SettingsPage() {
   }, [lastSyncTimestamp]);
 
   const filteredProblemCount = getFilteredProblemCount();
-  const availableProblemTypes = getAvailableProblemTypes();
+  const sessionStyleLabel = randomSampling ? 'Mixed Review' : 'Structured Path';
 
   const runSync = (force: boolean) => {
     void syncProblems(force).then((result) => {
@@ -93,81 +86,25 @@ export default function SettingsPage() {
       </section>
 
       <section className="card">
-        <h2>Practice Preferences</h2>
-        <p>Control how problems are sampled and which subsets are included.</p>
-
-        <div className="formGrid">
-          <label className="fieldLabel" htmlFor="difficulty-filter">
-            Difficulty
-          </label>
-          <select
-            id="difficulty-filter"
-            className="fieldControl"
-            value={selectedDifficulty}
-            onChange={(event) => setDifficultyFilter(event.target.value as DifficultyFilter)}
-          >
-            {difficultyOptions.map((difficulty) => (
-              <option key={difficulty} value={difficulty}>
-                {formatDifficultyLabel(difficulty)}
-              </option>
-            ))}
-          </select>
-
-          <label className="fieldLabel" htmlFor="type-filter">
-            Problem Type
-          </label>
-          <select
-            id="type-filter"
-            className="fieldControl"
-            value={selectedProblemType}
-            onChange={(event) => setProblemTypeFilter(event.target.value)}
-          >
-            <option value="all">{formatProblemTypeLabel('all')}</option>
-            {availableProblemTypes.map((problemType) => (
-              <option key={problemType} value={problemType}>
-                {formatProblemTypeLabel(problemType)}
-              </option>
-            ))}
-          </select>
-
-          <label className="fieldLabel" htmlFor="random-sampling-toggle">
-            Sampling Mode
-          </label>
-          <div className="fieldControlInline">
-            <label className="switchLabel" htmlFor="random-sampling-toggle">
-              <input
-                id="random-sampling-toggle"
-                type="checkbox"
-                checked={randomSampling}
-                onChange={(event) => setRandomSampling(event.target.checked)}
-              />
-              Random sampling
-            </label>
-          </div>
-        </div>
-
+        <h2>Learning Setup</h2>
+        <p>
+          Difficulty, topic, and session style are now first-class controls on Home and Practice.
+        </p>
+        <p>
+          Current setup: <strong>{formatDifficultyLabel(selectedDifficulty)}</strong>,{' '}
+          <strong>{formatProblemTypeLabel(selectedProblemType)}</strong>,{' '}
+          <strong>{sessionStyleLabel}</strong>.
+        </p>
         <p>
           Matching problems: <strong>{filteredProblemCount}</strong>
         </p>
-        <p className="helperText">
-          Use ordered mode for structured drills, or random mode for mixed review.
-        </p>
-
         <div className="buttonRow">
-          <button
-            type="button"
-            className="secondaryButton"
-            onClick={() => {
-              resetPracticePreferences();
-              showToast({
-                title: 'Preferences reset',
-                description: 'Difficulty/type filters cleared and random mode enabled.',
-                variant: 'success',
-              });
-            }}
-          >
-            Reset Preferences
-          </button>
+          <Link href="/" className="primaryButton">
+            Open Practice Setup
+          </Link>
+          <Link href="/practice" className="secondaryButton">
+            Go To Practice
+          </Link>
         </div>
       </section>
 
