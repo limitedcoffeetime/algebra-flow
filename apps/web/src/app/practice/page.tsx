@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { MathFieldInput } from '@/components/MathFieldInput';
 import { ProblemCard } from '@/components/ProblemCard';
@@ -14,13 +15,13 @@ type ActionState = 'verify' | 'next';
 interface PracticeSessionProps {
   problem: ProblemApiData;
   currentProblemIndex: number;
-  batchSize: number;
+  progressLabel: string;
 }
 
 function PracticeSession({
   problem,
   currentProblemIndex,
-  batchSize,
+  progressLabel,
 }: PracticeSessionProps) {
   const recordAttempt = useAlgebraStore((state) => state.recordAttempt);
   const markSolutionViewed = useAlgebraStore((state) => state.markSolutionViewed);
@@ -105,8 +106,6 @@ function PracticeSession({
     advanceProblem();
   };
 
-  const progressLabel = `${currentProblemIndex + 1}/${batchSize}`;
-
   return (
     <>
       <ProblemCard problem={problem} progressLabel={progressLabel} />
@@ -168,15 +167,24 @@ export default function PracticePage() {
   const syncProblems = useAlgebraStore((state) => state.syncProblems);
   const isSyncing = useAlgebraStore((state) => state.isSyncing);
   const syncError = useAlgebraStore((state) => state.syncError);
+  const selectedDifficulty = useAlgebraStore((state) => state.selectedDifficulty);
+  const selectedProblemType = useAlgebraStore((state) => state.selectedProblemType);
+  const randomSampling = useAlgebraStore((state) => state.randomSampling);
+  const getFilteredProblemCount = useAlgebraStore((state) => state.getFilteredProblemCount);
+  const getCurrentProblemPosition = useAlgebraStore((state) => state.getCurrentProblemPosition);
+  const resetPracticePreferences = useAlgebraStore((state) => state.resetPracticePreferences);
 
   const { showToast } = useToast();
 
   const problem = useMemo(() => {
-    if (!batch) return null;
+    if (!batch || currentProblemIndex < 0) return null;
     return batch.problems[currentProblemIndex] ?? null;
   }, [batch, currentProblemIndex]);
 
-  if (!problem) {
+  const filteredProblemCount = getFilteredProblemCount();
+  const currentProblemPosition = getCurrentProblemPosition();
+
+  if (!batch) {
     return (
       <div className="stack">
         <section className="card">
@@ -204,15 +212,57 @@ export default function PracticePage() {
     );
   }
 
+  if (!problem || filteredProblemCount === 0) {
+    return (
+      <div className="stack">
+        <section className="card">
+          <h1>Practice</h1>
+          <p>No problems match your current filters.</p>
+          <p>
+            Difficulty: <strong>{selectedDifficulty}</strong> | Type: <strong>{selectedProblemType}</strong>
+          </p>
+          <div className="buttonRow">
+            <button
+              type="button"
+              className="primaryButton"
+              onClick={() => {
+                resetPracticePreferences();
+                showToast({
+                  title: 'Filters reset',
+                  description: 'All problems are available again.',
+                  variant: 'success',
+                });
+              }}
+            >
+              Reset Filters
+            </button>
+            <Link href="/settings" className="secondaryButton">
+              Open Settings
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const positionLabel = currentProblemPosition ?? 1;
+  const modeLabel = randomSampling ? 'random' : 'ordered';
+  const progressLabel = `${positionLabel}/${filteredProblemCount} (${modeLabel})`;
   const sessionKey = problem.id ?? `${problem.problemType}-${currentProblemIndex}`;
 
   return (
     <div className="stack">
+      <section className="card compactCard">
+        <p>
+          Filters: <strong>{selectedDifficulty}</strong> difficulty, <strong>{selectedProblemType}</strong> type.
+          Mode: <strong>{modeLabel}</strong>.
+        </p>
+      </section>
       <PracticeSession
         key={sessionKey}
         problem={problem}
         currentProblemIndex={currentProblemIndex}
-        batchSize={batch?.problems.length ?? 0}
+        progressLabel={progressLabel}
       />
     </div>
   );

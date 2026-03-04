@@ -10,11 +10,17 @@ export default function HomePage() {
   const problemsAttempted = useAlgebraStore((state) => state.problemsAttempted);
   const problemsCorrect = useAlgebraStore((state) => state.problemsCorrect);
   const syncError = useAlgebraStore((state) => state.syncError);
+  const selectedDifficulty = useAlgebraStore((state) => state.selectedDifficulty);
+  const selectedProblemType = useAlgebraStore((state) => state.selectedProblemType);
+  const randomSampling = useAlgebraStore((state) => state.randomSampling);
+  const getFilteredProblemCount = useAlgebraStore((state) => state.getFilteredProblemCount);
 
   const accuracy = useMemo(() => {
     if (problemsAttempted === 0) return 0;
     return Math.round((problemsCorrect / problemsAttempted) * 100);
   }, [problemsAttempted, problemsCorrect]);
+
+  const filteredProblemCount = getFilteredProblemCount();
 
   return (
     <div className="stack">
@@ -59,6 +65,17 @@ export default function HomePage() {
             <span className="statValue">{batch?.id ?? 'Not synced yet'}</span>
           </div>
         </div>
+      </section>
+
+      <section className="card">
+        <h2>Practice Mode</h2>
+        <p>
+          Sampling: <strong>{randomSampling ? 'random' : 'ordered'}</strong> | Difficulty:{' '}
+          <strong>{selectedDifficulty}</strong> | Type: <strong>{selectedProblemType}</strong>
+        </p>
+        <p>
+          Matching problems in current batch: <strong>{filteredProblemCount}</strong>
+        </p>
       </section>
 
       <section className="card">
