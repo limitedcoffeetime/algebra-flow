@@ -1,6 +1,6 @@
 # Algebra Flow
 
-> This repository contains the source code for Algebra Flow, a modern mobile algebra learning app that makes practicing math engaging and accessible while keeping you in a flow. Built with React Native and Expo, Algebra Flow features professional math input, step-by-step solutions, and automated problem generation.
+> This repository contains the source code for Algebra Flow across mobile and web surfaces. The legacy mobile app is built with React Native + Expo, and the new browser experience lives in `apps/web` (Next.js).
 
 ## Features
 
@@ -17,6 +17,35 @@
 Algebra Flow is available on the App Store for iOS devices.
 
 [Download on the App Store](https://apps.apple.com/us/app/algebra-flow/id6748621915)
+
+## Web App
+
+- Path: `apps/web`
+- Stack: Next.js + React + Zustand + MathLive
+- Data source: S3 `latest.json` + batch files
+- Deploy target: Vercel
+
+### Web Environment
+
+Create `apps/web/.env.local`:
+
+```bash
+NEXT_PUBLIC_PROBLEMS_LATEST_URL=https://algebra-problems.s3.us-east-2.amazonaws.com/latest.json
+# Optional
+NEXT_PUBLIC_SENTRY_DSN=
+```
+
+### Web Commands
+
+From repository root:
+
+```bash
+npm run web:dev
+npm run web:typecheck
+npm run web:lint
+npm run web:build
+npm run web:test:e2e
+```
 
 ## Development
 

@@ -1,0 +1,435 @@
+:root {
+  --bg: #0b1220;
+  --surface: #121c2f;
+  --surface-alt: #1a2740;
+  --line: #27395f;
+  --text: #e6eefc;
+  --muted: #9fb1d4;
+  --primary: #2e7ef7;
+  --success: #1db580;
+  --danger: #d9534f;
+  --warning: #f4a62a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, #1c2f57 0%, transparent 36%),
+    radial-gradient(circle at 84% 0%, #17335f 0%, transparent 38%),
+    linear-gradient(180deg, #0c1527 0%, #080d18 100%);
+  color: var(--text);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+}
+
+.appFrame {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(8, 14, 25, 0.84);
+  border-bottom: 1px solid rgba(39, 57, 95, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.brand {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.navTabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.navTab {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  color: var(--muted);
+  transition: all 0.15s ease;
+}
+
+.navTab:hover {
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.navTabActive {
+  background: rgba(46, 126, 247, 0.2);
+  border-color: rgba(46, 126, 247, 0.5);
+  color: #ddebff;
+}
+
+.mainContent {
+  width: min(960px, 100% - 2.5rem);
+  margin: 1.5rem auto 2.5rem;
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  background: linear-gradient(180deg, rgba(18, 28, 47, 0.94), rgba(13, 22, 40, 0.92));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+.hero h1,
+.card h1,
+.card h2,
+.card h3 {
+  margin: 0 0 0.65rem;
+}
+
+.hero p,
+.card p {
+  color: var(--muted);
+  margin: 0.3rem 0;
+}
+
+.warningCard {
+  border-color: rgba(244, 166, 42, 0.65);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.cardTitle {
+  font-size: 1.15rem;
+}
+
+.cardHeaderRight {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.difficultyBadge {
+  display: inline-flex;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(46, 126, 247, 0.2);
+  border: 1px solid rgba(46, 126, 247, 0.4);
+}
+
+.progressLabel {
+  font-size: 0.85rem;
+  color: #c8daff;
+}
+
+.directionText {
+  color: #dce7ff;
+  font-weight: 600;
+}
+
+.equationsList {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+
+.equationRow {
+  border: 1px solid rgba(46, 126, 247, 0.35);
+  border-radius: 10px;
+  background: #0c1528;
+  padding: 0.7rem;
+  overflow-x: auto;
+}
+
+.answerHint {
+  font-size: 0.92rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.65rem;
+}
+
+.mathInput,
+.mathReadonly {
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #091224;
+  padding: 0.75rem;
+  color: var(--text);
+  display: block;
+}
+
+.mathReadonly {
+  min-height: 52px;
+  pointer-events: none;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.buttonColumn {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0.58rem 0.9rem;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primaryButton {
+  background: var(--primary);
+  border-color: rgba(116, 170, 255, 0.6);
+}
+
+.secondaryButton {
+  background: rgba(20, 35, 63, 0.95);
+  border-color: var(--line);
+}
+
+.dangerButton {
+  background: rgba(217, 83, 79, 0.9);
+  border-color: rgba(255, 145, 142, 0.75);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.feedbackText {
+  margin-top: 0.85rem;
+  color: #dce7ff;
+}
+
+.errorText {
+  color: #ffb7b1;
+  margin-top: 0.7rem;
+}
+
+.stepsList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.stepItem {
+  border: 1px solid rgba(39, 57, 95, 0.8);
+  border-radius: 12px;
+  background: rgba(10, 18, 33, 0.85);
+  padding: 0.8rem;
+}
+
+.stepHeading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #dce7ff;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.stepIndex {
+  width: 1.45rem;
+  height: 1.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(46, 126, 247, 0.35);
+  border: 1px solid rgba(138, 182, 255, 0.6);
+  font-size: 0.75rem;
+}
+
+.stepMathWrap {
+  border: 1px solid rgba(39, 57, 95, 0.8);
+  border-radius: 10px;
+  background: #091224;
+  padding: 0.5rem;
+  overflow-x: auto;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.65rem;
+}
+
+.statBlock {
+  border: 1px solid rgba(39, 57, 95, 0.85);
+  border-radius: 10px;
+  background: rgba(10, 17, 31, 0.9);
+  padding: 0.65rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.statLabel {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.statValue {
+  color: #f3f7ff;
+  font-weight: 600;
+  font-size: 0.97rem;
+  word-break: break-word;
+}
+
+.toastViewport {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  z-index: 120;
+  max-width: min(360px, calc(100vw - 2rem));
+}
+
+.toast {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(8, 14, 25, 0.95);
+  padding: 0.7rem 2rem 0.7rem 0.75rem;
+}
+
+.toastTitle {
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.toastDescription {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.toastClose {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.45rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.25rem;
+}
+
+.toast-success {
+  border-color: rgba(29, 181, 128, 0.55);
+}
+
+.toast-error {
+  border-color: rgba(217, 83, 79, 0.7);
+}
+
+.toast-info {
+  border-color: rgba(46, 126, 247, 0.6);
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  background: rgba(0, 0, 0, 0.56);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.dialogCard {
+  width: min(460px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #0d1629;
+  padding: 1rem;
+}
+
+.dialogTitle {
+  margin: 0;
+}
+
+.dialogMessage {
+  color: var(--muted);
+}
+
+.dialogActions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .topBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mainContent {
+    width: min(960px, calc(100% - 1.2rem));
+    margin-top: 1rem;
+  }
+
+  .toastViewport {
+    left: 0.6rem;
+    right: 0.6rem;
+    max-width: none;
+  }
+}
